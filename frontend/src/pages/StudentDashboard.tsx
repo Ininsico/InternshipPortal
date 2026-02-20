@@ -6,22 +6,15 @@ import {
     LogOut,
     GraduationCap,
     FileText,
-    Clock,
-    CheckCircle2,
     Briefcase,
-    Building2,
     User,
-    BarChart3,
     Plus,
     Loader2,
     X,
     LayoutDashboard,
     Zap,
-    Terminal,
     ArrowUpRight,
-    Search,
-    Bell,
-    ShieldCheck
+    Bell
 } from 'lucide-react';
 
 type TabKey = 'overview' | 'applications' | 'documents' | 'profile';
@@ -96,8 +89,8 @@ const StudentDashboard = () => {
                             key={item.key}
                             onClick={() => setActiveTab(item.key as TabKey)}
                             className={`flex w-full items-center rounded-lg px-3 py-2.5 transition-all ${activeTab === item.key
-                                    ? 'bg-blue-50 text-blue-600'
-                                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                                ? 'bg-blue-50 text-blue-600'
+                                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                                 }`}
                         >
                             <item.icon className="h-4 w-4 shrink-0" />
@@ -286,7 +279,13 @@ const StudentDashboard = () => {
     );
 };
 
-const MetricCard = ({ label, value, sub }: any) => (
+interface MetricCardProps {
+    label: string;
+    value: string | number;
+    sub: string;
+}
+
+const MetricCard = ({ label, value, sub }: MetricCardProps) => (
     <div className="bg-white rounded-2xl border border-slate-100 p-6 group hover:border-blue-200 shadow-sm transition-all">
         <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">{label}</p>
         <p className="mt-3 text-3xl font-black tracking-tighter text-slate-900 leading-none">{value}</p>
@@ -294,21 +293,31 @@ const MetricCard = ({ label, value, sub }: any) => (
     </div>
 );
 
-const ProfileField = ({ label, value, isLink }: any) => (
+interface ProfileFieldProps {
+    label: string;
+    value: string;
+    isLink?: boolean;
+}
+
+const ProfileField = ({ label, value, isLink }: ProfileFieldProps) => (
     <div className={`p-6 rounded-2xl border ${isLink ? 'border-blue-100 bg-blue-50/20' : 'border-slate-50 bg-slate-50/50'}`}>
         <label className="text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] block mb-2">{label}</label>
         <p className="text-sm font-black text-slate-900 tracking-tight">{value || 'N/A'}</p>
     </div>
 );
 
-const InputField = ({ label, ...props }: any) => (
+interface InputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
+    label: string;
+}
+
+const InputField = ({ label, ...props }: InputFieldProps) => (
     <div>
         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">{label}</label>
         <input {...props} required className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300" />
     </div>
 );
 
-const StatusBadge = ({ status }: any) => {
+const StatusBadge = ({ status }: { status: string }) => {
     const isSuccess = status === 'approved' || status === 'completed' || status === 'verified';
     return (
         <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${isSuccess ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-slate-50 text-slate-400 border-slate-100'
