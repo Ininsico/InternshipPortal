@@ -86,6 +86,18 @@ const loginAdmin = async (req, res) => {
     }
 };
 
+const logout = async (req, res) => {
+    try {
+        return res.json({
+            success: true,
+            message: 'Logged out successfully.'
+        });
+    } catch (err) {
+        console.error('logout:', err);
+        return res.status(500).json({ success: false, message: 'Server error.' });
+    }
+};
+
 const getMe = async (req, res) => {
     try {
         const { id, role } = req.user;
@@ -128,4 +140,4 @@ const getMe = async (req, res) => {
     }
 };
 
-module.exports = { loginStudent, loginAdmin, getMe };
+module.exports = { loginStudent, loginAdmin, logout, getMe };

@@ -8,20 +8,20 @@ import {
     FileText,
     Clock,
     CheckCircle2,
-    AlertCircle,
     Briefcase,
     Building2,
-    Calendar,
-    ChevronRight,
-    Bell,
-    Search,
     User,
     BarChart3,
-    Upload,
-    ExternalLink,
     Plus,
     Loader2,
-    X
+    X,
+    LayoutDashboard,
+    Zap,
+    Terminal,
+    ArrowUpRight,
+    Search,
+    Bell,
+    ShieldCheck
 } from 'lucide-react';
 
 type TabKey = 'overview' | 'applications' | 'documents' | 'profile';
@@ -47,11 +47,10 @@ const StudentDashboard = () => {
                     axios.get(`${API_BASE}/profile`, config),
                     axios.get(`${API_BASE}/applications`, config)
                 ]);
-
                 if (profileRes.data.success) setProfile(profileRes.data.student);
                 if (appsRes.data.success) setApplications(appsRes.data.applications);
             } catch (err) {
-                console.error('Error fetching student data:', err);
+                console.error(err);
             } finally {
                 setLoading(false);
             }
@@ -71,224 +70,252 @@ const StudentDashboard = () => {
                 setActiveTab('applications');
             }
         } catch (err) {
-            console.error('Error applying:', err);
+            console.error(err);
         }
     };
 
-    const stats = [
-        { label: 'Applications', value: applications.length, icon: Briefcase, color: 'from-blue-500 to-blue-600' },
-        { label: 'Approved', value: applications.filter(a => a.status === 'approved').length, icon: CheckCircle2, color: 'from-emerald-500 to-emerald-600' },
-        { label: 'Pending', value: applications.filter(a => a.status === 'pending').length, icon: Clock, color: 'from-amber-500 to-amber-600' },
-        { label: 'Supervisor', value: profile?.supervisorId?.name || 'Pending', icon: User, color: 'from-violet-500 to-violet-600' },
+    const menuItems = [
+        { key: 'overview', label: 'Overview', icon: LayoutDashboard },
+        { key: 'applications', label: 'Applications', icon: Briefcase },
+        { key: 'documents', label: 'Documents', icon: FileText },
+        { key: 'profile', label: 'My Profile', icon: User },
     ];
 
-    if (loading && activeTab === 'overview') {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-slate-50">
-                <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
-            </div>
-        );
-    }
-
     return (
-        <div className="min-h-screen bg-[#f8fafc]">
-            <header className="sticky top-0 z-50 border-b border-slate-200/60 bg-white/80 backdrop-blur-2xl">
-                <div className="mx-auto flex h-20 max-w-[1600px] items-center justify-between px-6 lg:px-10">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg">
-                            <GraduationCap className="h-5 w-5 text-white" />
-                        </div>
-                        <div className="flex flex-col leading-none">
-                            <span className="text-lg font-extrabold tracking-tight text-slate-900">Student Portal</span>
-                            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-[0.2em] mt-0.5">COMSATS University</span>
-                        </div>
+        <div className="flex min-h-screen bg-white">
+            <aside className="fixed left-0 top-0 z-40 h-screen w-16 flex-col border-r border-slate-100 bg-white md:w-64">
+                <div className="flex h-16 items-center border-b border-slate-100 px-6">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-500/20">
+                        <GraduationCap className="h-5 w-5 text-white" />
                     </div>
-
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-sm font-black text-white shadow-lg">
-                                {user?.name?.charAt(0) || 'S'}
-                            </div>
-                            <div className="hidden lg:flex flex-col leading-none">
-                                <span className="text-sm font-bold text-slate-900">{user?.name}</span>
-                                <span className="text-[11px] font-semibold text-slate-400 mt-0.5">{profile?.rollNumber}</span>
-                            </div>
-                        </div>
-                        <button onClick={logout} className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all font-bold">
-                            <LogOut className="h-4.5 w-4.5" />
-                        </button>
-                    </div>
+                    <span className="ml-3 hidden text-xs font-black tracking-[0.2em] text-slate-900 md:block uppercase leading-none">Student Portal</span>
                 </div>
-            </header>
-
-            <div className="mx-auto max-w-[1600px] px-6 lg:px-10 py-8">
-                <nav className="flex gap-1 mb-8 bg-white rounded-2xl p-1.5 border border-slate-200/60 shadow-sm w-fit">
-                    {[
-                        { key: 'overview', label: 'Overview', icon: BarChart3 },
-                        { key: 'applications', label: 'Applications', icon: Briefcase },
-                        { key: 'documents', label: 'Documents', icon: FileText },
-                        { key: 'profile', label: 'Profile', icon: User },
-                    ].map((tab: any) => (
+                <nav className="flex-1 space-y-1 p-3">
+                    {menuItems.map((item) => (
                         <button
-                            key={tab.key}
-                            onClick={() => setActiveTab(tab.key)}
-                            className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold transition-all ${activeTab === tab.key
-                                ? 'bg-blue-600 text-white shadow-lg'
-                                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                            key={item.key}
+                            onClick={() => setActiveTab(item.key as TabKey)}
+                            className={`flex w-full items-center rounded-lg px-3 py-2.5 transition-all ${activeTab === item.key
+                                    ? 'bg-blue-50 text-blue-600'
+                                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                                 }`}
                         >
-                            <tab.icon className="h-4 w-4" />
-                            {tab.label}
+                            <item.icon className="h-4 w-4 shrink-0" />
+                            <span className="ml-3 hidden text-[10px] font-black uppercase tracking-widest md:block">{item.label}</span>
                         </button>
                     ))}
                 </nav>
+                <div className="border-t border-slate-100 p-3">
+                    <button onClick={logout} className="flex w-full items-center rounded-lg px-3 py-2.5 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all font-bold">
+                        <LogOut className="h-4 w-4 shrink-0" />
+                        <span className="ml-3 hidden text-[10px] font-black uppercase tracking-widest md:block">Logout</span>
+                    </button>
+                </div>
+            </aside>
 
-                <AnimatePresence mode="wait">
-                    {activeTab === 'overview' && (
-                        <motion.div key="overview" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
-                            <div className="mb-8">
-                                <h1 className="text-3xl font-black tracking-tight text-slate-900">Welcome Back, {user?.name?.split(' ')[0]}! 👋</h1>
-                                <p className="mt-1 text-sm font-semibold text-slate-400">Dashboard overview of your internship progress</p>
+            <main className="ml-16 flex-1 md:ml-64">
+                <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-100 bg-white/80 px-8 backdrop-blur-xl">
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Internship Portal / {activeTab}</h2>
+                    </div>
+                    <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-4 border-r border-slate-100 pr-6">
+                            <div className="text-right">
+                                <p className="text-sm font-black text-slate-900 leading-none">{user?.name}</p>
+                                <p className="mt-1 text-[9px] font-black uppercase tracking-tighter text-blue-600">{profile?.rollNumber}</p>
                             </div>
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-[10px] font-black text-white shadow-lg shadow-blue-500/20">
+                                {user?.name?.charAt(0)}
+                            </div>
+                        </div>
+                        <button className="text-slate-400 hover:text-slate-900 transition-colors"><Bell className="h-5 w-5" /></button>
+                    </div>
+                </header>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-                                {stats.map((stat) => (
-                                    <div key={stat.label} className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm group hover:shadow-lg transition-all">
-                                        <div className="flex items-start justify-between">
-                                            <div>
-                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                                                <p className="mt-2 text-3xl font-black text-slate-900">{stat.value}</p>
+                <div className="p-8">
+                    <AnimatePresence mode="wait">
+                        {loading && activeTab === 'overview' ? (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-[60vh] items-center justify-center">
+                                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                            </motion.div>
+                        ) : (
+                            <motion.div key={activeTab} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2 }}>
+                                {activeTab === 'overview' && (
+                                    <div className="space-y-8">
+                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                            <MetricCard label="Total Applications" value={applications.length} sub="Overall" />
+                                            <MetricCard label="Approved Status" value={applications.filter(a => a.status === 'approved').length} sub="Verified" />
+                                            <MetricCard label="Pending Review" value={applications.filter(a => a.status === 'pending').length} sub="In Progress" />
+                                            <MetricCard label="Assigned Faculty" value={profile?.supervisorId?.name?.split(' ')[0] || 'Pending'} sub="Supervisor" />
+                                        </div>
+
+                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                            <div className="lg:col-span-2 rounded-2xl border border-slate-100 bg-white overflow-hidden shadow-sm">
+                                                <div className="flex items-center justify-between border-b border-slate-100 px-8 py-6">
+                                                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900">Recent Applications</h3>
+                                                    <button onClick={() => setShowApplyModal(true)} className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95">
+                                                        <Plus className="h-3.5 w-3.5" /> New Application
+                                                    </button>
+                                                </div>
+                                                <div className="divide-y divide-slate-50">
+                                                    {applications.slice(0, 4).map((app: any) => (
+                                                        <div key={app._id} className="flex items-center justify-between px-8 py-5 hover:bg-slate-50 transition-colors">
+                                                            <div className="flex items-center gap-5">
+                                                                <div className="h-10 w-10 shrink-0 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100"><Zap className="h-4 w-4 text-blue-600" /></div>
+                                                                <div>
+                                                                    <p className="text-sm font-black text-slate-900 leading-none">{app.position}</p>
+                                                                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1.5">{app.companyName}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center gap-6">
+                                                                <StatusBadge status={app.status} />
+                                                                <button className="text-slate-200 hover:text-slate-400"><ArrowUpRight className="h-4 w-4" /></button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {applications.length === 0 && <div className="p-20 text-center text-[10px] font-black uppercase tracking-widest text-slate-300">No applications found</div>}
+                                                </div>
                                             </div>
-                                            <div className={`h-12 w-12 rounded-2xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg`}>
-                                                <stat.icon className="h-5 w-5 text-white" />
+
+                                            <div className="space-y-6">
+                                                <div className="rounded-2xl border border-blue-600 bg-blue-600 p-8 shadow-2xl shadow-blue-600/20 text-white">
+                                                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60">Faculty Supervisor</h4>
+                                                    <p className="mt-4 text-xl font-black">{profile?.supervisorId?.name || 'Awaiting Assignment'}</p>
+                                                    <p className="mt-1 text-[10px] font-black uppercase tracking-widest opacity-60">CUI Staff Member</p>
+                                                    <div className="mt-8 pt-6 border-t border-white/10">
+                                                        <button className="flex w-full items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                                                            Contact Supervisor <ArrowUpRight className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <button className="flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm hover:bg-slate-50 transition-all font-black uppercase text-[10px] tracking-widest text-slate-600">
+                                                    <FileText className="h-4 w-4" /> Download Records
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
+                                )}
 
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                <div className="lg:col-span-2 rounded-2xl bg-white border border-slate-200/60 shadow-sm overflow-hidden">
-                                    <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center">
-                                        <h3 className="text-base font-extrabold text-slate-900">Recent Applications</h3>
-                                        <button onClick={() => setShowApplyModal(true)} className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700 transition-all">
-                                            <Plus className="h-3.5 w-3.5" /> Apply New
-                                        </button>
+                                {activeTab === 'applications' && (
+                                    <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+                                        <div className="border-b border-slate-100 px-8 py-6 flex justify-between items-center bg-slate-50/50">
+                                            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900">All Applications ({applications.length})</h3>
+                                            <button onClick={() => setShowApplyModal(true)} className="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-blue-700 shadow-lg shadow-blue-600/10">
+                                                <Plus className="h-3.5 w-3.5" /> New Application
+                                            </button>
+                                        </div>
+                                        <table className="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr className="border-b border-slate-100 text-[9px] font-black uppercase tracking-[0.25em] text-slate-400 bg-slate-50/30">
+                                                    <th className="px-8 py-4">Company Name</th>
+                                                    <th className="px-8 py-4">Status</th>
+                                                    <th className="px-8 py-4">Applied Date</th>
+                                                    <th className="px-8 py-4 text-right">Progress</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
+                                                {applications.map((app: any) => (
+                                                    <tr key={app._id} className="hover:bg-slate-50 group transition-colors">
+                                                        <td className="px-8 py-5 text-sm font-black text-slate-900">
+                                                            <div>
+                                                                <p>{app.companyName}</p>
+                                                                <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">{app.position}</p>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-8 py-5">
+                                                            <StatusBadge status={app.status} />
+                                                        </td>
+                                                        <td className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(app.appliedDate).toLocaleDateString()}</td>
+                                                        <td className="px-8 py-5 text-right">
+                                                            <button className="text-slate-200 hover:text-blue-600"><ArrowUpRight className="h-4 w-4" /></button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
                                     </div>
-                                    <div className="divide-y divide-slate-50">
-                                        {applications.slice(0, 3).map((app: any) => (
-                                            <div key={app._id} className="flex items-center gap-4 px-6 py-4">
-                                                <div className="h-11 w-11 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500"><Building2 className="h-5 w-5" /></div>
-                                                <div className="flex-1">
-                                                    <p className="text-sm font-bold text-slate-900">{app.position}</p>
-                                                    <p className="text-xs font-semibold text-slate-400 mt-0.5">{app.companyName}</p>
-                                                </div>
-                                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ring-1 ${app.status === 'approved' ? 'bg-emerald-50 text-emerald-600 ring-emerald-100' : 'bg-amber-50 text-amber-600 ring-amber-100'}`}>
-                                                    {app.status}
-                                                </span>
+                                )}
+
+                                {activeTab === 'profile' && (
+                                    <div className="max-w-xl mx-auto space-y-8 py-12">
+                                        <div className="text-center space-y-4">
+                                            <div className="inline-flex h-24 w-24 items-center justify-center rounded-[2.5rem] bg-blue-600 text-white text-3xl font-black shadow-2xl shadow-blue-500/30 mb-4 ring-8 ring-blue-50">
+                                                {user?.name[0]}
                                             </div>
-                                        ))}
-                                        {applications.length === 0 && <div className="p-10 text-center text-slate-400 font-bold">No applications found</div>}
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
+                                            <h2 className="text-2xl font-black text-slate-900 leading-none capitalize">{profile?.name}</h2>
+                                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600 mb-8">{profile?.rollNumber}</p>
+                                        </div>
 
-                    {activeTab === 'applications' && (
-                        <motion.div key="applications" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
-                            <div className="mb-8 flex items-center justify-between">
-                                <div>
-                                    <h1 className="text-3xl font-black tracking-tight text-slate-900">All Applications</h1>
-                                    <p className="mt-1 text-sm font-semibold text-slate-400">Total applications: {applications.length}</p>
-                                </div>
-                                <button onClick={() => setShowApplyModal(true)} className="flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700 transition-all active:scale-95">
-                                    <Plus className="h-4 w-4" /> New Application
-                                </button>
-                            </div>
-                            <div className="rounded-2xl bg-white border border-slate-200/60 shadow-sm overflow-hidden">
-                                <table className="w-full text-left">
-                                    <thead className="bg-slate-50 border-b border-slate-100">
-                                        <tr>
-                                            <th className="px-6 py-4 text-[11px] font-black uppercase text-slate-400">Company</th>
-                                            <th className="px-6 py-4 text-[11px] font-black uppercase text-slate-400">Position</th>
-                                            <th className="px-6 py-4 text-[11px] font-black uppercase text-slate-400">Date</th>
-                                            <th className="px-6 py-4 text-[11px] font-black uppercase text-slate-400">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-50">
-                                        {applications.map((app: any) => (
-                                            <tr key={app._id} className="hover:bg-slate-50/50">
-                                                <td className="px-6 py-4 font-bold text-slate-900">{app.companyName}</td>
-                                                <td className="px-6 py-4 text-sm font-semibold text-slate-600">{app.position}</td>
-                                                <td className="px-6 py-4 text-sm font-semibold text-slate-400">{new Date(app.appliedDate).toLocaleDateString()}</td>
-                                                <td className="px-6 py-4">
-                                                    <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-[10px] font-black uppercase">{app.status}</span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {activeTab === 'profile' && (
-                        <motion.div key="profile" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
-                            <div className="max-w-2xl bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm overflow-hidden">
-                                <div className="h-32 bg-gradient-to-r from-blue-500 to-indigo-600" />
-                                <div className="px-10 pb-10">
-                                    <div className="-mt-12 mb-6 flex h-24 w-24 items-center justify-center rounded-[2rem] bg-white p-2 shadow-xl">
-                                        <div className="h-full w-full rounded-[1.5rem] bg-slate-900 flex items-center justify-center text-3xl font-black text-white">{user?.name[0]}</div>
+                                        <div className="grid grid-cols-1 gap-4">
+                                            <ProfileField label="University Email" value={profile?.email} />
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <ProfileField label="Current Session" value={profile?.session} />
+                                                <ProfileField label="Degree Program" value={profile?.degree} />
+                                            </div>
+                                            <ProfileField label="Faculty Supervisor" value={profile?.supervisorId?.name || 'Not Yet Assigned'} isLink />
+                                        </div>
                                     </div>
-                                    <h2 className="text-2xl font-black text-slate-900">{profile?.name}</h2>
-                                    <p className="text-slate-400 font-bold mb-8">{profile?.rollNumber}</p>
-
-                                    <div className="grid grid-cols-2 gap-8">
-                                        <Field label="Email" value={profile?.email} />
-                                        <Field label="Session" value={profile?.session} />
-                                        <Field label="Degree" value={profile?.degree} />
-                                        <Field label="Supervisor" value={profile?.supervisorId?.name || 'Unassigned'} />
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
+                                )}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            </main>
 
             {showApplyModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-6">
-                    <div className="w-full max-w-lg bg-white rounded-[2.5rem] p-10 shadow-2xl relative">
-                        <button onClick={() => setShowApplyModal(false)} className="absolute top-8 right-8 text-slate-400 hover:text-slate-900 transition-colors"><X className="h-6 w-6" /></button>
-                        <h2 className="text-2xl font-black text-slate-900 mb-6">New Internship Application</h2>
-                        <form onSubmit={handleApply} className="space-y-4">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-xl p-6">
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-lg rounded-[2.5rem] border border-slate-100 bg-white p-12 shadow-2xl shadow-blue-600/5 relative">
+                        <button onClick={() => setShowApplyModal(false)} className="absolute top-10 right-10 text-slate-300 hover:text-slate-900 transition-colors"><X className="h-6 w-6" /></button>
+                        <div className="mb-10 text-center">
+                            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Internship Request</h2>
+                            <p className="mt-2 text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Submit New Application</p>
+                        </div>
+                        <form onSubmit={handleApply} className="space-y-6">
+                            <InputField label="Company Name" value={newApp.companyName} onChange={e => setNewApp({ ...newApp, companyName: e.target.value })} placeholder="e.g. Systems Ltd" />
+                            <InputField label="Internship Position" value={newApp.position} onChange={e => setNewApp({ ...newApp, position: e.target.value })} placeholder="e.g. Software Engineer" />
                             <div>
-                                <label className="text-xs font-black uppercase text-slate-400 mb-1 block">Company Name</label>
-                                <input required value={newApp.companyName} onChange={e => setNewApp({ ...newApp, companyName: e.target.value })} className="w-full h-12 rounded-xl border border-slate-200 px-4 text-sm font-bold bg-slate-50 outline-none focus:border-blue-600 transition-all" placeholder="e.g. Google, Microsoft" />
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Application Summary</label>
+                                <textarea rows={4} value={newApp.description} onChange={e => setNewApp({ ...newApp, description: e.target.value })} className="w-full rounded-2xl bg-slate-50 border-none p-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300" placeholder="Brief details about the internship..." />
                             </div>
-                            <div>
-                                <label className="text-xs font-black uppercase text-slate-400 mb-1 block">Position</label>
-                                <input required value={newApp.position} onChange={e => setNewApp({ ...newApp, position: e.target.value })} className="w-full h-12 rounded-xl border border-slate-200 px-4 text-sm font-bold bg-slate-50 outline-none focus:border-blue-600 transition-all" placeholder="e.g. Software Engineer Intern" />
-                            </div>
-                            <div>
-                                <label className="text-xs font-black uppercase text-slate-400 mb-1 block">Description</label>
-                                <textarea rows={4} value={newApp.description} onChange={e => setNewApp({ ...newApp, description: e.target.value })} className="w-full rounded-xl border border-slate-200 p-4 text-sm font-bold bg-slate-50 outline-none focus:border-blue-600 transition-all" placeholder="Brief about the internship..." />
-                            </div>
-                            <button type="submit" className="w-full h-14 rounded-2xl bg-blue-600 text-white font-black shadow-lg shadow-blue-600/20 active:scale-95 transition-all mt-6">Submit Application</button>
+                            <button type="submit" className="w-full h-16 rounded-2xl bg-blue-600 text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-blue-500/30 hover:bg-blue-700 transition-all active:scale-95 mt-6">Submit Application</button>
                         </form>
-                    </div>
+                    </motion.div>
                 </div>
             )}
         </div>
     );
 };
 
-const Field = ({ label, value }: any) => (
-    <div>
-        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-1">{label}</label>
-        <p className="text-sm font-black text-slate-900">{value || 'N/A'}</p>
+const MetricCard = ({ label, value, sub }: any) => (
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 group hover:border-blue-200 shadow-sm transition-all">
+        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">{label}</p>
+        <p className="mt-3 text-3xl font-black tracking-tighter text-slate-900 leading-none">{value}</p>
+        <p className="mt-2 text-[9px] font-black uppercase tracking-widest text-blue-600 opacity-60 group-hover:opacity-100">{sub}</p>
     </div>
 );
+
+const ProfileField = ({ label, value, isLink }: any) => (
+    <div className={`p-6 rounded-2xl border ${isLink ? 'border-blue-100 bg-blue-50/20' : 'border-slate-50 bg-slate-50/50'}`}>
+        <label className="text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] block mb-2">{label}</label>
+        <p className="text-sm font-black text-slate-900 tracking-tight">{value || 'N/A'}</p>
+    </div>
+);
+
+const InputField = ({ label, ...props }: any) => (
+    <div>
+        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">{label}</label>
+        <input {...props} required className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300" />
+    </div>
+);
+
+const StatusBadge = ({ status }: any) => {
+    const isSuccess = status === 'approved' || status === 'completed' || status === 'verified';
+    return (
+        <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${isSuccess ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-slate-50 text-slate-400 border-slate-100'
+            }`}>
+            {status}
+        </span>
+    );
+};
 
 export default StudentDashboard;

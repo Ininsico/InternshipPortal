@@ -36,16 +36,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
     const [loading, setLoading] = useState(true);
 
-    const logout = useCallback(() => {
+    const clearAuth = useCallback(() => {
         localStorage.removeItem('token');
         setToken(null);
         setUser(null);
+        axios.defaults.headers.common['Authorization'] = '';
     }, []);
+
+    const logout = useCallback(async () => {
+        try {
+            if (token) {
+                await axios.post(`${API_BASE}/logout`, {}, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            }
+        } catch (err) {
+            console.error('Frontend logout error:', err);
+        } finally {
+            clearAuth();
+        }
+    }, [token, clearAuth]);
 
     const login = useCallback((newToken: string, newUser: User) => {
         localStorage.setItem('token', newToken);
         setToken(newToken);
         setUser(newUser);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     }, []);
 
     useEffect(() => {
@@ -61,18 +77,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 });
                 if (data.success) {
                     setUser(data.user);
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
                 } else {
-                    logout();
+                    clearAuth();
                 }
             } catch {
-                logout();
+                clearAuth();
             } finally {
                 setLoading(false);
             }
         };
 
         fetchUser();
-    }, [token, logout]);
+    }, [token, clearAuth]);
 
     return (
         <AuthContext.Provider value={{ user, token, loading, login, logout }}>
