@@ -9,7 +9,6 @@ const StudentSchema = new mongoose.Schema(
             unique: true,
             uppercase: true,
             trim: true,
-            // Format: FA21-BCS-001
             match: [/^[A-Z]{2}\d{2}-[A-Z]{2,3}-\d+$/, 'Invalid roll number format'],
         },
         session: {
@@ -53,7 +52,6 @@ const StudentSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-// Hash password before saving
 StudentSchema.pre('save', async function (next) {
     if (!this.isModified('passwordHash')) return next();
     if (!this.passwordHash.startsWith('$2')) {
@@ -62,7 +60,6 @@ StudentSchema.pre('save', async function (next) {
     next();
 });
 
-// Method to compare password
 StudentSchema.methods.comparePassword = function (plain) {
     return bcrypt.compare(plain, this.passwordHash);
 };

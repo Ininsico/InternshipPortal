@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Lock, User, Mail, ShieldCheck, GraduationCap, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 type FormMode = 'student' | 'admin';
 
 interface ApiResponse {
@@ -19,30 +20,35 @@ interface ApiResponse {
     };
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
 const SESSIONS = ['FA20', 'SP20', 'FA21', 'SP21', 'FA22', 'SP22', 'FA23', 'SP23', 'FA24', 'SP24'];
 const DEGREES = ['BCS', 'BSE', 'BBA', 'BEE', 'BME', 'BAR'];
 const API_BASE = 'http://localhost:5000/api/auth';
 
-// ─── Component ────────────────────────────────────────────────────────────────
 const LandingPage = () => {
+    const navigate = useNavigate();
+    const { login, user } = useAuth();
     const [mode, setMode] = useState<FormMode>('student');
 
-    // Student fields
     const [session, setSession] = useState('FA21');
     const [degree, setDegree] = useState('BCS');
     const [rollId, setRollId] = useState('');
 
-    // Admin fields
     const [email, setEmail] = useState('');
 
-    // Shared
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [feedback, setFeedback] = useState<{ type: 'error' | 'success'; msg: string } | null>(null);
 
-    // ── Switch mode & reset state ────────────────────────────────────────────
+    if (user) {
+        if (user.role === 'student') {
+            navigate('/dashboard', { replace: true });
+        } else {
+            navigate('/admin', { replace: true });
+        }
+        return null;
+    }
+
     const switchMode = (next: FormMode) => {
         if (next === mode) return;
         setMode(next);
@@ -53,7 +59,6 @@ const LandingPage = () => {
         setRollId('');
     };
 
-    // ── Student submit ────────────────────────────────────────────────────────
     const handleStudentSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setFeedback(null);
@@ -62,9 +67,11 @@ const LandingPage = () => {
             const { data } = await axios.post<ApiResponse>(`${API_BASE}/login/student`, {
                 session, degree, rollId, password,
             });
+            if (data.token && data.user) {
+                login(data.token, data.user);
+                navigate('/dashboard');
+            }
             setFeedback({ type: 'success', msg: data.message });
-            // TODO: store token & redirect
-            if (data.token) localStorage.setItem('token', data.token);
         } catch (err: unknown) {
             const msg =
                 axios.isAxiosError(err) && err.response?.data?.message
@@ -76,7 +83,6 @@ const LandingPage = () => {
         }
     };
 
-    // ── Admin submit ──────────────────────────────────────────────────────────
     const handleAdminSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setFeedback(null);
@@ -85,8 +91,11 @@ const LandingPage = () => {
             const { data } = await axios.post<ApiResponse>(`${API_BASE}/login/admin`, {
                 email, password,
             });
+            if (data.token && data.user) {
+                login(data.token, data.user);
+                navigate('/admin');
+            }
             setFeedback({ type: 'success', msg: data.message });
-            if (data.token) localStorage.setItem('token', data.token);
         } catch (err: unknown) {
             const msg =
                 axios.isAxiosError(err) && err.response?.data?.message
@@ -98,17 +107,14 @@ const LandingPage = () => {
         }
     };
 
-    // ── Shared UI ─────────────────────────────────────────────────────────────
     const isAdmin = mode === 'admin';
 
     return (
         <div className="relative min-h-screen bg-slate-50 text-slate-900 selection:bg-blue-100 selection:text-blue-900 overflow-hidden">
 
-            {/* ── Header ─────────────────────────────────────────────────────────── */}
             <header className="fixed top-0 left-0 right-0 z-50 border-b border-blue-100/30 bg-white/60 backdrop-blur-2xl">
                 <nav className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
 
-                    {/* Logo */}
                     <div className="flex items-center gap-3 group cursor-pointer">
                         <motion.div
                             whileHover={{ rotate: [0, -10, 10, 0] }}
@@ -122,14 +128,12 @@ const LandingPage = () => {
                         </div>
                     </div>
 
-                    {/* Nav actions */}
                     <div className="hidden items-center gap-4 md:flex">
                         <button className="text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors px-4 py-2">
                             Helper Center
                         </button>
                         <div className="h-4 w-px bg-slate-200" />
 
-                        {/* Admin toggle — switches the form, no navigation */}
                         <button
                             onClick={() => switchMode(isAdmin ? 'student' : 'admin')}
                             className={`flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold shadow-lg transition-all active:scale-95 ${isAdmin
@@ -146,17 +150,14 @@ const LandingPage = () => {
                 </nav>
             </header>
 
-            {/* ── Main ───────────────────────────────────────────────────────────── */}
             <main className="relative flex min-h-screen items-center justify-center px-6 pt-20">
 
-                {/* Background */}
                 <div className="absolute inset-0 z-0">
                     <img src="/landingpagebg.png" alt="Background" className="h-full w-full object-cover" />
                     <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px]" />
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-50/90 via-transparent to-white/60" />
                 </div>
 
-                {/* ── Login Card ─────────────────────────────────────────────────── */}
                 <motion.div
                     initial={{ opacity: 0, y: 40 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -165,7 +166,6 @@ const LandingPage = () => {
                 >
                     <div className="overflow-hidden rounded-[2.5rem] border border-white/80 bg-white/80 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.1)] backdrop-blur-3xl">
 
-                        {/* Mode tab strip */}
                         <div className="flex border-b border-slate-100">
                             {(['student', 'admin'] as FormMode[]).map((m) => (
                                 <button
@@ -182,7 +182,6 @@ const LandingPage = () => {
                         </div>
 
                         <div className="p-8 lg:p-14">
-                            {/* Header text */}
                             <AnimatePresence mode="wait">
                                 <motion.div
                                     key={mode}
@@ -203,7 +202,6 @@ const LandingPage = () => {
                                 </motion.div>
                             </AnimatePresence>
 
-                            {/* Feedback banner */}
                             <AnimatePresence>
                                 {feedback && (
                                     <motion.div
@@ -229,9 +227,7 @@ const LandingPage = () => {
                                 )}
                             </AnimatePresence>
 
-                            {/* ── FORM ─────────────────────────────────────────────────── */}
                             <AnimatePresence mode="wait">
-                                {/* ── Student form ────────────────────────────────────────── */}
                                 {!isAdmin && (
                                     <motion.form
                                         key="student-form"
@@ -242,7 +238,6 @@ const LandingPage = () => {
                                         onSubmit={handleStudentSubmit}
                                         className="space-y-8"
                                     >
-                                        {/* Roll Number */}
                                         <div className="space-y-3">
                                             <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400">
                                                 <User className="h-3 w-3" /> Roll Number
@@ -273,7 +268,6 @@ const LandingPage = () => {
                                             </div>
                                         </div>
 
-                                        {/* Password */}
                                         <PasswordField
                                             value={password}
                                             onChange={setPassword}
@@ -282,7 +276,6 @@ const LandingPage = () => {
                                             accentRing="focus:border-blue-500 focus:ring-blue-500/10"
                                         />
 
-                                        {/* Actions */}
                                         <div className="flex items-center justify-between pt-4">
                                             <a href="#" className="text-xs font-bold text-blue-600 hover:text-blue-700 underline underline-offset-4 decoration-2">
                                                 Forgot Password?
@@ -292,7 +285,6 @@ const LandingPage = () => {
                                     </motion.form>
                                 )}
 
-                                {/* ── Admin form ───────────────────────────────────────────── */}
                                 {isAdmin && (
                                     <motion.form
                                         key="admin-form"
@@ -303,7 +295,6 @@ const LandingPage = () => {
                                         onSubmit={handleAdminSubmit}
                                         className="space-y-8"
                                     >
-                                        {/* Email */}
                                         <div className="space-y-3">
                                             <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400">
                                                 <Mail className="h-3 w-3" /> Email Address
@@ -319,7 +310,6 @@ const LandingPage = () => {
                                             />
                                         </div>
 
-                                        {/* Password */}
                                         <PasswordField
                                             value={password}
                                             onChange={setPassword}
@@ -328,7 +318,6 @@ const LandingPage = () => {
                                             accentRing="focus:border-slate-700 focus:ring-slate-900/10"
                                         />
 
-                                        {/* Actions */}
                                         <div className="flex items-center justify-between pt-4">
                                             <a href="#" className="text-xs font-bold text-slate-600 hover:text-slate-800 underline underline-offset-4 decoration-2">
                                                 Forgot Password?
@@ -343,7 +332,6 @@ const LandingPage = () => {
                 </motion.div>
             </main>
 
-            {/* ── Footer ─────────────────────────────────────────────────────────── */}
             <footer className="absolute bottom-6 left-0 right-0 text-center">
                 <p className="text-[10px] font-black tracking-widest uppercase text-slate-400">
                     &copy; 2026 COMSATS University Islamabad. Higher Education Portal.
@@ -352,8 +340,6 @@ const LandingPage = () => {
         </div>
     );
 };
-
-// ─── Shared sub-components ────────────────────────────────────────────────────
 
 interface PasswordFieldProps {
     value: string;

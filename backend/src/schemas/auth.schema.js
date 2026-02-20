@@ -3,7 +3,6 @@ const { z } = require('zod');
 const SESSIONS = ['FA20', 'SP20', 'FA21', 'SP21', 'FA22', 'SP22', 'FA23', 'SP23', 'FA24', 'SP24'];
 const DEGREES = ['BCS', 'BSE', 'BBA', 'BEE', 'BME', 'BAR'];
 
-// ─── Student Login ────────────────────────────────────────────────────────────
 const studentLoginSchema = z.object({
     session: z
         .string({ required_error: 'Session is required' })
@@ -24,7 +23,6 @@ const studentLoginSchema = z.object({
         .min(5, 'Password must be at least 5 characters'),
 });
 
-// ─── Admin Login ──────────────────────────────────────────────────────────────
 const adminLoginSchema = z.object({
     email: z
         .string({ required_error: 'Email is required' })

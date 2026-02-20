@@ -32,17 +32,14 @@ const AdminSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-// Hash password before saving
 AdminSchema.pre('save', async function (next) {
     if (!this.isModified('passwordHash')) return next();
-    // Only hash if not already hashed
     if (!this.passwordHash.startsWith('$2')) {
         this.passwordHash = await bcrypt.hash(this.passwordHash, 10);
     }
     next();
 });
 
-// Method to compare password
 AdminSchema.methods.comparePassword = function (plain) {
     return bcrypt.compare(plain, this.passwordHash);
 };

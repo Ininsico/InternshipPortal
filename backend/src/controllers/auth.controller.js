@@ -8,7 +8,6 @@ const signToken = (payload) =>
 
 const formatZodError = (err) => err.errors.map((e) => e.message).join(', ');
 
-// ─── POST /api/auth/login/student ─────────────────────────────────────────────
 const loginStudent = async (req, res) => {
     const parse = studentLoginSchema.safeParse(req.body);
     if (!parse.success) {
@@ -49,7 +48,6 @@ const loginStudent = async (req, res) => {
     }
 };
 
-// ─── POST /api/auth/login/admin ───────────────────────────────────────────────
 const loginAdmin = async (req, res) => {
     const parse = adminLoginSchema.safeParse(req.body);
     if (!parse.success) {
@@ -88,4 +86,46 @@ const loginAdmin = async (req, res) => {
     }
 };
 
-module.exports = { loginStudent, loginAdmin };
+const getMe = async (req, res) => {
+    try {
+        const { id, role } = req.user;
+
+        if (role === 'student') {
+            const student = await Student.findById(id).select('-passwordHash');
+            if (!student) {
+                return res.status(404).json({ success: false, message: 'Student not found.' });
+            }
+            return res.json({
+                success: true,
+                user: {
+                    id: student._id,
+                    name: student.name,
+                    rollNumber: student.rollNumber,
+                    email: student.email,
+                    session: student.session,
+                    degree: student.degree,
+                    role: 'student',
+                },
+            });
+        }
+
+        const admin = await Admin.findById(id).select('-passwordHash');
+        if (!admin) {
+            return res.status(404).json({ success: false, message: 'Admin not found.' });
+        }
+        return res.json({
+            success: true,
+            user: {
+                id: admin._id,
+                name: admin.name,
+                email: admin.email,
+                role: admin.role,
+            },
+        });
+    } catch (err) {
+        console.error('getMe:', err);
+        return res.status(500).json({ success: false, message: 'Server error.' });
+    }
+};
+
+module.exports = { loginStudent, loginAdmin, getMe };

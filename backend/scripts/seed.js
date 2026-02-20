@@ -1,12 +1,3 @@
-/**
- * scripts/seed.js
- * Run: npm run seed
- *
- * Seeds the database with:
- *   Admin  → admin@gmail.com  / 12345
- *   Students (test accounts)
- */
-
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
@@ -19,7 +10,7 @@ const admins = [
     {
         name: 'Super Admin',
         email: 'admin@gmail.com',
-        passwordHash: '12345',          // plain — hashed by the model pre-save hook
+        passwordHash: '12345',
         role: 'super_admin',
         isActive: true,
     },
@@ -61,41 +52,36 @@ const students = [
 async function seed() {
     try {
         await mongoose.connect(process.env.MONGO_URI);
-        console.log('✅  Connected to MongoDB');
+        console.log('Connected to MongoDB');
 
-        // ── Admins ──────────────────────────────────────────────────────────
         for (const data of admins) {
             const exists = await Admin.findOne({ email: data.email });
             if (exists) {
-                console.log(`⚠️   Admin already exists: ${data.email} — skipping`);
+                console.log(`Admin already exists: ${data.email} — skipping`);
                 continue;
             }
-            // Hash password manually (pre-save hook needs a new doc)
             const hash = await bcrypt.hash(data.passwordHash, SALT);
             await Admin.create({ ...data, passwordHash: hash });
-            console.log(`✅  Admin seeded: ${data.email}`);
+            console.log(`Admin seeded: ${data.email}`);
         }
 
-        // ── Students ────────────────────────────────────────────────────────
         for (const data of students) {
             const exists = await Student.findOne({ rollNumber: data.rollNumber });
             if (exists) {
-                console.log(`⚠️   Student already exists: ${data.rollNumber} — skipping`);
+                console.log(`Student already exists: ${data.rollNumber} — skipping`);
                 continue;
             }
             const hash = await bcrypt.hash(data.passwordHash, SALT);
             await Student.create({ ...data, passwordHash: hash });
-            console.log(`✅  Student seeded: ${data.rollNumber} (${data.name})`);
+            console.log(`Student seeded: ${data.rollNumber} (${data.name})`);
         }
 
-        console.log('\n🎉  Seed complete!');
-        console.log('─────────────────────────────────────────────');
-        console.log('  Admin   →  admin@gmail.com  /  12345');
-        console.log('  Student →  FA21-BCS-001     /  12345');
-        console.log('─────────────────────────────────────────────\n');
+        console.log('\nSeed complete!');
+        console.log('Admin   ->  admin@gmail.com  /  12345');
+        console.log('Student ->  FA21-BCS-001     /  12345');
 
     } catch (err) {
-        console.error('❌  Seed failed:', err.message);
+        console.error('Seed failed:', err.message);
     } finally {
         await mongoose.disconnect();
         process.exit(0);
