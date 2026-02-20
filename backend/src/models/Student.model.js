@@ -48,6 +48,11 @@ const StudentSchema = new mongoose.Schema(
             type: Boolean,
             default: true,
         },
+        supervisorId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Admin',
+            default: null,
+        },
     },
     { timestamps: true }
 );

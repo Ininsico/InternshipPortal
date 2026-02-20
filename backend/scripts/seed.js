@@ -3,50 +3,50 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const Admin = require('../src/models/Admin.model');
 const Student = require('../src/models/Student.model');
+const Application = require('../src/models/Application.model');
 
 const SALT = 10;
 
 const admins = [
     {
         name: 'Super Admin',
-        email: 'admin@gmail.com',
+        email: 'superadmin@gmail.com',
         passwordHash: '12345',
         role: 'super_admin',
-        isActive: true,
     },
+    {
+        name: 'Dr. Ahmad',
+        email: 'ahmad@comsats.edu.pk',
+        passwordHash: '12345',
+        role: 'admin',
+    },
+    {
+        name: 'Prof. Sarah',
+        email: 'sarah@comsats.edu.pk',
+        passwordHash: '12345',
+        role: 'admin',
+    }
 ];
 
-const students = [
+const studentData = [
     {
         rollNumber: 'FA21-BCS-001',
         session: 'FA21',
         degree: 'BCS',
         serialNo: '001',
-        name: 'Ali Raza',
-        email: 'ali.raza@student.comsats.edu.pk',
+        name: 'Arslan Ali',
+        email: 'arslan@student.comsats.edu.pk',
         passwordHash: '12345',
-        isActive: true,
     },
     {
-        rollNumber: 'FA22-BSE-042',
-        session: 'FA22',
-        degree: 'BSE',
-        serialNo: '042',
-        name: 'Sara Khan',
-        email: 'sara.khan@student.comsats.edu.pk',
-        passwordHash: '12345',
-        isActive: true,
-    },
-    {
-        rollNumber: 'SP23-BCS-015',
-        session: 'SP23',
+        rollNumber: 'FA21-BCS-002',
+        session: 'FA21',
         degree: 'BCS',
-        serialNo: '015',
-        name: 'Hamza Ahmed',
-        email: 'hamza.ahmed@student.comsats.edu.pk',
+        serialNo: '002',
+        name: 'Zainab Bibi',
+        email: 'zainab@student.comsats.edu.pk',
         passwordHash: '12345',
-        isActive: true,
-    },
+    }
 ];
 
 async function seed() {
@@ -54,31 +54,35 @@ async function seed() {
         await mongoose.connect(process.env.MONGO_URI);
         console.log('Connected to MongoDB');
 
+        await Admin.deleteMany({});
+        await Student.deleteMany({});
+        await Application.deleteMany({});
+        console.log('Cleared existing data');
+
+        const createdAdmins = [];
         for (const data of admins) {
-            const exists = await Admin.findOne({ email: data.email });
-            if (exists) {
-                console.log(`Admin already exists: ${data.email} — skipping`);
-                continue;
-            }
             const hash = await bcrypt.hash(data.passwordHash, SALT);
-            await Admin.create({ ...data, passwordHash: hash });
-            console.log(`Admin seeded: ${data.email}`);
+            const admin = await Admin.create({ ...data, passwordHash: hash });
+            createdAdmins.push(admin);
+            console.log(`Admin seeded: ${data.email} (${data.role})`);
         }
 
-        for (const data of students) {
-            const exists = await Student.findOne({ rollNumber: data.rollNumber });
-            if (exists) {
-                console.log(`Student already exists: ${data.rollNumber} — skipping`);
-                continue;
-            }
+        const faculty1 = createdAdmins.find(a => a.email === 'ahmad@comsats.edu.pk');
+
+        for (const data of studentData) {
             const hash = await bcrypt.hash(data.passwordHash, SALT);
-            await Student.create({ ...data, passwordHash: hash });
-            console.log(`Student seeded: ${data.rollNumber} (${data.name})`);
+            await Student.create({
+                ...data,
+                passwordHash: hash,
+                supervisorId: faculty1._id
+            });
+            console.log(`Student seeded: ${data.rollNumber} (Assigned to ${faculty1.name})`);
         }
 
         console.log('\nSeed complete!');
-        console.log('Admin   ->  admin@gmail.com  /  12345');
-        console.log('Student ->  FA21-BCS-001     /  12345');
+        console.log('Super Admin: superadmin@gmail.com / 12345');
+        console.log('Faculty:     ahmad@comsats.edu.pk / 12345');
+        console.log('Student:     FA21-BCS-001 / 12345');
 
     } catch (err) {
         console.error('Seed failed:', err.message);

@@ -1,0 +1,112 @@
+const Admin = require('../models/Admin.model');
+const Student = require('../models/Student.model');
+const Application = require('../models/Application.model');
+const bcrypt = require('bcryptjs');
+
+const createAdmin = async (req, res) => {
+    try {
+        const { name, email, password, role } = req.body;
+
+        const exists = await Admin.findOne({ email });
+        if (exists) {
+            return res.status(400).json({ success: false, message: 'Admin with this email already exists' });
+        }
+
+        const admin = await Admin.create({
+            name,
+            email,
+            passwordHash: password,
+            role: role || 'admin'
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Admin created successfully',
+            admin: {
+                id: admin._id,
+                name: admin.name,
+                email: admin.email,
+                role: admin.role
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+const getAllAdmins = async (req, res) => {
+    try {
+        const admins = await Admin.find({ role: 'admin' }).select('-passwordHash');
+        res.json({ success: true, admins });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+const getAllStudents = async (req, res) => {
+    try {
+        const students = await Student.find()
+            .populate('supervisorId', 'name email')
+            .select('-passwordHash');
+        res.json({ success: true, students });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+const assignStudentToSupervisor = async (req, res) => {
+    try {
+        const { studentId, supervisorId } = req.body;
+
+        const student = await Student.findById(studentId);
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+
+        const supervisor = await Admin.findById(supervisorId);
+        if (!supervisor || supervisor.role !== 'admin') {
+            return res.status(404).json({ success: false, message: 'Supervisor not found or invalid role' });
+        }
+
+        student.supervisorId = supervisorId;
+        await student.save();
+
+        res.json({ success: true, message: 'Student assigned to supervisor successfully' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+const getDashboardStats = async (req, res) => {
+    try {
+        const totalStudents = await Student.countDocuments();
+        const activeApplications = await Application.countDocuments({ status: { $in: ['pending', 'in_progress'] } });
+        const completedPlacements = await Application.countDocuments({ status: 'completed' });
+
+        const recentActivity = await Application.find()
+            .populate('studentId', 'name')
+            .sort({ createdAt: -1 })
+            .limit(5);
+
+        res.json({
+            success: true,
+            stats: {
+                totalStudents,
+                activeApplications,
+                completedPlacements,
+                placementRate: totalStudents > 0 ? Math.round((completedPlacements / totalStudents) * 100) : 0
+            },
+            recentActivity
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+module.exports = {
+    createAdmin,
+    getAllAdmins,
+    getAllStudents,
+    assignStudentToSupervisor,
+    getDashboardStats
+};
