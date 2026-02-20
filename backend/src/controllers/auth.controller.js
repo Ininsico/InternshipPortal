@@ -210,6 +210,7 @@ const resetPassword = async (req, res) => {
         }
 
         userInstance.passwordHash = password;
+        userInstance.isActive = true; // Activate account if it was inactive
         userInstance.resetPasswordToken = undefined;
         userInstance.resetPasswordExpire = undefined;
 

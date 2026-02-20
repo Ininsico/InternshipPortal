@@ -118,8 +118,11 @@ const LandingPage = () => {
         try {
             const { data } = await axios.post(`${API_BASE}/forgot-password`, { email: forgotEmail });
             setForgotFeedback({ type: 'success', msg: data.message });
-        } catch (err: any) {
-            setForgotFeedback({ type: 'error', msg: err.response?.data?.message || 'Something went wrong.' });
+        } catch (err: unknown) {
+            const msg = axios.isAxiosError(err) && err.response?.data?.message
+                ? err.response.data.message
+                : 'Something went wrong.';
+            setForgotFeedback({ type: 'error', msg });
         } finally {
             setForgotLoading(false);
         }
@@ -128,138 +131,118 @@ const LandingPage = () => {
     const isAdmin = mode === 'admin';
 
     return (
-        <div className="relative min-h-screen text-slate-900 selection:bg-blue-100 selection:text-blue-900 overflow-hidden">
-            {/* Background Image Container */}
-            <div className="fixed inset-0 -z-10 overflow-hidden">
+        <div className="relative min-h-screen text-white selection:bg-blue-600 selection:text-white overflow-hidden">
+            <div className="fixed inset-0 -z-10 bg-black">
                 <img
                     src="/landingpagebg.png"
-                    className="h-full w-full object-cover scale-110 blur-xl brightness-[0.85]"
+                    className="h-full w-full object-cover blur-[2px]"
                     alt="Background"
                 />
-                <div className="absolute inset-0 bg-white/20 backdrop-blur-[2px]" />
             </div>
 
-            <header className="fixed top-0 left-0 right-0 z-50 border-b border-slate-100 bg-white/70 backdrop-blur-2xl">
-                <nav className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
-
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 shadow-xl shadow-blue-500/10">
-                            <GraduationCap className="h-5 w-5 text-white" />
+            <header className="fixed top-0 left-0 right-0 z-50 px-12 py-10">
+                <nav className="mx-auto flex max-w-[1400px] items-center justify-between bg-transparent">
+                    <div className="flex items-center gap-6">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-white">
+                            <GraduationCap className="h-6 w-6" />
                         </div>
-                        <div className="flex flex-col leading-none">
-                            <span className="text-lg font-black tracking-tight text-slate-900 uppercase">COMSATS</span>
-                            <span className="text-[9px] font-black text-blue-600 uppercase tracking-[0.3em] mt-1">Internship Portal</span>
+                        <div className="flex flex-col">
+                            <h1 className="text-xl font-black tracking-[-0.05em] text-slate-900 uppercase leading-none">COMSATS</h1>
                         </div>
                     </div>
 
-                    <div className="hidden items-center gap-4 md:flex">
+                    <div className="hidden items-center gap-10 md:flex">
                         <button
                             onClick={() => switchMode(isAdmin ? 'student' : 'admin')}
-                            className="flex items-center gap-2 rounded-xl border border-slate-100 px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all font-bold"
+                            className="px-8 py-3.5 rounded-2xl bg-white text-blue-600 text-[11px] font-black uppercase tracking-[0.3em] transition-all hover:bg-slate-50 hover:shadow-[0_10px_30px_-5px_rgba(255,255,255,0.2)] active:scale-95"
                         >
-                            {isAdmin ? 'Student Access' : 'Faculty Access'}
+                            {isAdmin ? 'Student Entry' : 'Faculty Access'}
                         </button>
                     </div>
                 </nav>
             </header>
 
             <main className="relative flex min-h-screen items-center justify-center px-6 pt-20">
+                <div className="absolute top-1/4 -left-20 -z-10 h-[600px] w-[600px] rounded-full bg-blue-600/[0.15] blur-[120px] animate-pulse" />
+                <div className="absolute bottom-1/4 -right-20 -z-10 h-[600px] w-[600px] rounded-full bg-indigo-600/[0.1] blur-[120px]" />
+
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.4 }}
-                    className="relative z-10 w-full max-w-lg"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    className="relative z-10 w-full max-w-[380px]"
                 >
-                    <div className="overflow-hidden rounded-[3rem] border border-slate-100 bg-white shadow-2xl shadow-blue-500/5">
-
-                        <div className="flex border-b border-slate-50">
-                            {(['student', 'admin'] as FormMode[]).map((m) => (
-                                <button
-                                    key={m}
-                                    onClick={() => switchMode(m)}
-                                    className={`flex-1 py-5 text-[11px] font-black uppercase tracking-[0.2em] transition-all ${mode === m
-                                        ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30'
-                                        : 'text-slate-400 hover:text-slate-600'
-                                        }`}
-                                >
-                                    {m === 'student' ? 'Student' : 'Faculty Admin'}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="p-10 lg:p-16">
-                            <div className="mb-12 text-center text-slate-900">
-                                <h1 className="text-3xl font-black uppercase tracking-tighter">
-                                    {isAdmin ? 'Faculty Login' : 'Student Login'}
+                    <div className="relative overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.3)]">
+                        <div className="p-8 lg:p-12">
+                            <div className="mb-10 text-center">
+                                <h1 className="text-4xl font-black text-slate-950 uppercase tracking-tighter leading-none mb-3">
+                                    {mode === 'admin' ? 'FACULTY' : 'STUDENT'}
                                 </h1>
-                                <p className="mt-3 text-[10px] font-black uppercase tracking-[0.4em] text-blue-600">
-                                    {isAdmin ? 'Staff Credentials Only' : 'Enter University Credentials'}
-                                </p>
+                                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-600 opacity-80">Portal Authentication</p>
                             </div>
-
-                            <AnimatePresence>
+                            <AnimatePresence mode="wait">
                                 {feedback && (
                                     <motion.div
-                                        initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                                        className={`mb-8 flex items-start gap-4 rounded-2xl px-6 py-4 text-xs font-black uppercase tracking-widest ${feedback.type === 'error' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
+                                        initial={{ opacity: 0, scale: 0.98 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.98 }}
+                                        className={`mb-8 flex items-center gap-4 rounded-xl border px-5 py-3 text-[9px] font-black uppercase tracking-widest ${feedback.type === 'error'
+                                            ? 'bg-red-50 border-red-100 text-red-600'
+                                            : 'bg-blue-50 border-blue-100 text-blue-600'
                                             }`}
                                     >
                                         <AlertCircle className="h-4 w-4 shrink-0" />
-                                        {feedback.msg}
+                                        <span>{feedback.msg}</span>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
 
                             <AnimatePresence mode="wait">
                                 {!isAdmin ? (
-                                    <motion.form key="stu" initial={{ opacity: 0 }} animate={{ opacity: 1 }} onSubmit={handleStudentSubmit} className="space-y-6">
+                                    <motion.form key="stu" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} onSubmit={handleStudentSubmit} className="space-y-6">
                                         <div className="space-y-4">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Roll Number</label>
                                             <div className="flex gap-3">
-                                                <select value={session} onChange={e => setSession(e.target.value)} className="h-14 w-28 rounded-2xl bg-slate-50 border-none px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100">
+                                                <select value={session} onChange={e => setSession(e.target.value)} className="h-14 flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-4 text-xs font-black text-slate-900 outline-none focus:border-blue-500 transition-all">
                                                     {SESSIONS.map(s => <option key={s} value={s}>{s}</option>)}
                                                 </select>
-                                                <select value={degree} onChange={e => setDegree(e.target.value)} className="h-14 w-28 rounded-2xl bg-slate-50 border-none px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100">
+                                                <select value={degree} onChange={e => setDegree(e.target.value)} className="h-14 flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-4 text-xs font-black text-slate-900 outline-none focus:border-blue-500 transition-all">
                                                     {DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
                                                 </select>
-                                                <input type="text" placeholder="001" value={rollId} onChange={e => setRollId(e.target.value)} required className="h-14 flex-1 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100" />
                                             </div>
+                                            <input type="text" placeholder="Roll Number" value={rollId} onChange={e => setRollId(e.target.value)} required className="h-14 w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 transition-all placeholder:text-slate-400" />
                                         </div>
-                                        <div className="space-y-4">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Account Password</label>
-                                            <div className="relative group">
-                                                <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required className="h-14 w-full rounded-2xl bg-slate-50 border-none px-6 pr-14 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100" />
-                                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-blue-600">{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button>
-                                            </div>
+
+                                        <div className="relative">
+                                            <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required className="h-14 w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 transition-all placeholder:text-slate-400" placeholder="Password" />
+                                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-900">
+                                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </button>
                                         </div>
-                                        <div className="flex justify-between items-center px-1">
-                                            <button type="button" onClick={() => setShowForgotModal(true)} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors">Forgot Password?</button>
+
+                                        <div className="flex flex-col gap-6 pt-2">
+                                            <button disabled={loading} className="h-14 w-full rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black text-[11px] uppercase tracking-[0.4em] transition-all hover:shadow-[0_20px_40px_-10px_rgba(37,99,235,0.4)] hover:brightness-110 active:scale-[0.98] disabled:opacity-50">
+                                                {loading ? "Verifying..." : "Sign In"}
+                                            </button>
+                                            <button type="button" onClick={() => setShowForgotModal(true)} className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-slate-900 text-center transition-colors">Forgot Password?</button>
                                         </div>
-                                        <button disabled={loading} className="w-full h-16 rounded-2xl bg-blue-600 text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-3">
-                                            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                                            Sign In
-                                        </button>
                                     </motion.form>
                                 ) : (
-                                    <motion.form key="adm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} onSubmit={handleAdminSubmit} className="space-y-6">
-                                        <div className="space-y-4">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Email Address</label>
-                                            <input type="email" placeholder="admin@comsats.edu.pk" value={email} onChange={e => setEmail(e.target.value)} required className="h-14 w-full rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100" />
+                                    <motion.form key="adm" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleAdminSubmit} className="space-y-6">
+                                        <input type="email" placeholder="Faculty Email" value={email} onChange={e => setEmail(e.target.value)} required className="h-14 w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 transition-all placeholder:text-slate-400" />
+
+                                        <div className="relative">
+                                            <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required className="h-14 w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 transition-all placeholder:text-slate-400" placeholder="Password" />
+                                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-900">
+                                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </button>
                                         </div>
-                                        <div className="space-y-4">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Account Password</label>
-                                            <div className="relative group">
-                                                <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required className="h-14 w-full rounded-2xl bg-slate-50 border-none px-6 pr-14 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100" />
-                                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-blue-600">{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button>
-                                            </div>
+
+                                        <div className="flex flex-col gap-6 pt-2">
+                                            <button disabled={loading} className="h-14 w-full rounded-2xl bg-slate-900 text-white font-black text-[11px] uppercase tracking-[0.4em] transition-all hover:bg-slate-800 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.2)] active:scale-[0.98] disabled:opacity-50">
+                                                {loading ? "Verifying..." : "Sign In"}
+                                            </button>
+                                            <button type="button" onClick={() => setShowForgotModal(true)} className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-slate-900 text-center transition-colors">Forgot Password?</button>
                                         </div>
-                                        <div className="flex justify-between items-center px-1">
-                                            <button type="button" onClick={() => setShowForgotModal(true)} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors">Forgot Password?</button>
-                                        </div>
-                                        <button disabled={loading} className="w-full h-16 rounded-2xl bg-slate-900 text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-900/20 active:scale-95 transition-all flex items-center justify-center gap-3">
-                                            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                                            Sign In
-                                        </button>
                                     </motion.form>
                                 )}
                             </AnimatePresence>
@@ -268,51 +251,45 @@ const LandingPage = () => {
                 </motion.div>
             </main>
 
-            <footer className="absolute bottom-10 left-0 right-0 text-center">
-                <p className="text-[9px] font-black tracking-[0.4em] uppercase text-slate-300">
-                    Proprietary Interface / 2026 COMSATS University
-                </p>
-            </footer>
-
             <AnimatePresence>
                 {showForgotModal && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-xl p-6">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-6">
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="w-full max-w-md rounded-[2.5rem] border border-slate-100 bg-white p-12 shadow-2xl shadow-blue-500/5 relative"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 20 }}
+                            className="w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-12 shadow-2xl relative"
                         >
                             <button onClick={() => { setShowForgotModal(false); setForgotFeedback(null); }} className="absolute top-10 right-10 text-slate-300 hover:text-slate-900 transition-colors"><X className="h-6 w-6" /></button>
                             <div className="mb-10 text-center">
-                                <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Recover Account</h2>
-                                <p className="mt-2 text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Enter your university email</p>
+                                <h2 className="text-3xl font-black text-slate-950 uppercase tracking-tighter">PASSWORD RESET</h2>
+                                <p className="mt-2 text-[10px] font-black uppercase tracking-[0.3em] text-blue-600">Account Recovery Service</p>
                             </div>
 
                             {forgotFeedback && (
-                                <div className={`mb-8 p-4 rounded-xl text-[10px] font-black uppercase tracking-widest ${forgotFeedback.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
+                                <div className={`mb-8 p-5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${forgotFeedback.type === 'error' ? 'bg-red-50 border-red-100 text-red-600' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
                                     {forgotFeedback.msg}
                                 </div>
                             )}
 
                             <form onSubmit={handleForgotSubmit} className="space-y-6">
                                 <div className="space-y-4">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Email Address</label>
+                                    <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 ml-1">University Email</label>
                                     <input
                                         type="email"
                                         placeholder="user@comsats.edu.pk"
                                         value={forgotEmail}
                                         onChange={e => setForgotEmail(e.target.value)}
                                         required
-                                        className="h-14 w-full rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100"
+                                        className="h-16 w-full rounded-2xl bg-slate-50 border border-slate-200 px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 placeholder:text-slate-300"
                                     />
                                 </div>
                                 <button
                                     disabled={forgotLoading}
-                                    className="w-full h-16 rounded-2xl bg-blue-600 text-white text-[11px] font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-3"
+                                    className="w-full h-16 rounded-2xl bg-slate-900 text-white text-[12px] font-black uppercase tracking-[0.5em] active:scale-95 transition-all flex items-center justify-center gap-3"
                                 >
                                     {forgotLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                                    Send Recovery Link
+                                    RESET PASSWORD
                                 </button>
                             </form>
                         </motion.div>

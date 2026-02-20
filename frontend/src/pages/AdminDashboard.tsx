@@ -38,7 +38,7 @@ const AdminDashboard = () => {
     const [faculty, setFaculty] = useState([]);
     const [recentActivity, setRecentActivity] = useState([]);
     const [showAddAdminModal, setShowAddAdminModal] = useState(false);
-    const [newAdmin, setNewAdmin] = useState({ name: '', email: '', password: '', role: 'admin' });
+    const [newAdmin, setNewAdmin] = useState({ name: '', email: '', role: 'admin' });
 
     useEffect(() => {
         const fetchData = async () => {
@@ -82,7 +82,7 @@ const AdminDashboard = () => {
             if (data.success) {
                 setFaculty([...faculty, data.admin] as any);
                 setShowAddAdminModal(false);
-                setNewAdmin({ name: '', email: '', password: '', role: 'admin' });
+                setNewAdmin({ name: '', email: '', role: 'admin' });
             }
         } catch (err) {
             console.error(err);
@@ -325,7 +325,6 @@ const AdminDashboard = () => {
                         <form onSubmit={handleCreateAdmin} className="space-y-6">
                             <Input label="Full Name" value={newAdmin.name} onChange={e => setNewAdmin({ ...newAdmin, name: e.target.value })} placeholder="Prof. Ahmad" />
                             <Input label="Email Address" type="email" value={newAdmin.email} onChange={e => setNewAdmin({ ...newAdmin, email: e.target.value })} placeholder="admin@comsats.edu.pk" />
-                            <Input label="Password" type="password" value={newAdmin.password} onChange={e => setNewAdmin({ ...newAdmin, password: e.target.value })} placeholder="Initial Password" />
                             <div className="flex gap-4 pt-6">
                                 <button type="button" onClick={() => setShowAddAdminModal(false)} className="flex-1 h-14 rounded-2xl border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
                                 <button type="submit" className="flex-1 h-14 rounded-2xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-500/30 hover:bg-blue-700 transition-all active:scale-95">Create Account</button>

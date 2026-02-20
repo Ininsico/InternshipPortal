@@ -2,26 +2,41 @@ const Admin = require('../models/Admin.model');
 const Student = require('../models/Student.model');
 const Application = require('../models/Application.model');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const { sendEmail, staffInvitationTemplate } = require('../utils/email.util');
 
 const createAdmin = async (req, res) => {
     try {
-        const { name, email, password, role } = req.body;
+        const { name, email, role } = req.body;
 
         const exists = await Admin.findOne({ email });
         if (exists) {
             return res.status(400).json({ success: false, message: 'Admin with this email already exists' });
         }
 
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+        const resetPasswordExpire = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
+
+        // Create admin with temporary random password and inactive status
         const admin = await Admin.create({
             name,
             email,
-            passwordHash: password,
-            role: role || 'admin'
+            passwordHash: crypto.randomBytes(16).toString('hex'), // Random temp password
+            role: role || 'admin',
+            isActive: false, // Inactive until password is set
+            resetPasswordToken,
+            resetPasswordExpire
         });
+
+        const setupUrl = `http://localhost:5173/reset-password/${resetToken}`;
+        const html = staffInvitationTemplate(admin.role, setupUrl);
+
+        await sendEmail(admin.email, 'Faculty Onboarding Invitation - CU Portal', html);
 
         res.status(201).json({
             success: true,
-            message: 'Admin created successfully',
+            message: 'Invitation email sent to new administrator',
             admin: {
                 id: admin._id,
                 name: admin.name,
