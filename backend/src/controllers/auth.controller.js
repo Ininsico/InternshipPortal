@@ -1,7 +1,9 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const Admin = require('../models/Admin.model');
 const Student = require('../models/Student.model');
-const { studentLoginSchema, adminLoginSchema } = require('../schemas/auth.schema');
+const { studentLoginSchema, adminLoginSchema, forgotPasswordSchema, resetPasswordSchema } = require('../schemas/auth.schema');
+const { sendEmail, passwordResetTemplate } = require('../utils/email.util');
 
 const signToken = (payload) =>
     jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -140,4 +142,84 @@ const getMe = async (req, res) => {
     }
 };
 
-module.exports = { loginStudent, loginAdmin, logout, getMe };
+const forgotPassword = async (req, res) => {
+    const parse = forgotPasswordSchema.safeParse(req.body);
+    if (!parse.success) {
+        return res.status(400).json({ success: false, message: formatZodError(parse.error) });
+    }
+
+    const { email } = parse.data;
+
+    try {
+        // Search in both Student and Admin
+        let userInstance = await Student.findOne({ email });
+        let role = 'student';
+
+        if (!userInstance) {
+            userInstance = await Admin.findOne({ email });
+            role = 'admin';
+        }
+
+        if (!userInstance) {
+            // For security, don't reveal if user exists or not
+            return res.json({ success: true, message: 'If an account exists with this email, a reset link has been sent.' });
+        }
+
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        userInstance.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+        userInstance.resetPasswordExpire = Date.now() + 3600000; // 1 hour
+
+        await userInstance.save();
+
+        const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+        const html = passwordResetTemplate(userInstance.name, resetUrl);
+
+        await sendEmail(userInstance.email, 'Password Reset Request - CU Portal', html);
+
+        return res.json({ success: true, message: 'If an account exists with this email, a reset link has been sent.' });
+    } catch (err) {
+        console.error('forgotPassword:', err);
+        return res.status(500).json({ success: false, message: 'Error sending reset email.' });
+    }
+};
+
+const resetPassword = async (req, res) => {
+    const parse = resetPasswordSchema.safeParse(req.body);
+    if (!parse.success) {
+        return res.status(400).json({ success: false, message: formatZodError(parse.error) });
+    }
+
+    const { token, password } = parse.data;
+    const resetPasswordToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    try {
+        let userInstance = await Student.findOne({
+            resetPasswordToken,
+            resetPasswordExpire: { $gt: Date.now() }
+        });
+
+        if (!userInstance) {
+            userInstance = await Admin.findOne({
+                resetPasswordToken,
+                resetPasswordExpire: { $gt: Date.now() }
+            });
+        }
+
+        if (!userInstance) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired reset token.' });
+        }
+
+        userInstance.passwordHash = password;
+        userInstance.resetPasswordToken = undefined;
+        userInstance.resetPasswordExpire = undefined;
+
+        await userInstance.save();
+
+        return res.json({ success: true, message: 'Password reset successful. You can now log in.' });
+    } catch (err) {
+        console.error('resetPassword:', err);
+        return res.status(500).json({ success: false, message: 'Error resetting password.' });
+    }
+};
+
+module.exports = { loginStudent, loginAdmin, logout, getMe, forgotPassword, resetPassword };

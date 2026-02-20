@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LandingPage from './pages/LandingPage';
 import StudentDashboard from './pages/StudentDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import ResetPassword from './pages/ResetPassword';
 
 const App = () => {
   return (
@@ -27,6 +28,7 @@ const App = () => {
               </ProtectedRoute>
             }
           />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
         </Routes>
       </AuthProvider>
     </Router>

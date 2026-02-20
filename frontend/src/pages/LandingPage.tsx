@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, GraduationCap, Loader2, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, GraduationCap, Loader2, AlertCircle, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -39,6 +39,10 @@ const LandingPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [feedback, setFeedback] = useState<{ type: 'error' | 'success'; msg: string } | null>(null);
+    const [showForgotModal, setShowForgotModal] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState('');
+    const [forgotLoading, setForgotLoading] = useState(false);
+    const [forgotFeedback, setForgotFeedback] = useState<{ type: 'error' | 'success'; msg: string } | null>(null);
 
     if (user) {
         if (user.role === 'student') {
@@ -107,12 +111,35 @@ const LandingPage = () => {
         }
     };
 
+    const handleForgotSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setForgotLoading(true);
+        setForgotFeedback(null);
+        try {
+            const { data } = await axios.post(`${API_BASE}/forgot-password`, { email: forgotEmail });
+            setForgotFeedback({ type: 'success', msg: data.message });
+        } catch (err: any) {
+            setForgotFeedback({ type: 'error', msg: err.response?.data?.message || 'Something went wrong.' });
+        } finally {
+            setForgotLoading(false);
+        }
+    };
+
     const isAdmin = mode === 'admin';
 
     return (
-        <div className="relative min-h-screen bg-white text-slate-900 selection:bg-blue-100 selection:text-blue-900 overflow-hidden">
+        <div className="relative min-h-screen text-slate-900 selection:bg-blue-100 selection:text-blue-900 overflow-hidden">
+            {/* Background Image Container */}
+            <div className="fixed inset-0 -z-10 overflow-hidden">
+                <img
+                    src="/landingpagebg.png"
+                    className="h-full w-full object-cover scale-110 blur-xl brightness-[0.85]"
+                    alt="Background"
+                />
+                <div className="absolute inset-0 bg-white/20 backdrop-blur-[2px]" />
+            </div>
 
-            <header className="fixed top-0 left-0 right-0 z-50 border-b border-slate-100 bg-white/80 backdrop-blur-2xl">
+            <header className="fixed top-0 left-0 right-0 z-50 border-b border-slate-100 bg-white/70 backdrop-blur-2xl">
                 <nav className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
 
                     <div className="flex items-center gap-3">
@@ -136,7 +163,7 @@ const LandingPage = () => {
                 </nav>
             </header>
 
-            <main className="relative flex min-h-screen items-center justify-center px-6 pt-20 bg-slate-50/30">
+            <main className="relative flex min-h-screen items-center justify-center px-6 pt-20">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -205,6 +232,9 @@ const LandingPage = () => {
                                                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-blue-600">{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button>
                                             </div>
                                         </div>
+                                        <div className="flex justify-between items-center px-1">
+                                            <button type="button" onClick={() => setShowForgotModal(true)} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors">Forgot Password?</button>
+                                        </div>
                                         <button disabled={loading} className="w-full h-16 rounded-2xl bg-blue-600 text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-3">
                                             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                                             Sign In
@@ -223,6 +253,9 @@ const LandingPage = () => {
                                                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-blue-600">{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button>
                                             </div>
                                         </div>
+                                        <div className="flex justify-between items-center px-1">
+                                            <button type="button" onClick={() => setShowForgotModal(true)} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors">Forgot Password?</button>
+                                        </div>
                                         <button disabled={loading} className="w-full h-16 rounded-2xl bg-slate-900 text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-900/20 active:scale-95 transition-all flex items-center justify-center gap-3">
                                             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                                             Sign In
@@ -240,6 +273,52 @@ const LandingPage = () => {
                     Proprietary Interface / 2026 COMSATS University
                 </p>
             </footer>
+
+            <AnimatePresence>
+                {showForgotModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-xl p-6">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="w-full max-w-md rounded-[2.5rem] border border-slate-100 bg-white p-12 shadow-2xl shadow-blue-500/5 relative"
+                        >
+                            <button onClick={() => { setShowForgotModal(false); setForgotFeedback(null); }} className="absolute top-10 right-10 text-slate-300 hover:text-slate-900 transition-colors"><X className="h-6 w-6" /></button>
+                            <div className="mb-10 text-center">
+                                <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Recover Account</h2>
+                                <p className="mt-2 text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Enter your university email</p>
+                            </div>
+
+                            {forgotFeedback && (
+                                <div className={`mb-8 p-4 rounded-xl text-[10px] font-black uppercase tracking-widest ${forgotFeedback.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
+                                    {forgotFeedback.msg}
+                                </div>
+                            )}
+
+                            <form onSubmit={handleForgotSubmit} className="space-y-6">
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Email Address</label>
+                                    <input
+                                        type="email"
+                                        placeholder="user@comsats.edu.pk"
+                                        value={forgotEmail}
+                                        onChange={e => setForgotEmail(e.target.value)}
+                                        required
+                                        className="h-14 w-full rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100"
+                                    />
+                                </div>
+                                <button
+                                    disabled={forgotLoading}
+                                    className="w-full h-16 rounded-2xl bg-blue-600 text-white text-[11px] font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-3"
+                                >
+                                    {forgotLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                                    Send Recovery Link
+                                </button>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

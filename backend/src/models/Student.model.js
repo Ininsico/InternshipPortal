@@ -48,6 +48,8 @@ const StudentSchema = new mongoose.Schema(
             type: Boolean,
             default: true,
         },
+        resetPasswordToken: String,
+        resetPasswordExpire: Date,
         supervisorId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Admin',

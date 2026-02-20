@@ -34,4 +34,13 @@ const adminLoginSchema = z.object({
         .min(5, 'Password must be at least 5 characters'),
 });
 
-module.exports = { studentLoginSchema, adminLoginSchema, SESSIONS, DEGREES };
+const forgotPasswordSchema = z.object({
+    email: z.string().email('Valid email is required'),
+});
+
+const resetPasswordSchema = z.object({
+    token: z.string().min(1, 'Token is required'),
+    password: z.string().min(5, 'Password must be at least 5 characters'),
+});
+
+module.exports = { studentLoginSchema, adminLoginSchema, forgotPasswordSchema, resetPasswordSchema, SESSIONS, DEGREES };
