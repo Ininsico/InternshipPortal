@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import {
     LayoutDashboard, Users, ClipboardList, BarChart2,
     LogOut, Plus, Loader2,
-    Send, Star, Briefcase, File, ArrowUpRight, Pencil
+    Send, Briefcase, File, Pencil, Trash2
 } from 'lucide-react';
 
 import API from '../config/api';
@@ -44,10 +44,10 @@ const CompanyDashboard = () => {
     const [taskLoading, setTaskLoading] = useState(false);
     const [taskError, setTaskError] = useState('');
 
-    const [gradeTarget, setGradeTarget] = useState<any | null>(null);
-    const [gradeForm, setGradeForm] = useState({ marks: '', feedback: '' });
-    const [gradeLoading, setGradeLoading] = useState(false);
-    const [gradeError, setGradeError] = useState('');
+    const [editTaskTarget, setEditTaskTarget] = useState<any | null>(null);
+    const [editTaskForm, setEditTaskForm] = useState({ title: '', description: '', deadline: '', maxMarks: 100, assignedTo: '' });
+    const [editTaskLoading, setEditTaskLoading] = useState(false);
+    const [editTaskError, setEditTaskError] = useState('');
 
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
@@ -94,25 +94,38 @@ const CompanyDashboard = () => {
         }
     };
 
-    const handleGrade = async (e: React.FormEvent) => {
+
+    const handleUpdateTask = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!gradeTarget) return;
-        setGradeLoading(true);
-        setGradeError('');
+        if (!editTaskTarget) return;
+        setEditTaskLoading(true);
+        setEditTaskError('');
         try {
-            const { data } = await axios.put(`${API_BASE}/submissions/${gradeTarget._id}/grade`, {
-                marks: Number(gradeForm.marks),
-                feedback: gradeForm.feedback,
+            const { data } = await axios.put(`${API_BASE}/tasks/${editTaskTarget._id}`, {
+                ...editTaskForm,
+                maxMarks: Number(editTaskForm.maxMarks),
+                assignedTo: editTaskForm.assignedTo || null
             }, config);
             if (data.success) {
-                setSubmissions(prev => prev.map(s => s._id === gradeTarget._id ? data.submission : s));
-                setGradeTarget(null);
-                setGradeForm({ marks: '', feedback: '' });
+                setTasks(prev => prev.map(t => t._id === editTaskTarget._id ? data.task : t));
+                setEditTaskTarget(null);
             }
         } catch (err: any) {
-            setGradeError(err?.response?.data?.message || 'Failed to grade.');
+            setEditTaskError(err?.response?.data?.message || 'Failed to update task.');
         } finally {
-            setGradeLoading(false);
+            setEditTaskLoading(false);
+        }
+    };
+
+    const handleDeleteTask = async (taskId: string) => {
+        if (!window.confirm('Are you sure you want to delete this task?')) return;
+        try {
+            const { data } = await axios.delete(`${API_BASE}/tasks/${taskId}`, config);
+            if (data.success) {
+                setTasks(prev => prev.filter(t => t._id !== taskId));
+            }
+        } catch (err: any) {
+            alert(err?.response?.data?.message || 'Failed to delete task.');
         }
     };
 
@@ -252,7 +265,12 @@ const CompanyDashboard = () => {
                         {activeTab === 'tasks' && (
                             <div className="space-y-4">
                                 <div className="flex justify-end">
-                                    <button onClick={() => setShowTaskModal(true)} className="flex items-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-xs font-black uppercase tracking-widest text-white hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95">
+                                    <button
+                                        onClick={() => setShowTaskModal(true)}
+                                        disabled={students.length === 0}
+                                        title={students.length === 0 ? "You cannot create tasks until students are assigned to your company." : ""}
+                                        className="flex items-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-xs font-black uppercase tracking-widest text-white hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale"
+                                    >
                                         <Plus className="h-4 w-4" /> Create Task
                                     </button>
                                 </div>
@@ -261,10 +279,26 @@ const CompanyDashboard = () => {
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {tasks.map(t => (
-                                            <div key={t._id} className="rounded-2xl bg-white border border-slate-100 p-6 shadow-sm hover:border-indigo-100 transition-all">
+                                            <div key={t._id} className="group rounded-2xl bg-white border border-slate-100 p-6 shadow-sm hover:border-indigo-100 transition-all">
                                                 <div className="flex items-start justify-between gap-4 mb-3">
                                                     <h4 className="text-base font-black text-slate-900">{t.title}</h4>
-                                                    <StatusBadge status={t.status} />
+                                                    <div className="flex items-center gap-2">
+                                                        <StatusBadge status={t.status} />
+                                                        <div className="flex opacity-0 group-hover:opacity-100 transition-opacity gap-1">
+                                                            <button
+                                                                onClick={() => { setEditTaskTarget(t); setEditTaskForm({ title: t.title, description: t.description, deadline: t.deadline.split('T')[0], maxMarks: t.maxMarks, assignedTo: t.assignedTo?._id || '' }); setEditTaskError(''); }}
+                                                                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-indigo-600 transition-all"
+                                                            >
+                                                                <Pencil className="h-3.5 w-3.5" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeleteTask(t._id)}
+                                                                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-red-600 transition-all"
+                                                            >
+                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                                 <p className="text-sm text-slate-500 font-medium mb-4 line-clamp-2">{t.description}</p>
                                                 <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
@@ -313,7 +347,7 @@ const CompanyDashboard = () => {
                                                             <div className="flex items-center gap-3">
                                                                 <span className="text-sm font-black text-emerald-600">{sub.companyGrade.marks}/{sub.task?.maxMarks}</span>
                                                                 <button
-                                                                    onClick={() => { setGradeTarget(sub); setGradeForm({ marks: String(sub.companyGrade.marks), feedback: sub.companyGrade.feedback || '' }); setGradeError(''); }}
+                                                                    onClick={() => { /* setGradeTarget(sub); setGradeForm({ marks: String(sub.companyGrade.marks), feedback: sub.companyGrade.feedback || '' }); setGradeError(''); */ }}
                                                                     className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-indigo-600 transition-all"
                                                                     title="Edit Grade"
                                                                 >
@@ -321,12 +355,12 @@ const CompanyDashboard = () => {
                                                                 </button>
                                                             </div>
                                                         ) : (
-                                                            <button
-                                                                onClick={() => { setGradeTarget(sub); setGradeForm({ marks: '', feedback: '' }); setGradeError(''); }}
-                                                                className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white hover:bg-indigo-700 transition-all"
-                                                            >
-                                                                <Star className="h-3.5 w-3.5" /> Grade
-                                                            </button>
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="text-right">
+                                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Status</p>
+                                                                    <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${sub.status === 'graded' ? 'text-green-500' : 'text-blue-500'}`}>{sub.status}</p>
+                                                                </div>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </div>
@@ -392,42 +426,38 @@ const CompanyDashboard = () => {
             </AnimatePresence>
 
             <AnimatePresence>
-                {gradeTarget && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setGradeTarget(null)}>
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="w-full max-w-md rounded-3xl bg-white border border-slate-100 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                {editTaskTarget && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setEditTaskTarget(null)}>
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="w-full max-w-lg rounded-3xl bg-white border border-slate-100 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
                             <div className="border-b border-slate-100 px-8 py-6 bg-slate-50/50">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-1">Grade Submission</p>
-                                <h2 className="text-lg font-black text-slate-900">{gradeTarget.student?.name}</h2>
-                                <p className="text-xs font-bold text-slate-400 mt-0.5">{gradeTarget.task?.title}</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-1">Modify Task</p>
+                                <h2 className="text-xl font-black text-slate-900">Edit Task</h2>
                             </div>
-                            <div className="px-8 py-5 bg-slate-50 border-b border-slate-100">
-                                <p className="text-xs font-bold text-slate-600 mb-3">{gradeTarget.content}</p>
-                                {gradeTarget.attachments && gradeTarget.attachments.length > 0 && (
-                                    <div className="grid grid-cols-1 gap-2">
-                                        {gradeTarget.attachments.map((f: any, i: number) => (
-                                            <a key={i} href={f.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-xl bg-white border border-slate-100 px-4 py-2.5 text-[10px] font-black uppercase text-indigo-600 hover:shadow-md transition-all">
-                                                <span className="flex items-center gap-2 truncate"><File className="h-3.5 w-3.5" /> {f.originalname}</span>
-                                                <ArrowUpRight className="h-3.5 w-3.5 opacity-40" />
-                                            </a>
-                                        ))}
+                            <form onSubmit={handleUpdateTask} className="p-8 space-y-5">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Task Title</label>
+                                    <input required value={editTaskForm.title} onChange={e => setEditTaskForm({ ...editTaskForm, title: e.target.value })} className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Description</label>
+                                    <textarea required value={editTaskForm.description} onChange={e => setEditTaskForm({ ...editTaskForm, description: e.target.value })} rows={3} className="w-full rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100 resize-none" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Deadline</label>
+                                        <input required type="date" value={editTaskForm.deadline} onChange={e => setEditTaskForm({ ...editTaskForm, deadline: e.target.value })} className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100" />
                                     </div>
-                                )}
-                            </div>
-                            <form onSubmit={handleGrade} className="p-8 space-y-5">
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Marks (out of {gradeTarget.task?.maxMarks})</label>
-                                    <input required type="number" min={0} max={gradeTarget.task?.maxMarks} value={gradeForm.marks} onChange={e => setGradeForm({ ...gradeForm, marks: e.target.value })} className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100" />
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Max Marks</label>
+                                        <input type="number" min={1} max={1000} value={editTaskForm.maxMarks} onChange={e => setEditTaskForm({ ...editTaskForm, maxMarks: Number(e.target.value) })} className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100" />
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Feedback (optional)</label>
-                                    <textarea value={gradeForm.feedback} onChange={e => setGradeForm({ ...gradeForm, feedback: e.target.value })} rows={3} className="w-full rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100 resize-none" placeholder="Write constructive feedback..." />
-                                </div>
-                                {gradeError && <p className="text-xs font-bold text-red-500 bg-red-50 rounded-lg px-4 py-3">{gradeError}</p>}
+                                {editTaskError && <p className="text-xs font-bold text-red-500 bg-red-50 rounded-lg px-4 py-3">{editTaskError}</p>}
                                 <div className="flex gap-4">
-                                    <button type="button" onClick={() => setGradeTarget(null)} className="flex-1 h-12 rounded-2xl border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
-                                    <button type="submit" disabled={gradeLoading} className="flex-1 h-12 rounded-2xl bg-indigo-600 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2">
-                                        {gradeLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />}
-                                        {gradeLoading ? 'Saving...' : 'Submit Grade'}
+                                    <button type="button" onClick={() => setEditTaskTarget(null)} className="flex-1 h-12 rounded-2xl border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
+                                    <button type="submit" disabled={editTaskLoading} className="flex-1 h-12 rounded-2xl bg-indigo-600 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2">
+                                        {editTaskLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                        {editTaskLoading ? 'Saving...' : 'Update Task'}
                                     </button>
                                 </div>
                             </form>
@@ -435,6 +465,7 @@ const CompanyDashboard = () => {
                     </div>
                 )}
             </AnimatePresence>
+
         </div>
     );
 };

@@ -1,0 +1,32 @@
+[
+  {
+    "_id": "699b2e7fa475792035cade10",
+    "studentId": "699b2e7aa475792035cadd8c",
+    "companyName": "NetSol Technologies",
+    "position": "Mobile App Intern",
+    "internshipType": "Self",
+    "duration": "8 Weeks",
+    "description": "Internship application for the NetSol Technologies role. I am excited to contribute and learn.",
+    "status": "in_progress",
+    "appliedDate": "2025-11-10T16:27:43.609Z",
+    "documents": [],
+    "createdAt": "2026-02-22T16:27:43.610Z",
+    "updatedAt": "2026-02-22T17:30:40.150Z",
+    "__v": 0
+  },
+  {
+    "_id": "699b2e7fa475792035cade16",
+    "studentId": "699b2e7aa475792035cadd8e",
+    "companyName": "10Pearls",
+    "position": "Software Intern",
+    "internshipType": "Self",
+    "duration": "12 Weeks",
+    "description": "Internship application for the company role. I am excited to contribute and learn.",
+    "status": "approved",
+    "appliedDate": "2026-01-12T16:27:43.615Z",
+    "documents": [],
+    "createdAt": "2026-02-22T16:27:43.615Z",
+    "updatedAt": "2026-02-22T16:27:43.615Z",
+    "__v": 0
+  }
+]

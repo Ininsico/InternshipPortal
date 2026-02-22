@@ -1,0 +1,20 @@
+[
+  {
+    "_id": "699b7d5065abc88a83e2bd5f",
+    "student": "699b2e7aa475792035cadd8c",
+    "createdBy": "699b71dc65abc88a83e2bab5",
+    "summary": "good",
+    "overallRating": 75,
+    "scores": {
+      "technical": 75,
+      "communication": 75,
+      "teamwork": 75,
+      "punctuality": 75
+    },
+    "recommendation": "good",
+    "completionStatus": "ongoing",
+    "createdAt": "2026-02-22T22:04:00.345Z",
+    "updatedAt": "2026-02-22T22:04:00.345Z",
+    "__v": 0
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "_id": "699b8b69b924c663de18e40b",
+    "name": "Infotech",
+    "email": "hr@infotech.com",
+    "website": "infotech.com",
+    "address": "",
+    "phone": "+923315821144",
+    "isPartnered": true,
+    "createdAt": "2026-02-22T23:04:09.173Z",
+    "updatedAt": "2026-02-22T23:04:09.173Z",
+    "__v": 0
+  }
+]

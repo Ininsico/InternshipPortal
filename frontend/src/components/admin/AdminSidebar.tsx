@@ -1,10 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-    LayoutDashboard, Users, ShieldCheck, Building2, FileText,
-    Settings, ClipboardList, LogOut, ChevronLeft, ChevronRight,
-    Bell, BookOpen
-} from 'lucide-react';
+import { LayoutDashboard, Users, ShieldCheck, Building2, FileText, Settings, LogOut, ChevronLeft, ChevronRight, Bell, BookOpen } from 'lucide-react';
 
 interface AdminSidebarProps {
     activeTab: string;
@@ -20,7 +16,6 @@ const AdminSidebar = ({ activeTab, setActiveTab, isSuperAdmin, user, logout }: A
     const mainNavItems = [
         { id: 'overview', label: 'Overview', icon: LayoutDashboard },
         { id: 'students', label: 'Students', icon: Users },
-        { id: 'submissions', label: 'Submissions', icon: ClipboardList },
         { id: 'reports', label: 'Reports', icon: FileText },
     ];
 
@@ -29,7 +24,6 @@ const AdminSidebar = ({ activeTab, setActiveTab, isSuperAdmin, user, logout }: A
         { id: 'companies', label: 'Companies', icon: Building2 },
         { id: 'approvals', label: 'Approvals', icon: Bell },
         { id: 'agreements', label: 'Agreements', icon: ShieldCheck },
-        { id: 'assignments', label: 'Assignments', icon: Users },
     ] : [];
 
     const NavBtn = ({ item }: { item: { id: string; label: string; icon: any } }) => {

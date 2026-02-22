@@ -1,0 +1,64 @@
+[
+  {
+    "_id": "699b2e78a475792035cadd48",
+    "name": "Super Admin",
+    "email": "admin@gmail.com",
+    "passwordHash": "$2a$10$I8DT7YbVMSpz/X3rwKfUGOb5TtNVf7Wi5wKTa.gV07LQz2C28lAaq",
+    "role": "super_admin",
+    "company": null,
+    "isActive": true,
+    "createdAt": "2026-02-22T16:27:36.881Z",
+    "updatedAt": "2026-02-22T16:27:36.881Z",
+    "__v": 0
+  },
+  {
+    "_id": "699b2e78a475792035cadd4a",
+    "name": "Dr. Arslan Rathore",
+    "email": "drarslanrathore@gmail.com",
+    "passwordHash": "$2a$10$ajonQFqigJMaL2XgMGOZsewPRlP0m5PftMbUDBvko9TZXVmiRTZMG",
+    "role": "super_admin",
+    "company": null,
+    "isActive": true,
+    "createdAt": "2026-02-22T16:27:36.971Z",
+    "updatedAt": "2026-02-22T16:27:36.971Z",
+    "__v": 0
+  },
+  {
+    "_id": "699b2e79a475792035cadd62",
+    "name": "Sara Qureshi",
+    "email": "sara.qureshi@netsol.pk",
+    "passwordHash": "$2a$10$woSq7/khpjCpK5LtkW99lenHVGStDTpUJU8D49Fh7HoqNfThRwgNS",
+    "role": "company_admin",
+    "company": "NetSol Technologies",
+    "isActive": true,
+    "createdAt": "2026-02-22T16:27:37.974Z",
+    "updatedAt": "2026-02-22T16:27:37.974Z",
+    "__v": 0
+  },
+  {
+    "_id": "699b71dc65abc88a83e2bab5",
+    "name": "ArslanRathore",
+    "email": "merezubanurdu@gmail.com",
+    "passwordHash": "$2a$10$dOTGCfg7TK.6SCfJ.PQfN.BONqsE7fIdeqpsq7b7u6iuAdc1Zrnuq",
+    "role": "admin",
+    "company": null,
+    "isActive": true,
+    "createdAt": "2026-02-22T21:15:08.499Z",
+    "updatedAt": "2026-02-22T21:16:33.870Z",
+    "__v": 0
+  },
+  {
+    "_id": "699b8b8db924c663de18e40e",
+    "name": "ininsico",
+    "email": "hr@infotech.com",
+    "passwordHash": "$2a$10$PHAVpZQT5DBn3j7.pkfBN.Y2TjE0sRQCjQVkMi.h0qcYMmTwEOWN6",
+    "role": "company_admin",
+    "company": "Infotech",
+    "isActive": false,
+    "resetPasswordToken": "0df6115aa3a584a650b2ab30b047afd89c950e84c9e70e1f77ffafe31d7db639",
+    "resetPasswordExpire": "2026-03-01T23:04:45.374Z",
+    "createdAt": "2026-02-22T23:04:45.379Z",
+    "updatedAt": "2026-02-22T23:04:45.379Z",
+    "__v": 0
+  }
+]

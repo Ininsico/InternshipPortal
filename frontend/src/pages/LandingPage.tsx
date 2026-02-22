@@ -109,9 +109,10 @@ const LandingPage = () => {
             if (data.token && data.user) {
                 login(data.token, data.user);
                 const role = data.user.role;
-                if (role === 'company_admin') navigate('/company-portal');
-                else if (role === 'admin') navigate('/faculty-portal');
-                else navigate('/admin');
+                if (role === 'company_admin') navigate('/company-portal', { replace: true });
+                else if (role === 'admin') navigate('/faculty-portal', { replace: true });
+                else if (role === 'super_admin') navigate('/admin', { replace: true });
+                else navigate('/admin', { replace: true });
             }
             setFeedback({ type: 'success', msg: data.message });
         } catch (err: unknown) {

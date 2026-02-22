@@ -59,8 +59,8 @@ const StudentDashboard = () => {
     const [newApp, setNewApp] = useState({ companyName: '', position: '', description: '' });
     const [profileImageLoading, setProfileImageLoading] = useState(false);
 
-    const internshipStatus = user?.internshipStatus || 'none';
-    const isAssigned = internshipStatus === 'internship_assigned';
+    const internshipStatus = profile?.internshipStatus || user?.internshipStatus || 'none';
+    const isAssigned = internshipStatus === 'internship_assigned' && !!profile?.assignedCompany;
     const canApply = internshipStatus === 'none' || internshipStatus === 'rejected';
 
     useEffect(() => {
@@ -420,12 +420,6 @@ const StudentDashboard = () => {
                                                     </div>
                                                 )}
 
-                                                <button
-                                                    onClick={() => window.print()}
-                                                    className="flex w-full items-center justify-center gap-4 rounded-[1.75rem] border border-slate-200 bg-white p-8 text-[11px] font-black uppercase tracking-[0.25em] text-slate-900 hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
-                                                >
-                                                    <FileText className="h-5 w-5 text-blue-600" /> Generate Logbook
-                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -486,77 +480,200 @@ const StudentDashboard = () => {
                                 )}
 
                                 {activeTab === 'tasks' && isAssigned && (
-                                    <div className="space-y-10">
+                                    <div className="space-y-8">
+                                        {/* Header */}
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <h3 className="text-lg font-black uppercase tracking-tight text-slate-900">Work Console</h3>
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Assigned Deliverables ({tasks.length})</p>
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">
+                                                    {tasks.filter((t: any) => submissions.find((s: any) => (s.task?._id || s.task) === t._id)).length}/{tasks.length} Tasks Submitted
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 border border-emerald-100 px-5 py-3">
+                                                    <CheckCheck className="h-4 w-4 text-emerald-500" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">
+                                                        {submissions.length} Submitted
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2 rounded-2xl bg-amber-50 border border-amber-100 px-5 py-3">
+                                                    <Clock className="h-4 w-4 text-amber-500" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-amber-600">
+                                                        {tasks.length - submissions.length} Pending
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
+
+                                        {/* Task Cards */}
                                         {tasks.length === 0 ? (
                                             <div className="rounded-[2.5rem] border-2 border-dashed border-slate-100 bg-white py-32 text-center shadow-sm">
                                                 <Clock className="w-12 h-12 text-slate-200 mx-auto mb-6" />
-                                                <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Standby Content</p>
-                                                <p className="text-xs text-slate-300 font-bold mt-2">Awaiting supervisor task dispatch.</p>
+                                                <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">No Tasks Yet</p>
+                                                <p className="text-xs text-slate-300 font-bold mt-2">Your supervisor hasn't assigned any tasks yet.</p>
                                             </div>
                                         ) : (
-                                            <div className="grid gap-6">
+                                            <div className="grid gap-5">
                                                 {tasks.map((task: any) => {
                                                     const sub = submissions.find((s: any) => (s.task?._id || s.task) === task._id);
                                                     const isNew = new Date(task.createdAt).getTime() > Date.now() - 3 * 24 * 60 * 60 * 1000;
-                                                    return (
-                                                        <div key={task._id} className={`rounded-[2rem] border bg-white p-10 shadow-sm transition-all relative overflow-hidden group ${!sub ? 'border-blue-200 shadow-xl shadow-blue-500/5 ring-1 ring-blue-50' : 'border-slate-100'}`}>
-                                                            {isNew && !sub && (
-                                                                <div className="absolute top-0 right-10">
-                                                                    <div className="bg-blue-600 text-white text-[9px] font-black px-5 py-2 uppercase tracking-[0.2em] rounded-b-2xl shadow-xl animate-bounce">Priority Intake</div>
-                                                                </div>
-                                                            )}
-                                                            <div className="flex items-start justify-between gap-8">
-                                                                <div className="flex-1">
-                                                                    <div className="flex items-center gap-3 mb-4">
-                                                                        <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-4 py-1.5 rounded-full">{task.company}</span>
-                                                                        {task.deadline && (
-                                                                            <span className={`text-[10px] font-black uppercase tracking-widest ${new Date(task.deadline).getTime() < Date.now() + 2 * 24 * 60 * 60 * 1000 ? 'text-red-500' : 'text-amber-600'}`}>
-                                                                                Target: {new Date(task.deadline).toLocaleDateString()}
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                    <h4 className="text-xl font-black text-slate-900 group-hover:text-blue-600 transition-colors">{task.title}</h4>
-                                                                    <p className="text-sm text-slate-500 mt-3 font-medium leading-relaxed max-w-2xl">{task.description}</p>
-                                                                    {task.maxMarks && <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-6 border-t border-slate-50 pt-4 inline-block">{task.maxMarks} Performance Points</p>}
+                                                    const isOverdue = task.deadline && new Date(task.deadline).getTime() < Date.now();
+                                                    const isDueSoon = task.deadline && !isOverdue && new Date(task.deadline).getTime() < Date.now() + 2 * 24 * 60 * 60 * 1000;
+                                                    const isGraded = sub?.companyGrade?.marks !== null && sub?.companyGrade?.marks !== undefined;
 
-                                                                    {sub && sub.attachments && sub.attachments.length > 0 && (
-                                                                        <div className="mt-8 flex flex-wrap gap-3">
-                                                                            {sub.attachments.map((file: any, i: number) => (
-                                                                                <a key={i} href={file.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 text-[10px] font-black uppercase text-slate-600 hover:bg-white hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm">
-                                                                                    <File className="h-4 w-4" /> {file.originalname}
-                                                                                </a>
-                                                                            ))}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                                <div className="shrink-0 pt-2">
-                                                                    {sub ? (
-                                                                        <div className="text-right">
-                                                                            <span className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-5 py-3 text-[10px] font-black text-emerald-600 uppercase tracking-widest border border-emerald-100">
-                                                                                <CheckCheck className="h-4 w-4" /> Finalized
+                                                    return (
+                                                        <div
+                                                            key={task._id}
+                                                            className={`rounded-[2rem] border bg-white shadow-sm transition-all relative overflow-hidden ${!sub
+                                                                ? isOverdue
+                                                                    ? 'border-red-200 ring-1 ring-red-100'
+                                                                    : 'border-blue-200 ring-1 ring-blue-50 shadow-blue-500/5 shadow-xl'
+                                                                : isGraded
+                                                                    ? 'border-emerald-100'
+                                                                    : 'border-slate-100'
+                                                                }`}
+                                                        >
+                                                            {/* Top bar: status stripe */}
+                                                            <div className={`h-1.5 w-full ${isGraded ? 'bg-emerald-500' :
+                                                                sub ? 'bg-blue-400' :
+                                                                    isOverdue ? 'bg-red-500' :
+                                                                        isDueSoon ? 'bg-amber-400' :
+                                                                            'bg-slate-200'
+                                                                }`} />
+
+                                                            <div className="p-8">
+                                                                {/* Card Header */}
+                                                                <div className="flex items-start justify-between gap-6 mb-6">
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="flex flex-wrap items-center gap-2 mb-3">
+                                                                            {/* Company badge */}
+                                                                            <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-full">
+                                                                                <Building2 className="h-3 w-3" />
+                                                                                {task.company}
                                                                             </span>
-                                                                            {sub.companyGrade?.marks !== null && sub.companyGrade?.marks !== undefined && (
-                                                                                <div className="mt-6">
-                                                                                    <p className="text-3xl font-black text-slate-900 tracking-tighter">{sub.companyGrade.marks}<span className="text-xs text-slate-300 font-bold ml-1 uppercase">/ {task.maxMarks}</span></p>
-                                                                                    <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-1">Verified Grade</p>
-                                                                                </div>
+
+                                                                            {/* New tag */}
+                                                                            {isNew && !sub && (
+                                                                                <span className="text-[9px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-full animate-pulse">
+                                                                                    New
+                                                                                </span>
+                                                                            )}
+
+                                                                            {/* Deadline badge */}
+                                                                            {task.deadline && (
+                                                                                <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full ${isOverdue && !sub
+                                                                                    ? 'text-red-600 bg-red-50 border border-red-100'
+                                                                                    : isDueSoon
+                                                                                        ? 'text-amber-600 bg-amber-50 border border-amber-100'
+                                                                                        : 'text-slate-500 bg-slate-50 border border-slate-100'
+                                                                                    }`}>
+                                                                                    <Clock className="h-3 w-3" />
+                                                                                    {isOverdue && !sub ? 'Overdue · ' : 'Due · '}
+                                                                                    {new Date(task.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                                                </span>
                                                                             )}
                                                                         </div>
-                                                                    ) : (
-                                                                        <button
-                                                                            onClick={() => { setSubmitTarget(task); setSubmitContent(''); setSubmitFiles([]); }}
-                                                                            className="flex items-center gap-3 rounded-2xl bg-blue-600 px-8 h-16 text-[11px] font-black uppercase tracking-[0.2em] text-white hover:bg-blue-700 transition-all shadow-2xl shadow-blue-600/30 active:scale-95 group/btn"
-                                                                        >
-                                                                            Submit Intent <Send className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
-                                                                        </button>
-                                                                    )}
+
+                                                                        {/* Title */}
+                                                                        <h4 className="text-xl font-black text-slate-900 leading-tight">{task.title}</h4>
+
+                                                                        {/* Description */}
+                                                                        {task.description && (
+                                                                            <p className="text-sm text-slate-500 mt-3 font-medium leading-relaxed">{task.description}</p>
+                                                                        )}
+
+                                                                        {/* Max marks */}
+                                                                        {task.maxMarks != null && (
+                                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-4">
+                                                                                Worth <span className="text-slate-700">{task.maxMarks}</span> marks
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* Right: Status + Actions */}
+                                                                    <div className="shrink-0 flex flex-col items-end gap-3">
+                                                                        {sub ? (
+                                                                            isGraded ? (
+                                                                                <div className="text-right">
+                                                                                    <div className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-2.5 text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-3">
+                                                                                        <CheckCheck className="h-4 w-4" /> Graded
+                                                                                    </div>
+                                                                                    <div className="bg-white rounded-2xl border border-emerald-100 p-4 shadow-sm text-center">
+                                                                                        <p className="text-3xl font-black text-slate-900 tracking-tighter leading-none">
+                                                                                            {sub.companyGrade.marks}
+                                                                                        </p>
+                                                                                        {task.maxMarks && (
+                                                                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">/ {task.maxMarks} marks</p>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="flex flex-col items-end gap-2">
+                                                                                    <div className="inline-flex items-center gap-2 rounded-xl bg-sky-50 border border-sky-100 px-4 py-2.5 text-[10px] font-black text-sky-600 uppercase tracking-widest">
+                                                                                        <CheckCircle2 className="h-4 w-4" /> Submitted
+                                                                                    </div>
+                                                                                    <button
+                                                                                        onClick={() => {
+                                                                                            setSubmitTarget(task);
+                                                                                            setSubmitContent(sub.content || '');
+                                                                                            setSubmitFiles([]);
+                                                                                        }}
+                                                                                        className="inline-flex items-center gap-2 rounded-xl bg-white border border-slate-200 hover:border-blue-300 hover:bg-blue-50 px-4 py-2.5 text-[10px] font-black text-slate-500 hover:text-blue-600 uppercase tracking-widest transition-all"
+                                                                                    >
+                                                                                        <Send className="h-3.5 w-3.5" /> Edit Submission
+                                                                                    </button>
+                                                                                </div>
+                                                                            )
+                                                                        ) : (
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    setSubmitTarget(task);
+                                                                                    setSubmitContent('');
+                                                                                    setSubmitFiles([]);
+                                                                                }}
+                                                                                className="flex items-center gap-2.5 rounded-2xl bg-blue-600 px-6 h-14 text-[11px] font-black uppercase tracking-[0.15em] text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/25 active:scale-95 whitespace-nowrap"
+                                                                            >
+                                                                                Submit Task <Send className="h-4 w-4" />
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
+
+                                                                {/* Submission preview (when submitted) */}
+                                                                {sub && (
+                                                                    <div className={`mt-4 pt-5 border-t ${isGraded ? 'border-emerald-50' : 'border-slate-50'}`}>
+                                                                        {sub.content && (
+                                                                            <div className="mb-4">
+                                                                                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2">Your Submission</p>
+                                                                                <p className="text-sm text-slate-600 font-medium leading-relaxed bg-slate-50 rounded-2xl px-5 py-4">{sub.content}</p>
+                                                                            </div>
+                                                                        )}
+                                                                        {sub.attachments && sub.attachments.length > 0 && (
+                                                                            <div>
+                                                                                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 mb-3">Attached Files</p>
+                                                                                <div className="flex flex-wrap gap-2">
+                                                                                    {sub.attachments.map((file: any, i: number) => (
+                                                                                        <a
+                                                                                            key={i}
+                                                                                            href={file.url}
+                                                                                            target="_blank"
+                                                                                            rel="noopener noreferrer"
+                                                                                            className="inline-flex items-center gap-2 rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-[10px] font-black uppercase text-slate-600 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"
+                                                                                        >
+                                                                                            <File className="h-3.5 w-3.5" /> {file.originalname}
+                                                                                        </a>
+                                                                                    ))}
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                        {isGraded && sub.companyGrade?.feedback && (
+                                                                            <div className="mt-4 rounded-2xl bg-emerald-50/60 border border-emerald-100 px-5 py-4">
+                                                                                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-600 mb-2">Supervisor Feedback</p>
+                                                                                <p className="text-sm text-slate-700 font-medium leading-relaxed">{sub.companyGrade.feedback}</p>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     );
@@ -564,31 +681,37 @@ const StudentDashboard = () => {
                                             </div>
                                         )}
 
+                                        {/* Performance Report */}
                                         {myReport && (
-                                            <div className="rounded-[2.5rem] border border-teal-100 bg-teal-50/20 p-12 shadow-sm border-l-8 border-l-teal-500">
+                                            <div className="rounded-[2.5rem] border border-teal-100 bg-gradient-to-br from-teal-50/30 to-white p-10 shadow-sm">
                                                 <div className="flex items-center gap-3 mb-8">
-                                                    <Shield className="w-5 h-5 text-teal-600" />
-                                                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-teal-600">Performance Assessment Record</p>
-                                                </div>
-                                                <div className="flex items-start justify-between gap-8 mb-10">
-                                                    <p className="text-lg font-medium text-slate-700 leading-relaxed max-w-2xl">{myReport.summary}</p>
-                                                    <div className="text-center">
-                                                        <div className={`text-5xl font-black mb-1 p-4 rounded-3xl bg-white shadow-xl shadow-teal-500/10 border border-teal-50 ${myReport.overallRating >= 75 ? 'text-emerald-600' : myReport.overallRating >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
-                                                            {myReport.overallRating}
-                                                        </div>
-                                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-3">Final Index</p>
+                                                    <div className="h-10 w-10 rounded-2xl bg-teal-600 flex items-center justify-center">
+                                                        <Shield className="w-5 h-5 text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[11px] font-black uppercase tracking-[0.3em] text-teal-600">Performance Report</p>
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Issued by your supervisor</p>
                                                     </div>
                                                 </div>
-                                                <div className="flex gap-6 mb-10">
-                                                    <div className="bg-white/60 px-5 py-3 rounded-2xl border border-teal-50 text-[10px] font-black uppercase tracking-widest text-teal-600">{myReport.recommendation?.replace('_', ' ')}</div>
-                                                    <div className="bg-white/60 px-5 py-3 rounded-2xl border border-teal-50 text-[10px] font-black uppercase tracking-widest text-slate-600">{myReport.completionStatus}</div>
+                                                <div className="flex items-start justify-between gap-8 mb-8">
+                                                    <p className="text-base font-medium text-slate-600 leading-relaxed max-w-2xl">{myReport.summary}</p>
+                                                    <div className="shrink-0 text-center bg-white rounded-3xl border border-teal-100 shadow-xl shadow-teal-500/10 p-6">
+                                                        <p className={`text-5xl font-black mb-1 ${myReport.overallRating >= 75 ? 'text-emerald-600' : myReport.overallRating >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
+                                                            {myReport.overallRating}
+                                                        </p>
+                                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Overall Score</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-4 mb-8">
+                                                    <span className="bg-teal-50 border border-teal-100 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-teal-600">{myReport.recommendation?.replace('_', ' ')}</span>
+                                                    <span className="bg-slate-50 border border-slate-100 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600">{myReport.completionStatus}</span>
                                                 </div>
                                                 {myReport.scores && (
-                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                                         {Object.entries(myReport.scores).map(([k, v]: [string, any]) => (
-                                                            <div key={k} className="bg-white rounded-[1.75rem] p-6 border border-teal-50 shadow-sm text-center transform transition-transform hover:scale-105">
-                                                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">{k}</p>
-                                                                <p className="text-3xl font-black text-teal-600 tracking-tighter">{v}</p>
+                                                            <div key={k} className="bg-white rounded-2xl p-5 border border-teal-50 shadow-sm text-center">
+                                                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">{k}</p>
+                                                                <p className="text-3xl font-black text-teal-600">{v}</p>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -597,6 +720,8 @@ const StudentDashboard = () => {
                                         )}
                                     </div>
                                 )}
+
+
 
                                 {activeTab === 'profile' && (
                                     <div className="max-w-2xl mx-auto space-y-12 py-12 text-center">

@@ -1,0 +1,58 @@
+[
+  {
+    "_id": "699b2e7aa475792035cadd70",
+    "title": "Unit Test Coverage",
+    "description": "Achieve 80% unit test coverage for the assigned microservice.",
+    "deadline": "2026-03-23T16:27:38.219Z",
+    "createdBy": "699b2e79a475792035cadd62",
+    "company": "NetSol Technologies",
+    "assignedTo": null,
+    "maxMarks": 100,
+    "status": "active",
+    "createdAt": "2026-02-22T16:27:38.219Z",
+    "updatedAt": "2026-02-22T16:27:38.219Z",
+    "__v": 0
+  },
+  {
+    "_id": "699b2e7aa475792035cadd72",
+    "title": "CI/CD Pipeline Setup",
+    "description": "Set up GitHub Actions workflow for automated testing and deployment.",
+    "deadline": "2026-03-08T16:27:38.220Z",
+    "createdBy": "699b2e79a475792035cadd62",
+    "company": "NetSol Technologies",
+    "assignedTo": null,
+    "maxMarks": 100,
+    "status": "active",
+    "createdAt": "2026-02-22T16:27:38.220Z",
+    "updatedAt": "2026-02-22T16:27:38.220Z",
+    "__v": 0
+  },
+  {
+    "_id": "699b2e7aa475792035cadd74",
+    "title": "Mobile Responsiveness Fix",
+    "description": "Ensure all pages are fully responsive on mobile and tablet breakpoints.",
+    "deadline": "2026-03-16T16:27:38.221Z",
+    "createdBy": "699b2e79a475792035cadd62",
+    "company": "NetSol Technologies",
+    "assignedTo": null,
+    "maxMarks": 70,
+    "status": "active",
+    "createdAt": "2026-02-22T16:27:38.221Z",
+    "updatedAt": "2026-02-22T16:27:38.221Z",
+    "__v": 0
+  },
+  {
+    "_id": "699b3e8c694fcc8b2a2b23f0",
+    "title": "Weekly progress report",
+    "description": "testing",
+    "deadline": "2026-03-04T00:00:00.000Z",
+    "createdBy": "699b2e79a475792035cadd62",
+    "company": "NetSol Technologies",
+    "assignedTo": "699b2e7aa475792035cadd8c",
+    "maxMarks": 100,
+    "status": "active",
+    "createdAt": "2026-02-22T17:36:12.513Z",
+    "updatedAt": "2026-02-22T17:36:12.513Z",
+    "__v": 0
+  }
+]

@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import {
     LayoutDashboard, Users, FileText, ClipboardList,
-    LogOut, Plus, Loader2, Star, BookOpen, Award, CheckCircle2, Pencil
+    LogOut, Plus, Loader2, Star, BookOpen, Award, CheckCircle2, Pencil, Building2, X
 } from 'lucide-react';
 
 import API from '../config/api';
@@ -51,6 +51,11 @@ const FacultyDashboard = () => {
     const [gradeForm, setGradeForm] = useState({ marks: '', feedback: '' });
     const [gradeLoading, setGradeLoading] = useState(false);
     const [gradeError, setGradeError] = useState('');
+
+    const [showAddCompanyModal, setShowAddCompanyModal] = useState(false);
+    const [newCompany, setNewCompany] = useState({ name: '', email: '', website: '', phone: '', address: '' });
+    const [companyLoading, setCompanyLoading] = useState(false);
+    const [companyError, setCompanyError] = useState('');
 
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
@@ -119,6 +124,23 @@ const FacultyDashboard = () => {
             setReportError(err?.response?.data?.message || 'Failed to save report.');
         } finally {
             setReportLoading(false);
+        }
+    };
+
+    const handleCreateCompany = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setCompanyLoading(true);
+        setCompanyError('');
+        try {
+            const { data } = await axios.post(`${API_BASE}/companies`, newCompany, config);
+            if (data.success) {
+                setShowAddCompanyModal(false);
+                setNewCompany({ name: '', email: '', website: '', phone: '', address: '' });
+            }
+        } catch (err: any) {
+            setCompanyError(err?.response?.data?.message || 'Failed to add company.');
+        } finally {
+            setCompanyLoading(false);
         }
     };
 
@@ -194,14 +216,24 @@ const FacultyDashboard = () => {
                 ) : (
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-6xl mx-auto space-y-8">
 
-                        <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-teal-500 mb-1">Faculty Portal</p>
-                            <h1 className="text-3xl font-black text-slate-900">
-                                {activeTab === 'overview' && 'Dashboard'}
-                                {activeTab === 'students' && 'My Students'}
-                                {activeTab === 'submissions' && 'Student Submissions'}
-                                {activeTab === 'reports' && 'Internship Reports'}
-                            </h1>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-teal-500 mb-1">Faculty Portal</p>
+                                <h1 className="text-3xl font-black text-slate-900">
+                                    {activeTab === 'overview' && 'Dashboard'}
+                                    {activeTab === 'students' && 'My Students'}
+                                    {activeTab === 'submissions' && 'Student Submissions'}
+                                    {activeTab === 'reports' && 'Internship Reports'}
+                                </h1>
+                            </div>
+                            {activeTab === 'overview' && (
+                                <button
+                                    onClick={() => setShowAddCompanyModal(true)}
+                                    className="h-12 px-6 rounded-2xl bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-xl shadow-teal-100 flex items-center gap-2"
+                                >
+                                    <Building2 className="h-4 w-4" /> Add Partner
+                                </button>
+                            )}
                         </div>
 
                         {activeTab === 'overview' && (
@@ -493,6 +525,43 @@ const FacultyDashboard = () => {
                                         {gradeLoading ? 'Saving...' : 'Submit Grade'}
                                     </button>
                                 </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {showAddCompanyModal && (
+                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setShowAddCompanyModal(false)}>
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl" onClick={e => e.stopPropagation()}>
+                            <div className="flex items-center justify-between mb-8">
+                                <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest italic">Add Partner</h3>
+                                <button onClick={() => setShowAddCompanyModal(false)} className="h-8 w-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-900 transition-all"><X className="h-4 w-4" /></button>
+                            </div>
+                            <form onSubmit={handleCreateCompany} className="space-y-6">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Company Name</label>
+                                    <input required value={newCompany.name} onChange={e => setNewCompany({ ...newCompany, name: e.target.value })} className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-teal-100 transition-all" placeholder="e.g. Google" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Industry Email (Optional)</label>
+                                    <input type="email" value={newCompany.email} onChange={e => setNewCompany({ ...newCompany, email: e.target.value })} className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-teal-100 transition-all" placeholder="hr@company.com" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Website</label>
+                                        <input value={newCompany.website} onChange={e => setNewCompany({ ...newCompany, website: e.target.value })} className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-teal-100 transition-all" placeholder="company.com" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Phone</label>
+                                        <input value={newCompany.phone} onChange={e => setNewCompany({ ...newCompany, phone: e.target.value })} className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-teal-100 transition-all" placeholder="+1..." />
+                                    </div>
+                                </div>
+                                {companyError && <p className="text-xs font-bold text-red-500 bg-red-50 p-4 rounded-xl">{companyError}</p>}
+                                <button type="submit" disabled={companyLoading} className="w-full h-12 rounded-xl bg-teal-600 text-white text-[11px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-xl shadow-teal-100 active:scale-95 disabled:opacity-50">
+                                    {companyLoading ? 'Processing...' : 'Register Partner'}
+                                </button>
                             </form>
                         </motion.div>
                     </div>

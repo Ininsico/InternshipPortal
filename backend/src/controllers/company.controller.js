@@ -24,6 +24,12 @@ const createTask = async (req, res) => {
         const { title, description, deadline, maxMarks, assignedTo } = req.body;
         const companyName = req.admin.company;
 
+        // Check if any students are assigned to this company
+        const studentsCount = await Student.countDocuments({ assignedCompany: companyName, internshipStatus: 'internship_assigned' });
+        if (studentsCount === 0) {
+            return res.status(403).json({ success: false, message: 'You cannot create tasks until students are assigned to your company.' });
+        }
+
         if (!title || !description || !deadline) {
             return res.status(400).json({ success: false, message: 'title, description, and deadline are required.' });
         }

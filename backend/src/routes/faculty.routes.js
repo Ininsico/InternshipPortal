@@ -7,6 +7,7 @@ const {
     createReport,
     getMyReports,
 } = require('../controllers/faculty.controller');
+const { createCompany } = require('../controllers/admin.controller');
 const { protect, requireRole, loadAdmin } = require('../middleware/auth.middleware');
 const Report = require('../models/Report.model');
 
@@ -109,6 +110,7 @@ router.post('/reports', createReport);
  *         description: Success
  */
 router.get('/reports', getMyReports);
+router.post('/companies', createCompany);
 
 /**
  * @openapi

@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { protect, requireRole } = require('../middleware/auth.middleware');
 const {
     createAdmin,
     getAllAdmins,
@@ -15,12 +16,18 @@ const {
     deleteStudent,
     updateAdmin,
     changeSupervisor,
-    getPartneredCompanies
+    getPartneredCompanies,
+    getCompanyAdmins,
+    createCompany,
+    deleteCompany,
+    updateStudentInternship,
+    getStudentPlacementContext
 } = require('../controllers/admin.controller');
-const { protect, requireRole } = require('../middleware/auth.middleware');
-const Report = require('../models/Report.model');
 
 router.use(protect);
+
+router.put('/students/:studentId/internship', requireRole('super_admin'), updateStudentInternship);
+router.get('/students/:studentId/placement-context', requireRole('super_admin'), getStudentPlacementContext);
 
 /**
  * @openapi
@@ -112,6 +119,7 @@ router.post('/create-admin', requireRole('super_admin'), createAdmin);
  *         description: Success
  */
 router.get('/faculty', requireRole('super_admin'), getAllAdmins);
+router.get('/company-admins', requireRole('super_admin'), getCompanyAdmins);
 
 /**
  * @openapi
@@ -223,6 +231,8 @@ router.get('/verified-students', requireRole('super_admin'), getVerifiedStudents
  *     tags: [Admin]
  */
 router.get('/partnered-companies', requireRole('super_admin'), getPartneredCompanies);
+router.post('/companies', requireRole('admin', 'super_admin'), createCompany);
+router.delete('/companies/:companyId', requireRole('super_admin'), deleteCompany);
 
 /**
  * @openapi
@@ -243,7 +253,11 @@ router.post('/assign-internship', requireRole('super_admin'), assignInternship);
 router.get('/reports', requireRole('super_admin'), async (req, res) => {
     try {
         const reports = await Report.find()
-            .populate('student', 'name rollNumber degree assignedCompany assignedPosition')
+            .populate({
+                path: 'student',
+                select: 'name rollNumber degree assignedCompany assignedPosition siteSupervisorName siteSupervisorEmail siteSupervisorPhone supervisorId',
+                populate: { path: 'supervisorId', select: 'name email' }
+            })
             .populate('createdBy', 'name email')
             .sort({ updatedAt: -1 });
         res.json({ success: true, reports });

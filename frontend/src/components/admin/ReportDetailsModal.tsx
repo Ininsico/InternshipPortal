@@ -74,18 +74,37 @@ const ReportDetailsModal = ({
                                     </section>
                                 </div>
 
+                                <div className="grid grid-cols-2 gap-10 border-t border-slate-100 pt-10">
+                                    <section>
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 italic">Site Supervisor (Company)</h4>
+                                        <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+                                            <p className="text-sm font-black text-slate-900">{selectedReport.student?.siteSupervisorName || 'Not Assigned'}</p>
+                                            <p className="text-[10px] font-bold text-blue-600 mt-1">{selectedReport.student?.siteSupervisorEmail || 'No Email'}</p>
+                                            <p className="text-[10px] font-bold text-slate-400 mt-0.5">{selectedReport.student?.siteSupervisorPhone || 'No Phone'}</p>
+                                        </div>
+                                    </section>
+                                    <section>
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 italic">Assigned Faculty (CU)</h4>
+                                        <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
+                                            <p className="text-sm font-black text-slate-900">{selectedReport.student?.supervisorId?.name || 'Not Assigned'}</p>
+                                            <p className="text-[10px] font-bold text-indigo-600 mt-1">{selectedReport.student?.supervisorId?.email || 'No Email'}</p>
+                                            <p className="text-[10px] font-black text-indigo-400 mt-2 uppercase tracking-widest text-[8px]">Current Assigned Faculty</p>
+                                        </div>
+                                    </section>
+                                </div>
+
                                 <section className="bg-slate-900 text-white rounded-3xl p-8 mt-10">
-                                    <h4 className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-4 italic">Supervisor Meta Information</h4>
+                                    <h4 className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-4 italic">Report Submitter Information</h4>
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-4">
                                             <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center font-black text-xl">{selectedReport.createdBy?.name?.charAt(0)}</div>
                                             <div>
                                                 <p className="text-sm font-black">{selectedReport.createdBy?.name}</p>
-                                                <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Faculty Official</p>
+                                                <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">Faculty Member who evaluated</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-white/30">Submitted on</p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-white/30">Last Updated</p>
                                             <p className="text-xs font-bold mt-1">{new Date(selectedReport.updatedAt).toLocaleDateString() || 'N/A'}</p>
                                         </div>
                                     </div>

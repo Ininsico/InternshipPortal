@@ -138,7 +138,8 @@ const getMyTasks = async (req, res) => {
         const tasks = await Task.find({
             company: student.assignedCompany,
             status: 'active',
-            $or: [{ assignedTo: req.user.id }, { assignedTo: null }]
+            $or: [{ assignedTo: req.user.id }, { assignedTo: null }],
+            createdAt: { $gte: student.internshipAssignedAt || new Date(0) }
         })
             .populate('createdBy', 'name company')
             .sort({ deadline: 1 });

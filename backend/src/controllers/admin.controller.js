@@ -8,6 +8,7 @@ const Report = require('../models/Report.model');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { sendEmail, staffInvitationTemplate } = require('../utils/email.util');
+const Company = require('../models/Company.model');
 
 const createAdmin = async (req, res) => {
     try {
@@ -25,6 +26,14 @@ const createAdmin = async (req, res) => {
         const resetToken = crypto.randomBytes(32).toString('hex');
         const resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
         const resetPasswordExpire = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
+
+        if (role === 'company_admin' && company) {
+            // Ensure a Company record exists for this name
+            const companyExists = await Company.findOne({ name: new RegExp(`^${company}$`, 'i') });
+            if (!companyExists) {
+                await Company.create({ name: company, email: email, isPartnered: true });
+            }
+        }
 
         const admin = await Admin.create({
             name,
@@ -59,14 +68,26 @@ const createAdmin = async (req, res) => {
     }
 };
 
-
-const Agreement = require('../models/Agreement.model');
-
 const getAllAdmins = async (req, res) => {
     try {
+        console.log('GET /faculty - Fetching all faculty admins');
         const admins = await Admin.find({ role: 'admin' }).select('-passwordHash');
+        console.log(`Found ${admins.length} faculty admins`);
         res.json({ success: true, admins });
     } catch (err) {
+        console.error('Error in getAllAdmins:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+const getCompanyAdmins = async (req, res) => {
+    try {
+        console.log('GET /company-admins - Fetching company admins');
+        const admins = await Admin.find({ role: 'company_admin' }).select('-passwordHash');
+        console.log(`Found ${admins.length} company admins`);
+        res.json({ success: true, admins });
+    } catch (err) {
+        console.error('Error in getCompanyAdmins:', err);
         res.status(500).json({ success: false, message: err.message });
     }
 };
@@ -82,9 +103,10 @@ const getAllStudents = async (req, res) => {
 
         // Enhance each student with their current status in the pipeline
         const enhancedStudents = await Promise.all(students.map(async (stu) => {
-            const [application, agreement] = await Promise.all([
+            const [application, agreement, report] = await Promise.all([
                 Application.findOne({ studentId: stu._id }).sort({ createdAt: -1 }),
-                Agreement.findOne({ studentId: stu._id }).sort({ createdAt: -1 })
+                Agreement.findOne({ studentId: stu._id }).sort({ createdAt: -1 }),
+                Report.findOne({ student: stu._id })
             ]);
 
             return {
@@ -93,7 +115,10 @@ const getAllStudents = async (req, res) => {
                     hasApplication: !!application,
                     applicationStatus: application?.status || 'none',
                     hasAgreement: !!agreement,
-                    agreementStatus: agreement?.status || 'none'
+                    agreementStatus: agreement?.status || 'none',
+                    hasReport: !!report,
+                    reportStatus: report?.completionStatus || 'none',
+                    reportRating: report?.overallRating || null
                 }
             };
         }));
@@ -130,10 +155,8 @@ const assignStudentToSupervisor = async (req, res) => {
 const getDashboardStats = async (req, res) => {
     try {
         const totalStudents = await Student.countDocuments({ degree: { $in: ALLOWED_DEGREES } });
-
-        // Count unique students by roll number to ensure total accuracy
         const activeAggregation = await Application.aggregate([
-            { $match: { status: { $in: ['pending', 'in_progress'] } } },
+            { $match: { status: 'pending' } },
             {
                 $lookup: {
                     from: 'students',
@@ -143,83 +166,71 @@ const getDashboardStats = async (req, res) => {
                 }
             },
             { $unwind: '$student' },
+            { $match: { 'student.degree': { $in: ALLOWED_DEGREES } } },
             { $group: { _id: '$student.rollNumber' } },
             { $count: 'count' }
         ]);
 
-        const completedAggregation = await Application.aggregate([
-            { $match: { status: 'completed' } },
-            {
-                $lookup: {
-                    from: 'students',
-                    localField: 'studentId',
-                    foreignField: '_id',
-                    as: 'student'
-                }
-            },
-            { $unwind: '$student' },
-            { $group: { _id: '$student.rollNumber' } },
-            { $count: 'count' }
-        ]);
+        const assignedPlacementsCount = await Student.countDocuments({
+            degree: { $in: ALLOWED_DEGREES },
+            internshipStatus: 'internship_assigned'
+        });
 
         const activeCount = activeAggregation[0]?.count || 0;
-        const completedCount = completedAggregation[0]?.count || 0;
 
-        // Get count of pending agreements - specifically for allowed degrees
         const pendingAgreementsCount = await Student.countDocuments({
             internshipStatus: 'agreement_submitted',
             degree: { $in: ALLOWED_DEGREES }
         });
 
-        // Get unique recent activities - Grouped by roll number + Status Prioritization
-        const recentActivity = await Application.aggregate([
-            // 1. Sort by status (alphabetical 'approved' comes before 'pending') and then date
-            { $sort: { status: 1, createdAt: -1 } },
-            {
-                $lookup: {
-                    from: 'students',
-                    localField: 'studentId',
-                    foreignField: '_id',
-                    as: 'studentInfo'
-                }
-            },
-            { $unwind: '$studentInfo' },
-            {
-                $group: {
-                    _id: '$studentInfo.rollNumber',
-                    application: { $first: '$$ROOT' },
-                    studentName: { $first: '$studentInfo.name' },
-                    studentId: { $first: '$studentInfo._id' }
-                }
-            },
-            // 2. Limit to most recent unique students
-            { $sort: { 'application.createdAt': -1 } },
-            { $limit: 5 },
-            {
-                $project: {
-                    _id: '$application._id',
-                    studentId: {
-                        _id: '$studentId',
-                        name: '$studentName'
-                    },
-                    companyName: '$application.companyName',
-                    position: '$application.position',
-                    status: '$application.status',
-                    createdAt: '$application.createdAt'
-                }
-            }
+        // Get unique recent activities from multiple sources for a "Live" feel
+        // We populate and filter by ALLOWED_DEGREES to stay consistent
+        const [recentAppsRaw, recentAgreementsRaw, recentSubmissionsRaw] = await Promise.all([
+            Application.find()
+                .populate({ path: 'studentId', select: 'name degree' })
+                .sort({ createdAt: -1 })
+                .limit(20)
+                .lean(),
+            Agreement.find()
+                .populate({ path: 'studentId', select: 'name degree' })
+                .sort({ createdAt: -1 })
+                .limit(20)
+                .lean(),
+            Submission.find()
+                .populate({ path: 'student', select: 'name degree' })
+                .sort({ createdAt: -1 })
+                .limit(20)
+                .lean()
         ]);
+
+        const filteredApps = recentAppsRaw.filter(a => a.studentId && ALLOWED_DEGREES.includes(a.studentId.degree)).slice(0, 5);
+        const filteredAgreements = recentAgreementsRaw.filter(a => a.studentId && ALLOWED_DEGREES.includes(a.studentId.degree)).slice(0, 5);
+        const filteredSubmissions = recentSubmissionsRaw.filter(s => s.student && ALLOWED_DEGREES.includes(s.student.degree)).slice(0, 5);
+
+        const activities = [
+            ...filteredApps.map(a => ({
+                message: `${a.studentId?.name || 'Student'} applied for ${a.position} at ${a.companyName}`,
+                timestamp: a.createdAt
+            })),
+            ...filteredAgreements.map(a => ({
+                message: `${a.studentId?.name || 'Student'} submitted placement agreement`,
+                timestamp: a.createdAt
+            })),
+            ...filteredSubmissions.map(s => ({
+                message: `${s.student?.name || 'Student'} logged new task submission`,
+                timestamp: s.createdAt
+            }))
+        ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5);
 
         res.json({
             success: true,
             stats: {
                 totalStudents,
                 activeApplications: activeCount,
-                completedPlacements: completedCount,
-                pendingAgreements: pendingAgreementsCount,
-                placementRate: totalStudents > 0 ? Math.round((completedCount / totalStudents) * 100) : 0
+                completedPlacements: assignedPlacementsCount,
+                pendingAgreements: pendingAgreementsCount
             },
-            recentActivity
+            recentActivity: activities
         });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -263,10 +274,13 @@ const getPendingAgreements = async (req, res) => {
             .select('name rollNumber degree email')
             .lean();
 
-        const agreements = await Agreement.find({ status: 'submitted' })
+        const agreementsRaw = await Agreement.find({ status: 'submitted' })
             .populate('studentId', 'name rollNumber degree email')
             .populate('applicationId', 'companyName position internshipType')
             .lean();
+
+        // Only include agreements for students in allowed degrees
+        const agreements = agreementsRaw.filter(a => a.studentId && ALLOWED_DEGREES.includes(a.studentId.degree));
 
         res.json({ success: true, agreements });
     } catch (err) {
@@ -332,7 +346,64 @@ const getVerifiedStudents = async (req, res) => {
 const getPartneredCompanies = async (req, res) => {
     try {
         const companyAdmins = await Admin.find({ role: 'company_admin' }).select('name email company').lean();
-        res.json({ success: true, companies: companyAdmins });
+        const manualCompanies = await Company.find().lean();
+
+        // Merge them. Use a Map to avoid duplicates by name
+        const companiesMap = new Map();
+
+        manualCompanies.forEach(c => {
+            companiesMap.set(c.name.toLowerCase(), {
+                _id: c._id,
+                company: c.name,
+                email: c.email || '—',
+                name: 'Manual Entry',
+                isManual: true,
+                website: c.website,
+                phone: c.phone
+            });
+        });
+
+        companyAdmins.forEach(admin => {
+            const key = (admin.company || '').toLowerCase();
+            if (!key) return;
+
+            if (companiesMap.has(key)) {
+                // If the company already exists in the manual list, keep the Company ID but update the rep info
+                const existing = companiesMap.get(key);
+                companiesMap.set(key, {
+                    ...existing,
+                    name: admin.name,
+                    email: admin.email,
+                    isManual: false // It has a representative now
+                });
+            } else {
+                // If it doesn't exist in the manual list, use the Admin ID (Virtual record)
+                companiesMap.set(key, {
+                    _id: admin._id,
+                    company: admin.company,
+                    email: admin.email,
+                    name: admin.name,
+                    isManual: false
+                });
+            }
+        });
+
+        res.json({ success: true, companies: Array.from(companiesMap.values()) });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+const createCompany = async (req, res) => {
+    try {
+        const { name, email, website, phone, address } = req.body;
+        if (!name) return res.status(400).json({ success: false, message: 'Company name is required.' });
+
+        const exists = await Company.findOne({ name: new RegExp(`^${name}$`, 'i') });
+        if (exists) return res.status(400).json({ success: false, message: 'Company already exists in the system.' });
+
+        const company = await Company.create({ name, email, website, phone, address });
+        res.status(201).json({ success: true, message: 'Company added successfully.', company });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -374,6 +445,7 @@ const assignInternship = async (req, res) => {
         student.siteSupervisorEmail = siteSupervisorEmail || null;
         student.siteSupervisorPhone = siteSupervisorPhone || null;
         student.internshipStatus = 'internship_assigned';
+        student.internshipAssignedAt = new Date();
         await student.save();
 
         // Mark the student's application as in_progress
@@ -499,7 +571,6 @@ const updateAdmin = async (req, res) => {
     }
 };
 
-// Reassign a student to a different faculty supervisor
 const changeSupervisor = async (req, res) => {
     try {
         const { studentId, newSupervisorId } = req.body;
@@ -533,9 +604,134 @@ const changeSupervisor = async (req, res) => {
     }
 };
 
+const deleteCompany = async (req, res) => {
+    try {
+        const { companyId } = req.params;
+
+        // 1. Check if it's a manual company entry in the Company model
+        const company = await Company.findById(companyId);
+        if (company) {
+            const companyName = company.name;
+            // Clear student assignments for this company name
+            await Student.updateMany(
+                { assignedCompany: companyName },
+                { $set: { assignedCompany: null, assignedPosition: null, internshipStatus: 'verified' } }
+            );
+
+            await Company.findByIdAndDelete(companyId);
+            return res.json({ success: true, message: `Partnered company "${companyName}" removed correctly.` });
+        }
+
+        // 2. Fallback: If they provided an Admin ID (legacy or edge case)
+        const admin = await Admin.findById(companyId);
+        if (admin && admin.role === 'company_admin') {
+            return res.status(400).json({
+                success: false,
+                message: `This item is actually a Representative profile ("${admin.name}"). To delete it, please use the User Management tab.`
+            });
+        }
+
+        res.status(404).json({ success: false, message: 'Company record not found.' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+const updateStudentInternship = async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const { assignedCompany, assignedPosition, siteSupervisorName, siteSupervisorEmail, siteSupervisorPhone, internshipStatus } = req.body;
+
+        const student = await Student.findById(studentId);
+        if (!student) return res.status(404).json({ success: false, message: 'Student not found.' });
+
+        student.assignedCompany = assignedCompany !== undefined ? assignedCompany : student.assignedCompany;
+        student.assignedPosition = assignedPosition !== undefined ? assignedPosition : student.assignedPosition;
+        student.siteSupervisorName = siteSupervisorName !== undefined ? siteSupervisorName : student.siteSupervisorName;
+        student.siteSupervisorEmail = siteSupervisorEmail !== undefined ? siteSupervisorEmail : student.siteSupervisorEmail;
+        student.siteSupervisorPhone = siteSupervisorPhone !== undefined ? siteSupervisorPhone : student.siteSupervisorPhone;
+
+        if (internshipStatus) {
+            student.internshipStatus = internshipStatus;
+            if (internshipStatus === 'internship_assigned' && !student.internshipAssignedAt) {
+                student.internshipAssignedAt = new Date();
+            }
+        }
+
+        await student.save();
+        res.json({ success: true, message: 'Student internship details updated successfully.', student });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// GET /api/admin/students/:studentId/placement-context
+// Returns student application + agreement + all partnered companies for smart modal auto-fill
+const getStudentPlacementContext = async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const [application, agreement, manualCompanies, companyAdmins] = await Promise.all([
+            Application.findOne({ studentId }).sort({ createdAt: -1 }),
+            Agreement.findOne({ studentId }),
+            Company.find().lean(),
+            Admin.find({ role: 'company_admin' }).select('name email company').lean()
+        ]);
+
+        const companiesMap = new Map();
+        manualCompanies.forEach(c => {
+            companiesMap.set(c.name.toLowerCase(), {
+                _id: c._id,
+                name: c.name,
+                email: c.email || '—',
+                website: c.website,
+                phone: c.phone,
+                isManual: true
+            });
+        });
+
+        companyAdmins.forEach(admin => {
+            const key = (admin.company || '').toLowerCase();
+            if (!key) return;
+            if (companiesMap.has(key)) {
+                const existing = companiesMap.get(key);
+                companiesMap.set(key, { ...existing, isManual: false });
+            } else {
+                companiesMap.set(key, {
+                    _id: admin._id,
+                    name: admin.company,
+                    email: admin.email,
+                    isManual: false
+                });
+            }
+        });
+
+        res.json({
+            success: true,
+            application: application ? {
+                companyName: application.companyName,
+                position: application.position,
+                internshipType: application.internshipType,
+                status: application.status,
+            } : null,
+            agreement: agreement ? {
+                supervisorName: agreement.supervisorName,
+                supervisorEmail: agreement.supervisorEmail,
+                supervisorPhone: agreement.supervisorPhone,
+                supervisorDesignation: agreement.supervisorDesignation,
+                companyAddress: agreement.companyAddress,
+                sourcingType: agreement.sourcingType,
+            } : null,
+            companies: Array.from(companiesMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 module.exports = {
     createAdmin,
     getAllAdmins,
+    getCompanyAdmins,
     getAllStudents,
     assignStudentToSupervisor,
     getDashboardStats,
@@ -548,6 +744,10 @@ module.exports = {
     deleteStudent,
     updateAdmin,
     changeSupervisor,
-    getPartneredCompanies
+    getPartneredCompanies,
+    createCompany,
+    deleteCompany,
+    updateStudentInternship,
+    getStudentPlacementContext
 };
 

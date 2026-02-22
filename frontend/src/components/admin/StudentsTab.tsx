@@ -1,4 +1,4 @@
-import { Briefcase, Trash2 } from 'lucide-react';
+import { Briefcase, Trash2, Building2, User, Mail, ShieldCheck, FileText, Star, Phone } from 'lucide-react';
 import StatusPill from '../StatusPill';
 
 interface StudentsTabProps {
@@ -8,6 +8,7 @@ interface StudentsTabProps {
     setChangeSupervisorTarget: (student: any) => void;
     setChangeSupervisorId: (id: string) => void;
     setDeleteStudentTarget: (student: any) => void;
+    setEditStudentTarget: (student: any) => void;
 }
 
 const StudentsTab = ({
@@ -16,7 +17,8 @@ const StudentsTab = ({
     setSelectedStudent,
     setChangeSupervisorTarget,
     setChangeSupervisorId,
-    setDeleteStudentTarget
+    setDeleteStudentTarget,
+    setEditStudentTarget
 }: StudentsTabProps) => {
     return (
         <div className="space-y-8">
@@ -37,103 +39,168 @@ const StudentsTab = ({
                 </div>
             </div>
 
-            <div className="rounded-[2.5rem] border border-slate-100 bg-white shadow-sm overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="border-b border-slate-50 bg-slate-50/30 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                            <th className="px-10 py-6">Student Information</th>
-                            <th className="px-10 py-6">Internship Status</th>
-                            <th className="px-10 py-6">Contract Status</th>
-                            <th className="px-10 py-6">Faculty Supervisor</th>
-                            <th className="px-10 py-6">Progress</th>
-                            <th className="px-10 py-6">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                        {students.map((stu: any) => (
-                            <tr key={stu._id} className="group hover:bg-slate-50/80 transition-all duration-300">
-                                <td className="px-10 py-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500 shadow-sm">
-                                            {stu.name[0]}
-                                        </div>
-                                        <div>
-                                            <p
-                                                className="text-sm font-black text-slate-900 group-hover:text-blue-600 transition-colors cursor-pointer"
-                                                onClick={() => setSelectedStudent(stu)}
-                                            >
-                                                {stu.name}
-                                            </p>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{stu.rollNumber} · {stu.degree}</p>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                {students.map((stu: any) => (
+                    <div key={stu._id} className="group relative rounded-[2.5rem] border border-slate-100 bg-white p-8 shadow-sm hover:border-blue-200 transition-all hover:shadow-2xl hover:shadow-blue-500/5 overflow-hidden">
+                        {/* Background Accent */}
+                        <div className="absolute top-0 right-0 h-32 w-32 bg-blue-50/50 rounded-bl-full -mr-16 -mt-16 group-hover:bg-blue-600/5 transition-colors" />
+
+                        <div className="relative z-10">
+                            {/* Student Header */}
+                            <div className="flex items-start justify-between mb-8">
+                                <div className="flex items-center gap-5">
+                                    <div className="h-16 w-16 rounded-3xl bg-slate-900 text-white flex items-center justify-center font-black text-xl shadow-xl shadow-slate-200 group-hover:bg-blue-600 group-hover:shadow-blue-200 transition-all duration-500">
+                                        {stu.name[0]}
+                                    </div>
+                                    <div>
+                                        <h4 className="text-lg font-black text-slate-900 group-hover:text-blue-600 transition-colors cursor-pointer leading-tight mb-1" onClick={() => setSelectedStudent(stu)}>
+                                            {stu.name}
+                                        </h4>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{stu.rollNumber} · {stu.degree}</p>
+                                        <div className="flex gap-2 mt-3">
+                                            <StatusPill status={stu.pipeline?.applicationStatus || 'none'} />
+                                            <StatusPill status={stu.pipeline?.agreementStatus || 'none'} />
                                         </div>
                                     </div>
-                                </td>
-                                <td className="px-10 py-6">
-                                    <StatusPill status={stu.pipeline?.applicationStatus || 'none'} />
-                                </td>
-                                <td className="px-10 py-6">
-                                    <StatusPill status={stu.pipeline?.agreementStatus || 'none'} />
-                                </td>
-                                <td className="px-10 py-6">
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-xs font-bold text-slate-600">
-                                            {stu.supervisorId?.name || (
-                                                <span className="text-amber-500 flex items-center gap-1.5 font-black uppercase text-[10px] tracking-widest bg-amber-50 px-2 py-1 rounded-lg border border-amber-100 italic">
-                                                    ⚠ Unassigned
-                                                </span>
-                                            )}
+                                </div>
+
+                                {isSuperAdmin && (
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setEditStudentTarget(stu)}
+                                            className="h-10 w-10 flex items-center justify-center rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                                            title="Edit Records"
+                                        >
+                                            <FileText className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setChangeSupervisorTarget(stu);
+                                                setChangeSupervisorId(stu.supervisorId?._id || '');
+                                            }}
+                                            className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all shadow-sm"
+                                            title="Manage Supervisor"
+                                        >
+                                            <Briefcase className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => setDeleteStudentTarget(stu)}
+                                            className="h-10 w-10 flex items-center justify-center rounded-xl bg-red-50 text-red-400 hover:bg-red-600 hover:text-white transition-all shadow-sm"
+                                            title="Delete Student"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* Internship Details Column */}
+                                <div className="space-y-6">
+                                    <div>
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-blue-600 mb-4 flex items-center gap-2 italic">
+                                            <Building2 className="h-3 w-3" /> Internship Placement
                                         </p>
+                                        {stu.assignedCompany ? (
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <p className="text-sm font-black text-slate-800 leading-tight">{stu.assignedCompany}</p>
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{stu.assignedPosition}</p>
+                                                </div>
+                                                <div className="space-y-2.5">
+                                                    <div className="flex items-center gap-2.5 text-[10px] font-bold text-slate-500">
+                                                        <User className="h-3.5 w-3.5 text-blue-400 shrink-0" /> {stu.siteSupervisorName || 'Supervisor N/A'}
+                                                    </div>
+                                                    <div className="flex items-center gap-2.5 text-[10px] font-bold text-slate-500 truncate">
+                                                        <Mail className="h-3.5 w-3.5 text-blue-400 shrink-0" /> {stu.siteSupervisorEmail || 'Email N/A'}
+                                                    </div>
+                                                    <div className="flex items-center gap-2.5 text-[10px] font-bold text-slate-500">
+                                                        <Phone className="h-3.5 w-3.5 text-blue-400 shrink-0" /> {stu.siteSupervisorPhone || 'No Contact'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="h-32 rounded-3xl bg-slate-50/50 border-2 border-dashed border-slate-100 flex items-center justify-center text-center p-6">
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 italic">No Internship Assigned Yet</p>
+                                            </div>
+                                        )}
                                     </div>
-                                </td>
-                                <td className="px-10 py-6">
-                                    <div className="w-32 space-y-2">
-                                        <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-slate-400">
-                                            <span>Pipe Status</span>
-                                            <span>
-                                                {stu.pipeline?.hasApplication && stu.pipeline?.hasAgreement && stu.supervisorId ? '100%' :
-                                                    stu.pipeline?.hasApplication && stu.pipeline?.hasAgreement ? '66%' :
-                                                        stu.pipeline?.hasApplication ? '33%' : '0%'}
-                                            </span>
-                                        </div>
-                                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                                            <div
-                                                className={`h-full transition-all duration-1000 bg-blue-600`}
-                                                style={{
-                                                    width: stu.pipeline?.hasApplication && stu.pipeline?.hasAgreement && stu.supervisorId ? '100%' :
-                                                        stu.pipeline?.hasApplication && stu.pipeline?.hasAgreement ? '66%' :
-                                                            stu.pipeline?.hasApplication ? '33%' : '0%'
-                                                }}
-                                            />
+                                </div>
+
+                                {/* Supervision & Reports Column */}
+                                <div className="space-y-6">
+                                    <div>
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-indigo-600 mb-4 flex items-center gap-2 italic">
+                                            <ShieldCheck className="h-3 w-3" /> Supervision Record
+                                        </p>
+                                        <div className="rounded-2xl bg-indigo-50/30 border border-indigo-100/50 p-4">
+                                            {stu.supervisorId ? (
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs">
+                                                        {stu.supervisorId.name[0]}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[11px] font-black text-slate-900">{stu.supervisorId.name}</p>
+                                                        <p className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest">{stu.supervisorId.email}</p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-3 italic">
+                                                    <div className="h-10 w-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
+                                                        <ShieldCheck className="h-5 w-5" />
+                                                    </div>
+                                                    <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Supervisor Unassigned</p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                </td>
-                                <td className="px-10 py-6">
-                                    {isSuperAdmin && (
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={() => {
-                                                    setChangeSupervisorTarget(stu);
-                                                    setChangeSupervisorId(stu.supervisorId?._id || '');
-                                                }}
-                                                className="h-10 px-4 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all active:scale-95 flex items-center gap-2 shadow-sm"
-                                            >
-                                                <Briefcase className="h-3.5 w-3.5" /> Manage
-                                            </button>
-                                            <button
-                                                onClick={() => setDeleteStudentTarget(stu)}
-                                                className="h-10 w-10 rounded-xl border border-red-100 text-red-400 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all flex items-center justify-center shadow-sm"
-                                                title="Hard Delete Student"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
+
+                                    <div>
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-emerald-600 mb-4 flex items-center gap-2 italic">
+                                            <FileText className="h-3 w-3" /> Academic Evaluation
+                                        </p>
+                                        <div className="flex flex-col gap-4">
+                                            <div className="flex items-center justify-between gap-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${stu.pipeline?.hasReport ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+                                                        <Star className="h-5 w-5" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">
+                                                            {stu.pipeline?.hasReport ? 'Grade Finalized' : 'Eval. Pending'}
+                                                        </p>
+                                                        <p className="text-[9px] font-bold text-slate-400 italic">
+                                                            {stu.pipeline?.hasReport ? `Assessed on ${new Date().toLocaleDateString()}` : 'No report submitted'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                {stu.pipeline?.hasReport && (
+                                                    <div className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest shadow-md shadow-emerald-200">
+                                                        {stu.pipeline.reportRating}%
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {stu.pipeline?.hasReport && (
+                                                <div className="p-3 bg-emerald-50/50 rounded-xl border border-emerald-100/50">
+                                                    <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-1 italic">Report Summary</p>
+                                                    <p className="text-[10px] font-bold text-slate-600 leading-relaxed italic">"Performance is {stu.pipeline.reportStatus}. Student has demonstrated solid competence in assigned tasks."</p>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ))}
             </div>
+
+            {students.length === 0 && (
+                <div className="py-32 text-center rounded-[3rem] border-2 border-dashed border-slate-100 bg-white/50">
+                    <User className="h-16 w-16 text-slate-200 mx-auto mb-4" />
+                    <p className="text-xs font-black uppercase tracking-widest text-slate-400">No student records found in current batch</p>
+                </div>
+            )}
         </div>
     );
 };

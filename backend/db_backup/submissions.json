@@ -1,0 +1,61 @@
+[
+  {
+    "_id": "699b2e7fa475792035cadf56",
+    "task": "699b2e7aa475792035cadd74",
+    "student": "699b2e7aa475792035cadd8c",
+    "content": "Query optimisation complete. Average response time reduced from 450ms to 210ms. Profiling report attached.",
+    "fileUrl": null,
+    "submittedAt": "2026-02-21T16:27:43.791Z",
+    "companyGrade": {
+      "marks": 54,
+      "feedback": "Excellent submission. Exceeded expectations.",
+      "gradedAt": "2026-02-18T16:27:43.791Z",
+      "gradedBy": "699b2e79a475792035cadd62"
+    },
+    "facultyGrade": {
+      "marks": 15,
+      "feedback": "this is optional",
+      "gradedAt": "2026-02-22T21:28:17.217Z",
+      "gradedBy": "699b71dc65abc88a83e2bab5"
+    },
+    "status": "fully_graded",
+    "createdAt": "2026-02-22T16:27:43.792Z",
+    "updatedAt": "2026-02-22T21:28:17.224Z",
+    "__v": 1,
+    "attachments": []
+  },
+  {
+    "_id": "699b5adb5be0ccdb3b0115b2",
+    "student": "699b2e7aa475792035cadd8c",
+    "task": "699b3e8c694fcc8b2a2b23f0",
+    "__v": 0,
+    "attachments": [
+      {
+        "filename": "files-1771789019573-399430322.pdf",
+        "originalname": "Internship Portal (1).pdf",
+        "path": "uploads/submissions/files-1771789019573-399430322.pdf",
+        "mimetype": "application/pdf",
+        "size": 4137984,
+        "url": "http://localhost:5000/uploads/submissions/files-1771789019573-399430322.pdf",
+        "_id": "699b5adbbd8b4588532c24a0"
+      }
+    ],
+    "companyGrade": {
+      "feedback": null,
+      "gradedAt": null,
+      "gradedBy": null,
+      "marks": null
+    },
+    "content": "Hi there",
+    "createdAt": "2026-02-22T19:36:59.749Z",
+    "facultyGrade": {
+      "marks": 60,
+      "feedback": "ok",
+      "gradedAt": "2026-02-22T22:01:25.476Z",
+      "gradedBy": "699b71dc65abc88a83e2bab5"
+    },
+    "status": "graded_by_faculty",
+    "submittedAt": "2026-02-22T19:36:59.748Z",
+    "updatedAt": "2026-02-22T22:01:25.489Z"
+  }
+]

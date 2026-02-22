@@ -59,6 +59,11 @@ const gradeSubmission = async (req, res) => {
         submission.status = submission.companyGrade?.marks != null ? 'fully_graded' : 'graded_by_faculty';
         await submission.save();
 
+        await submission.populate([
+            { path: 'student', select: 'name rollNumber degree assignedCompany assignedPosition' },
+            { path: 'task', select: 'title deadline maxMarks company' }
+        ]);
+
         res.json({ success: true, message: 'Submission graded.', submission });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });

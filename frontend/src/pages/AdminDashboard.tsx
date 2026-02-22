@@ -2,24 +2,22 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 
 import AdminSidebar from '../components/admin/AdminSidebar';
 import OverviewTab from '../components/admin/OverviewTab';
 import StudentsTab from '../components/admin/StudentsTab';
 import ReportsTab from '../components/admin/ReportsTab';
 import FacultyTab from '../components/admin/FacultyTab';
+import CompaniesTab from '../components/admin/CompaniesTab';
 import ApprovalsTab from '../components/admin/ApprovalsTab';
 import AgreementsTab from '../components/admin/AgreementsTab';
-import AssignmentsTab from '../components/admin/AssignmentsTab';
 import StudentProfileModal from '../components/admin/StudentProfileModal';
 import ReportDetailsModal from '../components/admin/ReportDetailsModal';
 import EditReportModal from '../components/admin/EditReportModal';
-import SubmissionsTab from '../components/admin/SubmissionsTab';
-import EditSubmissionGradeModal from '../components/admin/EditSubmissionGradeModal';
 import AdminDashboardModals from '../components/admin/AdminDashboardModals';
 
-type AdminTab = 'overview' | 'students' | 'faculty' | 'companies' | 'reports' | 'settings' | 'approvals' | 'agreements' | 'assignments' | 'submissions';
+type AdminTab = 'overview' | 'students' | 'reports' | 'faculty' | 'companies' | 'approvals' | 'agreements' | 'settings';
 
 import API from '../config/api';
 
@@ -39,12 +37,10 @@ const AdminDashboard = () => {
     const [students, setStudents] = useState<any[]>([]);
     const [faculty, setFaculty] = useState<any[]>([]);
     const [agreements, setAgreements] = useState<any[]>([]);
-    const [verifiedStudents, setVerifiedStudents] = useState<any[]>([]);
     const [recentActivity, setRecentActivity] = useState<any[]>([]);
     const [companyAdmins, setCompanyAdmins] = useState<any[]>([]);
     const [partneredCompanies, setPartneredCompanies] = useState<string[]>([]);
     const [reports, setReports] = useState<any[]>([]);
-    const [submissions, setSubmissions] = useState<any[]>([]);
 
     const [showAddAdminModal, setShowAddAdminModal] = useState(false);
     const [newAdmin, setNewAdmin] = useState({ name: '', email: '', role: 'admin', company: '' });
@@ -63,20 +59,25 @@ const AdminDashboard = () => {
     const [deleteStudentTarget, setDeleteStudentTarget] = useState<any | null>(null);
     const [deleteStudentLoading, setDeleteStudentLoading] = useState(false);
 
-    const [viewApp, setViewApp] = useState<any | null>(null);
-    const [viewAppLoading, setViewAppLoading] = useState(false);
-
-    const [assignTarget, setAssignTarget] = useState<any | null>(null);
-    const [assignForm, setAssignForm] = useState({
-        facultySupervisorId: '',
+    const [editStudentTarget, setEditStudentTarget] = useState<any | null>(null);
+    const [editStudentForm, setEditStudentForm] = useState({
         assignedCompany: '',
         assignedPosition: '',
         siteSupervisorName: '',
         siteSupervisorEmail: '',
-        siteSupervisorPhone: ''
+        siteSupervisorPhone: '',
+        internshipStatus: ''
     });
-    const [assignLoading, setAssignLoading] = useState(false);
-    const [assignError, setAssignError] = useState('');
+    const [editStudentLoading, setEditStudentLoading] = useState(false);
+    const [editStudentError, setEditStudentError] = useState('');
+
+    const [viewApp, setViewApp] = useState<any | null>(null);
+    const [viewAppLoading, setViewAppLoading] = useState(false);
+
+    const [showAddCompanyModal, setShowAddCompanyModal] = useState(false);
+    const [newCompany, setNewCompany] = useState({ name: '', email: '', website: '', phone: '', address: '' });
+    const [companyLoading, setCompanyLoading] = useState(false);
+    const [companyError, setCompanyError] = useState('');
 
     const [changeSupervisorTarget, setChangeSupervisorTarget] = useState<any | null>(null);
     const [changeSupervisorId, setChangeSupervisorId] = useState('');
@@ -87,11 +88,6 @@ const AdminDashboard = () => {
     const [editReportForm, setEditReportForm] = useState({ summary: '', overallRating: 0, recommendation: '', completionStatus: '', scores: {} });
     const [editReportLoading, setEditReportLoading] = useState(false);
     const [editReportError, setEditReportError] = useState('');
-
-    const [editSubmission, setEditSubmission] = useState<any | null>(null);
-    const [editSubmissionForm, setEditSubmissionForm] = useState({ facultyGrade: { marks: 0, feedback: '' }, companyGrade: { marks: 0, feedback: '' }, status: '' });
-    const [editSubmissionLoading, setEditSubmissionLoading] = useState(false);
-    const [editSubmissionError, setEditSubmissionError] = useState('');
 
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
@@ -114,30 +110,37 @@ const AdminDashboard = () => {
                 }
 
                 if (user?.role === 'super_admin') {
-                    const [facultyRes, agreementsRes, verifiedRes, companyAdminRes, reportsRes, partneredRes, submissionsRes] = await Promise.all([
+                    const results = await Promise.allSettled([
                         axios.get(`${API_BASE}/faculty`, config),
                         axios.get(`${API_BASE}/agreements`, config),
-                        axios.get(`${API_BASE}/verified-students`, config),
                         axios.get(`${API_BASE}/company-admins`, config),
                         axios.get(`${API_BASE}/reports`, config),
                         axios.get(`${API_BASE}/partnered-companies`, config),
-                        axios.get(`${API_BASE}/submissions`, config),
                     ]);
-                    if (facultyRes.data.success) setFaculty(facultyRes.data.admins);
-                    if (agreementsRes.data.success) setAgreements(agreementsRes.data.agreements);
-                    if (verifiedRes.data.success) setVerifiedStudents(verifiedRes.data.students);
-                    if (companyAdminRes.data.success) setCompanyAdmins(companyAdminRes.data.admins);
-                    if (reportsRes.data.success) setReports(reportsRes.data.reports);
-                    if (partneredRes.data.success) setPartneredCompanies(partneredRes.data.companies);
-                    if (submissionsRes.data.success) setSubmissions(submissionsRes.data.submissions);
-                } else if (user?.role === 'admin') {
-                    const FACULTY_API = API.FACULTY;
-                    const [subRes, repRes] = await Promise.all([
-                        axios.get(`${FACULTY_API}/submissions`, config),
-                        axios.get(`${FACULTY_API}/reports`, config),
-                    ]);
-                    if (subRes.data.success) setSubmissions(subRes.data.submissions);
-                    if (repRes.data.success) setReports(repRes.data.reports);
+
+                    const [facultyRes, agreementsRes, companyAdminRes, reportsRes, partneredRes] = results;
+
+                    if (facultyRes.status === 'fulfilled' && facultyRes.value.data.success) {
+                        console.log('Setting faculty:', facultyRes.value.data.admins);
+                        setFaculty(facultyRes.value.data.admins);
+                    }
+                    if (agreementsRes.status === 'fulfilled' && agreementsRes.value.data.success) setAgreements(agreementsRes.value.data.agreements);
+                    if (companyAdminRes.status === 'fulfilled' && companyAdminRes.value.data.success) {
+                        console.log('Setting company admins:', companyAdminRes.value.data.admins);
+                        setCompanyAdmins(companyAdminRes.value.data.admins);
+                    }
+                    if (reportsRes.status === 'fulfilled' && reportsRes.value.data.success) setReports(reportsRes.value.data.reports);
+                    if (partneredRes.status === 'fulfilled' && partneredRes.value.data.success) {
+                        console.log('Setting partnered companies:', partneredRes.value.data.companies);
+                        setPartneredCompanies(partneredRes.value.data.companies);
+                    }
+
+                    // Log failures for debugging
+                    results.forEach((res, idx) => {
+                        if (res.status === 'rejected') {
+                            console.error(`Request ${idx} failed:`, res.reason);
+                        }
+                    });
                 }
             } catch (err) {
                 console.error(err);
@@ -186,7 +189,16 @@ const AdminDashboard = () => {
         try {
             const { data } = await axios.delete(`${API_BASE}/faculty/${deleteFaculty._id}`, config);
             if (data.success) {
-                setFaculty(prev => prev.filter(f => f._id !== deleteFaculty._id));
+                if (deleteFaculty.role === 'company_admin') {
+                    setCompanyAdmins(prev => prev.filter(f => f._id !== deleteFaculty._id));
+                    // Also refresh partnered companies list so stale company cards are removed
+                    try {
+                        const companiesRes = await axios.get(`${API_BASE}/partnered-companies`, config);
+                        if (companiesRes.data.success) setPartneredCompanies(companiesRes.data.companies);
+                    } catch (_) { /* best effort */ }
+                } else {
+                    setFaculty(prev => prev.filter(f => f._id !== deleteFaculty._id));
+                }
                 setDeleteFaculty(null);
             }
         } catch (err) { console.error(err); }
@@ -208,6 +220,29 @@ const AdminDashboard = () => {
         finally { setDeleteStudentLoading(false); }
     };
 
+    const handleEditStudent = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editStudentTarget) return;
+        setEditStudentLoading(true);
+        setEditStudentError('');
+        try {
+            const { data } = await axios.put(`${API_BASE}/students/${editStudentTarget._id}/internship`, editStudentForm, config);
+            if (data.success) {
+                setStudents(prev => prev.map(s => s._id === editStudentTarget._id ? { ...s, ...data.student } : s));
+                setEditStudentTarget(null);
+                // Update stats
+                const statsRes = await axios.get(`${API_BASE}/stats`, config);
+                if (statsRes.data.success) setStats(statsRes.data.stats);
+            } else {
+                setEditStudentError(data.message);
+            }
+        } catch (err: any) {
+            setEditStudentError(err.response?.data?.message || 'Update failed');
+        } finally {
+            setEditStudentLoading(false);
+        }
+    };
+
     const handleApprove = async (studentId: string, status: string) => {
         try {
             const { data } = await axios.post(`${API_BASE}/approve-internship`, { studentId, status }, config);
@@ -219,31 +254,11 @@ const AdminDashboard = () => {
 
     const handleVerifyAgreement = async (agreementId: string, status: string) => {
         try {
-            const { data } = await axios.post(`${API_BASE}/verify-agreement`, { agreementId, status }, config);
-            if (data.success) {
-                setAgreements(prev => prev.filter(a => a._id !== agreementId));
-                if (status === 'verified') {
-                    const vRes = await axios.get(`${API_BASE}/verified-students`, config);
-                    if (vRes.data.success) setVerifiedStudents(vRes.data.students);
-                }
-            }
+            await axios.post(`${API_BASE}/verify-agreement`, { agreementId, status }, config);
+            setAgreements(prev => prev.filter(a => a._id !== agreementId));
         } catch (err) { console.error(err); }
     };
 
-    const handleAssignInternship = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setAssignLoading(true);
-        setAssignError('');
-        try {
-            const { data } = await axios.post(`${API_BASE}/assign-student`, { studentId: assignTarget._id, ...assignForm }, config);
-            if (data.success) {
-                setVerifiedStudents(prev => prev.filter(s => s._id !== assignTarget._id));
-                setAssignTarget(null);
-            }
-        } catch (err: any) {
-            setAssignError(err.response?.data?.message || 'Assignment failed');
-        } finally { setAssignLoading(false); }
-    };
 
     const handleChangeSupervisor = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -267,6 +282,49 @@ const AdminDashboard = () => {
             if (data.success) setViewApp(data.application);
         } catch (err) { console.error(err); }
         finally { setViewAppLoading(false); }
+    };
+
+    const handleCreateCompany = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setCompanyLoading(true);
+        setCompanyError('');
+        try {
+            const { data } = await axios.post(`${API_BASE}/companies`, newCompany, config);
+            if (data.success) {
+                setPartneredCompanies(prev => [...prev, { ...data.company, company: data.company.name, name: 'Manual Entry', isManual: true }]);
+                setShowAddCompanyModal(false);
+                setNewCompany({ name: '', email: '', website: '', phone: '', address: '' });
+            }
+        } catch (err: any) {
+            setCompanyError(err?.response?.data?.message || 'Failed to add company.');
+        } finally {
+            setCompanyLoading(false);
+        }
+    };
+
+    const handleDeleteCompany = async (id: string) => {
+        if (!window.confirm('Are you sure you want to remove this partnered company? This will also clear all student assignments for this company.')) return;
+        try {
+            const { data } = await axios.delete(`${API_BASE}/companies/${id}`, config);
+            if (data.success) {
+                setPartneredCompanies(prev => prev.filter((c: any) => c._id !== id));
+                // Update stats
+                const statsRes = await axios.get(`${API_BASE}/stats`, config);
+                if (statsRes.data.success) setStats(statsRes.data.stats);
+            }
+        } catch (err: any) {
+            const status = err.response?.status;
+            const message = err.response?.data?.message || '';
+            if (status === 404 && message.includes('not found')) {
+                // Record is already gone — remove from UI and refresh
+                setPartneredCompanies(prev => prev.filter((c: any) => c._id !== id));
+            } else if (message.includes('Representative')) {
+                // This is a company_admin supervisor — tell the user where to delete it
+                alert(message);
+            } else {
+                alert(message || 'Failed to remove partnered company');
+            }
+        }
     };
 
     const handleDeleteReport = async (reportId: string) => {
@@ -296,33 +354,6 @@ const AdminDashboard = () => {
         } finally { setEditReportLoading(false); }
     };
 
-    const handleUpdateSubmission = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setEditSubmissionLoading(true);
-        setEditSubmissionError('');
-        try {
-            if (user?.role === 'super_admin') {
-                const { data } = await axios.put(`${API_BASE}/submissions/${editSubmission._id}/grade`, editSubmissionForm, config);
-                if (data.success) {
-                    setSubmissions(prev => prev.map(s => s._id === editSubmission._id ? data.submission : s));
-                    setEditSubmission(null);
-                }
-            } else {
-                const { data } = await axios.put(`${API.FACULTY}/submissions/${editSubmission._id}/grade`, {
-                    marks: editSubmissionForm.facultyGrade.marks,
-                    feedback: editSubmissionForm.facultyGrade.feedback
-                }, config);
-                if (data.success) {
-                    setSubmissions(prev => prev.map(s => s._id === editSubmission._id ? data.submission : s));
-                    setEditSubmission(null);
-                }
-            }
-        } catch (err: any) {
-            setEditSubmissionError(err.response?.data?.message || 'Update failed');
-        } finally {
-            setEditSubmissionLoading(false);
-        }
-    };
 
     const isSuperAdmin = user?.role === 'super_admin';
 
@@ -359,7 +390,7 @@ const AdminDashboard = () => {
                             </motion.div>
                         ) : (
                             <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
-                                {activeTab === 'overview' && <OverviewTab stats={stats} recentActivity={recentActivity} setShowAddAdminModal={setShowAddAdminModal} />}
+                                {activeTab === 'overview' && <OverviewTab stats={stats} recentActivity={recentActivity} />}
                                 {activeTab === 'students' && (
                                     <StudentsTab
                                         students={students}
@@ -368,19 +399,29 @@ const AdminDashboard = () => {
                                         setChangeSupervisorTarget={setChangeSupervisorTarget}
                                         setChangeSupervisorId={setChangeSupervisorId}
                                         setDeleteStudentTarget={setDeleteStudentTarget}
+                                        setEditStudentTarget={(stu) => {
+                                            setEditStudentTarget(stu);
+                                            setEditStudentForm({
+                                                assignedCompany: stu.assignedCompany || '',
+                                                assignedPosition: stu.assignedPosition || '',
+                                                siteSupervisorName: stu.siteSupervisorName || '',
+                                                siteSupervisorEmail: stu.siteSupervisorEmail || '',
+                                                siteSupervisorPhone: stu.siteSupervisorPhone || '',
+                                                internshipStatus: stu.internshipStatus || ''
+                                            });
+                                        }}
                                     />
                                 )}
                                 {activeTab === 'reports' && <ReportsTab reports={reports} handleDeleteReport={handleDeleteReport} setSelectedReport={setSelectedReport} setEditReport={(r) => { setEditReport(r); setEditReportForm({ summary: r.summary, overallRating: r.overallRating, recommendation: r.recommendation, completionStatus: r.completionStatus, scores: r.scores || {} }); }} />}
                                 {activeTab === 'faculty' && isSuperAdmin && <FacultyTab faculty={faculty} companyAdmins={companyAdmins} setShowAddAdminModal={setShowAddAdminModal} setEditFaculty={setEditFaculty} setEditFacultyForm={setEditFacultyForm} setDeleteFaculty={setDeleteFaculty} />}
+                                {activeTab === 'companies' && isSuperAdmin && <CompaniesTab companies={partneredCompanies} setShowAddCompanyModal={setShowAddCompanyModal} handleDeleteCompany={handleDeleteCompany} />}
                                 {activeTab === 'approvals' && isSuperAdmin && <ApprovalsTab students={students} handleViewApp={handleViewApp} viewAppLoading={viewAppLoading} handleApprove={handleApprove} />}
                                 {activeTab === 'agreements' && isSuperAdmin && <AgreementsTab agreements={agreements} handleVerifyAgreement={handleVerifyAgreement} />}
-                                {activeTab === 'assignments' && isSuperAdmin && <AssignmentsTab verifiedStudents={verifiedStudents} setAssignTarget={setAssignTarget} setAssignForm={setAssignForm} setAssignError={setAssignError} />}
-                                {activeTab === 'submissions' && <SubmissionsTab submissions={submissions} setEditSubmission={(s) => { setEditSubmission(s); setEditSubmissionForm({ facultyGrade: s.facultyGrade || { marks: 0, feedback: '' }, companyGrade: s.companyGrade || { marks: 0, feedback: '' }, status: s.status }); }} />}
                                 {activeTab === 'settings' && (
                                     <div className="h-[60vh] rounded-2xl border-2 border-dashed border-blue-100 bg-white flex items-center justify-center text-center">
                                         <div>
                                             <p className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-300">Configuration</p>
-                                            <h3 className="text-xl font-black text-slate-900 mt-4 tracking-tight uppercase">System Settings</h3>
+                                            <h2 className="text-lg font-black text-slate-900 uppercase tracking-widest italic">SuperAdmin Console</h2>
                                             <p className="text-xs font-bold text-slate-400 mt-2 max-w-xs mx-auto">Access system configurations and security protocols here.</p>
                                         </div>
                                     </div>
@@ -407,27 +448,58 @@ const AdminDashboard = () => {
                 editReportLoading={editReportLoading}
                 editReportError={editReportError}
             />
-            <EditSubmissionGradeModal
-                editSubmission={editSubmission}
-                setEditSubmission={setEditSubmission}
-                editSubmissionForm={editSubmissionForm}
-                setEditSubmissionForm={setEditSubmissionForm}
-                handleUpdateSubmission={handleUpdateSubmission}
-                editSubmissionLoading={editSubmissionLoading}
-                editSubmissionError={editSubmissionError}
-                isSuperAdmin={isSuperAdmin}
-            />
             <AdminDashboardModals
                 {...{
                     showAddAdminModal, setShowAddAdminModal, newAdmin, setNewAdmin, partneredCompanies, handleCreateAdmin,
                     editFaculty, setEditFaculty, editFacultyForm, setEditFacultyForm, handleUpdateFaculty, editFacultyLoading, editFacultyError,
                     deleteFaculty, setDeleteFaculty, handleDeleteFaculty, deleteFacultyLoading,
-                    deleteStudent: deleteStudentTarget, setDeleteStudent: setDeleteStudentTarget, handleDeleteStudent, deleteStudentLoading,
                     viewApp, setViewApp,
-                    assignTarget, setAssignTarget, assignForm, setAssignForm, faculty, partneredCompaniesList: partneredCompanies, assignLoading, assignError, handleAssignInternship,
-                    changeSupervisorTarget, setChangeSupervisorTarget, changeSupervisorId, setChangeSupervisorId, changeSupervisorLoading, changeSupervisorError, handleChangeSupervisor
+                    deleteStudent: deleteStudentTarget, setDeleteStudent: setDeleteStudentTarget, handleDeleteStudent, deleteStudentLoading,
+                    faculty,
+                    changeSupervisorTarget, setChangeSupervisorTarget, changeSupervisorId, setChangeSupervisorId, changeSupervisorLoading, changeSupervisorError, handleChangeSupervisor,
+                    editStudentTarget, setEditStudentTarget, editStudentForm, setEditStudentForm, handleEditStudent, editStudentLoading, editStudentError,
+                    apiBase: API_BASE,
+                    config,
+                    setPartneredCompanies
                 }}
             />
+
+            <AnimatePresence>
+                {showAddCompanyModal && (
+                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setShowAddCompanyModal(false)}>
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl" onClick={e => e.stopPropagation()}>
+                            <div className="flex items-center justify-between mb-8">
+                                <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest italic">Add Partner</h3>
+                                <button onClick={() => setShowAddCompanyModal(false)} className="h-8 w-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-900 transition-all"><X className="h-4 w-4" /></button>
+                            </div>
+                            <form onSubmit={handleCreateCompany} className="space-y-6">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Company Name</label>
+                                    <input required value={newCompany.name} onChange={e => setNewCompany({ ...newCompany, name: e.target.value })} className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300" placeholder="e.g. Google" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Industry Email (Optional)</label>
+                                    <input type="email" value={newCompany.email} onChange={e => setNewCompany({ ...newCompany, email: e.target.value })} className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300" placeholder="hr@company.com" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Website</label>
+                                        <input value={newCompany.website} onChange={e => setNewCompany({ ...newCompany, website: e.target.value })} className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300" placeholder="company.com" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Phone</label>
+                                        <input value={newCompany.phone} onChange={e => setNewCompany({ ...newCompany, phone: e.target.value })} className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300" placeholder="+1..." />
+                                    </div>
+                                </div>
+                                {companyError && <p className="text-xs font-bold text-red-500 bg-red-50 p-4 rounded-xl">{companyError}</p>}
+                                <button type="submit" disabled={companyLoading} className="w-full h-14 rounded-2xl bg-blue-600 text-white text-[11px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 active:scale-95 disabled:opacity-50">
+                                    {companyLoading ? 'Processing...' : 'Register Partner'}
+                                </button>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
