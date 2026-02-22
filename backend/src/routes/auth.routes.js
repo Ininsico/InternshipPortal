@@ -1,7 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { loginStudent, loginAdmin, logout, getMe, forgotPassword, resetPassword } = require('../controllers/auth.controller');
+const { signupStudent, verifyOtp, resendOtp, loginStudent, loginAdmin, logout, getMe, forgotPassword, resetPassword, completeOnboarding } = require('../controllers/auth.controller');
 const { protect } = require('../middleware/auth.middleware');
+
+// ── Student Signup (OTP-based email verification) ──────────────────────────
+router.post('/signup/student', signupStudent);
+router.post('/verify-otp', verifyOtp);
+router.post('/resend-otp', resendOtp);
+
 
 /**
  * @openapi
@@ -118,5 +124,6 @@ router.post('/forgot-password', forgotPassword);
  *         description: Success
  */
 router.post('/reset-password', resetPassword);
+router.post('/complete-onboarding', completeOnboarding);
 
 module.exports = router;

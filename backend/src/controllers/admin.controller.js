@@ -1,6 +1,10 @@
 const Admin = require('../models/Admin.model');
 const Student = require('../models/Student.model');
 const Application = require('../models/Application.model');
+const Agreement = require('../models/Agreement.model');
+const Submission = require('../models/Submission.model');
+const Task = require('../models/Task.model');
+const Report = require('../models/Report.model');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { sendEmail, staffInvitationTemplate } = require('../utils/email.util');
@@ -33,7 +37,8 @@ const createAdmin = async (req, res) => {
             resetPasswordExpire
         });
 
-        const setupUrl = `http://localhost:5173/reset-password/${resetToken}`;
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const setupUrl = `${frontendUrl}/complete-onboarding/${resetToken}`;
         const html = staffInvitationTemplate(admin.role, setupUrl);
 
         await sendEmail(admin.email, 'Staff Onboarding Invitation - CU Portal', html);
@@ -384,7 +389,7 @@ const assignInternship = async (req, res) => {
 };
 
 
-// Delete a faculty admin — also clears supervisorId on all their assigned students
+// Delete a faculty admin — complete wipeout of their records and assignments
 const deleteAdmin = async (req, res) => {
     try {
         const { adminId } = req.params;
@@ -397,18 +402,63 @@ const deleteAdmin = async (req, res) => {
             return res.status(403).json({ success: false, message: 'Cannot delete a super admin.' });
         }
 
-        // Count how many students are currently assigned to this supervisor
-        const affectedCount = await Student.countDocuments({ supervisorId: adminId });
-
-        // Unset supervisorId on all assigned students
+        // 1. Unset supervisorId on all assigned students
         await Student.updateMany({ supervisorId: adminId }, { $unset: { supervisorId: '' } });
+
+        // 2. Delete all reports created by this admin
+        await Report.deleteMany({ createdBy: adminId });
+
+        // 3. If they were a company admin, delete their tasks AND the submissions for those tasks
+        if (admin.role === 'company_admin') {
+            const tasks = await Task.find({ createdBy: adminId });
+            const taskIds = tasks.map(t => t._id);
+            await Submission.deleteMany({ task: { $in: taskIds } });
+            await Task.deleteMany({ createdBy: adminId });
+        }
+
+        // 4. Update any submissions they graded to nullify the grader (optional, or just leave as is if submission is deleted)
+        await Submission.updateMany({ 'companyGrade.gradedBy': adminId }, { $set: { 'companyGrade.gradedBy': null } });
+        await Submission.updateMany({ 'facultyGrade.gradedBy': adminId }, { $set: { 'facultyGrade.gradedBy': null } });
 
         await Admin.findByIdAndDelete(adminId);
 
         res.json({
             success: true,
-            message: `Faculty member deleted. ${affectedCount} student(s) unassigned.`,
-            affectedCount
+            message: `Administrator "${admin.name}" and all their related records (tasks, reports, grading history) have been permanently wiped out.`
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// Delete a student — complete wipeout of all their data
+const deleteStudent = async (req, res) => {
+    try {
+        const { studentId } = req.params;
+
+        const student = await Student.findById(studentId);
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'Student not found.' });
+        }
+
+        // 1. Delete all applications
+        await Application.deleteMany({ studentId });
+
+        // 2. Delete all agreements
+        await Agreement.deleteMany({ studentId });
+
+        // 3. Delete all submissions
+        await Submission.deleteMany({ student: studentId });
+
+        // 4. Delete all faculty reports regarding this student
+        await Report.deleteMany({ student: studentId });
+
+        // 5. Finally delete the student record
+        await Student.findByIdAndDelete(studentId);
+
+        res.json({
+            success: true,
+            message: `Student "${student.name}" (${student.rollNumber}) and all their relative records (applications, agreements, submissions, evaluations) have been permanently wiped out.`
         });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -495,6 +545,7 @@ module.exports = {
     getVerifiedStudents,
     assignInternship,
     deleteAdmin,
+    deleteStudent,
     updateAdmin,
     changeSupervisor,
     getPartneredCompanies

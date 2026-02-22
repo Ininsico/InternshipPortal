@@ -1,4 +1,4 @@
-import { Search, UserPlus, Pencil, Trash2, Mail, ShieldCheck } from 'lucide-react';
+import { UserPlus, Pencil, Trash2, Mail, ShieldCheck } from 'lucide-react';
 import StatusPill from '../StatusPill';
 
 interface FacultyTabProps {
@@ -89,8 +89,17 @@ const FacultyTab = ({
                                 </div>
                                 <h4 className="text-base font-black text-slate-900">{ca.name}</h4>
                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{ca.email}</p>
-                                <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-black text-indigo-600">
-                                    <ShieldCheck className="h-3.5 w-3.5" />{ca.company || 'No company set'}
+                                <div className="mt-3 flex items-center justify-between">
+                                    <div className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-black text-indigo-600">
+                                        <ShieldCheck className="h-3.5 w-3.5" />{ca.company || 'No company set'}
+                                    </div>
+                                    <button
+                                        onClick={() => setDeleteFaculty(ca)}
+                                        className="h-8 w-8 flex items-center justify-center rounded-lg bg-red-50 text-red-400 hover:bg-red-600 hover:text-white transition-all shadow-sm"
+                                        title="Delete Admin"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
                                 </div>
                             </div>
                         ))}

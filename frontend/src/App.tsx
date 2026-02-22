@@ -9,6 +9,7 @@ import FacultyDashboard from './pages/FacultyDashboard';
 import InternshipRequestForm from './pages/InternshipRequestForm';
 import StudentAgreementPage from './pages/StudentAgreementPage';
 import ResetPassword from './pages/ResetPassword';
+import AdminOnboarding from './pages/AdminOnboarding';
 
 const App = () => {
   return (
@@ -65,6 +66,7 @@ const App = () => {
             }
           />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/complete-onboarding/:token" element={<AdminOnboarding />} />
         </Routes>
       </AuthProvider>
     </Router>

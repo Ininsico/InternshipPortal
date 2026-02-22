@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { Loader2 } from 'lucide-react';
 
-// Components
 import AdminSidebar from '../components/admin/AdminSidebar';
 import OverviewTab from '../components/admin/OverviewTab';
 import StudentsTab from '../components/admin/StudentsTab';
@@ -47,7 +46,6 @@ const AdminDashboard = () => {
     const [reports, setReports] = useState<any[]>([]);
     const [submissions, setSubmissions] = useState<any[]>([]);
 
-    // Modals State
     const [showAddAdminModal, setShowAddAdminModal] = useState(false);
     const [newAdmin, setNewAdmin] = useState({ name: '', email: '', role: 'admin', company: '' });
 
@@ -61,6 +59,9 @@ const AdminDashboard = () => {
 
     const [deleteFaculty, setDeleteFaculty] = useState<any | null>(null);
     const [deleteFacultyLoading, setDeleteFacultyLoading] = useState(false);
+
+    const [deleteStudentTarget, setDeleteStudentTarget] = useState<any | null>(null);
+    const [deleteStudentLoading, setDeleteStudentLoading] = useState(false);
 
     const [viewApp, setViewApp] = useState<any | null>(null);
     const [viewAppLoading, setViewAppLoading] = useState(false);
@@ -130,7 +131,6 @@ const AdminDashboard = () => {
                     if (partneredRes.data.success) setPartneredCompanies(partneredRes.data.companies);
                     if (submissionsRes.data.success) setSubmissions(submissionsRes.data.submissions);
                 } else if (user?.role === 'admin') {
-                    // Regular admin (Faculty Supervisor)
                     const FACULTY_API = API.FACULTY;
                     const [subRes, repRes] = await Promise.all([
                         axios.get(`${FACULTY_API}/submissions`, config),
@@ -148,7 +148,6 @@ const AdminDashboard = () => {
         fetchData();
     }, [token, user?.role]);
 
-    // Handlers
     const handleCreateAdmin = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -192,6 +191,21 @@ const AdminDashboard = () => {
             }
         } catch (err) { console.error(err); }
         finally { setDeleteFacultyLoading(false); }
+    };
+
+    const handleDeleteStudent = async () => {
+        setDeleteStudentLoading(true);
+        try {
+            const { data } = await axios.delete(`${API_BASE}/students/${deleteStudentTarget._id}`, config);
+            if (data.success) {
+                setStudents(prev => prev.filter(s => s._id !== deleteStudentTarget._id));
+                setDeleteStudentTarget(null);
+                // Also update stats since a student was removed
+                const statsRes = await axios.get(`${API_BASE}/stats`, config);
+                if (statsRes.data.success) setStats(statsRes.data.stats);
+            }
+        } catch (err) { console.error(err); }
+        finally { setDeleteStudentLoading(false); }
     };
 
     const handleApprove = async (studentId: string, status: string) => {
@@ -249,7 +263,7 @@ const AdminDashboard = () => {
     const handleViewApp = async (studentId: string) => {
         setViewAppLoading(true);
         try {
-            const { data } = await axios.get(`${API_BASE}/student-application/${studentId}`, config);
+            const { data } = await axios.get(`${API_BASE}/application/${studentId}`, config);
             if (data.success) setViewApp(data.application);
         } catch (err) { console.error(err); }
         finally { setViewAppLoading(false); }
@@ -294,7 +308,6 @@ const AdminDashboard = () => {
                     setEditSubmission(null);
                 }
             } else {
-                // Regular admin (Faculty)
                 const { data } = await axios.put(`${API.FACULTY}/submissions/${editSubmission._id}/grade`, {
                     marks: editSubmissionForm.facultyGrade.marks,
                     feedback: editSubmissionForm.facultyGrade.feedback
@@ -347,7 +360,16 @@ const AdminDashboard = () => {
                         ) : (
                             <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
                                 {activeTab === 'overview' && <OverviewTab stats={stats} recentActivity={recentActivity} setShowAddAdminModal={setShowAddAdminModal} />}
-                                {activeTab === 'students' && <StudentsTab students={students} isSuperAdmin={isSuperAdmin} setSelectedStudent={setSelectedStudent} setChangeSupervisorTarget={setChangeSupervisorTarget} setChangeSupervisorId={setChangeSupervisorId} />}
+                                {activeTab === 'students' && (
+                                    <StudentsTab
+                                        students={students}
+                                        isSuperAdmin={isSuperAdmin}
+                                        setSelectedStudent={setSelectedStudent}
+                                        setChangeSupervisorTarget={setChangeSupervisorTarget}
+                                        setChangeSupervisorId={setChangeSupervisorId}
+                                        setDeleteStudentTarget={setDeleteStudentTarget}
+                                    />
+                                )}
                                 {activeTab === 'reports' && <ReportsTab reports={reports} handleDeleteReport={handleDeleteReport} setSelectedReport={setSelectedReport} setEditReport={(r) => { setEditReport(r); setEditReportForm({ summary: r.summary, overallRating: r.overallRating, recommendation: r.recommendation, completionStatus: r.completionStatus, scores: r.scores || {} }); }} />}
                                 {activeTab === 'faculty' && isSuperAdmin && <FacultyTab faculty={faculty} companyAdmins={companyAdmins} setShowAddAdminModal={setShowAddAdminModal} setEditFaculty={setEditFaculty} setEditFacultyForm={setEditFacultyForm} setDeleteFaculty={setDeleteFaculty} />}
                                 {activeTab === 'approvals' && isSuperAdmin && <ApprovalsTab students={students} handleViewApp={handleViewApp} viewAppLoading={viewAppLoading} handleApprove={handleApprove} />}
@@ -400,6 +422,7 @@ const AdminDashboard = () => {
                     showAddAdminModal, setShowAddAdminModal, newAdmin, setNewAdmin, partneredCompanies, handleCreateAdmin,
                     editFaculty, setEditFaculty, editFacultyForm, setEditFacultyForm, handleUpdateFaculty, editFacultyLoading, editFacultyError,
                     deleteFaculty, setDeleteFaculty, handleDeleteFaculty, deleteFacultyLoading,
+                    deleteStudent: deleteStudentTarget, setDeleteStudent: setDeleteStudentTarget, handleDeleteStudent, deleteStudentLoading,
                     viewApp, setViewApp,
                     assignTarget, setAssignTarget, assignForm, setAssignForm, faculty, partneredCompaniesList: partneredCompanies, assignLoading, assignError, handleAssignInternship,
                     changeSupervisorTarget, setChangeSupervisorTarget, changeSupervisorId, setChangeSupervisorId, changeSupervisorLoading, changeSupervisorError, handleChangeSupervisor

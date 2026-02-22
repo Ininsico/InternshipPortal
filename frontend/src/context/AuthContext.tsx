@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import axios from 'axios';
-
 import API from '../config/api';
 
 const API_BASE = API.AUTH;

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 
 import API from '../config/api';
+import StatusTracker from '../components/StatusTracker';
 
 const API_BASE = API.STUDENT;
 
@@ -44,7 +45,6 @@ const InternshipRequestForm = () => {
             });
 
             if (data.success && data.applications.length > 0) {
-                // Get the most recent application
                 const latest = data.applications[data.applications.length - 1];
                 setApplication(latest);
                 setFormData({
@@ -72,8 +72,6 @@ const InternshipRequestForm = () => {
                 return;
             }
 
-            // ALWAYS fetch applications on mount, regardless of status
-            // This fixes the issue where internshipStatus might be 'none' but a record exists
             await fetchApplication();
         };
 
@@ -94,7 +92,6 @@ const InternshipRequestForm = () => {
             if (data.success) {
                 await fetchApplication();
                 setIsEditing(false);
-                // Force a reload to ensure the AuthContext user object is refreshed with the new internshipStatus
                 window.location.reload();
             }
         } catch (err: any) {
@@ -115,9 +112,6 @@ const InternshipRequestForm = () => {
         );
     }
 
-    // We show the status screen if:
-    // 1. The user's status is 'submitted' or 'rejected'
-    // 2. OR we found an application in the DB but the status is lagged/old
     const hasApplication = application !== null;
     const isSubmittedOrRejected = user?.internshipStatus === 'submitted' || user?.internshipStatus === 'rejected' || (user?.internshipStatus === 'none' && hasApplication);
     const showStatus = isSubmittedOrRejected && !isEditing;
@@ -149,7 +143,6 @@ const InternshipRequestForm = () => {
                                 </p>
                             </div>
 
-                            {/* Status Details Card */}
                             <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-100 mb-8">
                                 <div className="flex items-center justify-between mb-6">
                                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Current Record</span>
@@ -246,6 +239,10 @@ const InternshipRequestForm = () => {
                                 ? "Update your internship details below. Make sure all information is accurate to avoid rejection."
                                 : "The system requires an approved internship placement to activate your student dashboard."}
                         </p>
+                    </div>
+
+                    <div className="mb-10 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                        <StatusTracker currentStatus={user?.internshipStatus || 'none'} />
                     </div>
 
                     <form onSubmit={handleSubmit} className="bg-white rounded-[2.5rem] shadow-2xl shadow-blue-500/5 border border-slate-100 overflow-hidden">

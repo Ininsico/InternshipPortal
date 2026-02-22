@@ -1,4 +1,4 @@
-import { Search, Briefcase } from 'lucide-react';
+import { Briefcase, Trash2 } from 'lucide-react';
 import StatusPill from '../StatusPill';
 
 interface StudentsTabProps {
@@ -7,6 +7,7 @@ interface StudentsTabProps {
     setSelectedStudent: (student: any) => void;
     setChangeSupervisorTarget: (student: any) => void;
     setChangeSupervisorId: (id: string) => void;
+    setDeleteStudentTarget: (student: any) => void;
 }
 
 const StudentsTab = ({
@@ -14,7 +15,8 @@ const StudentsTab = ({
     isSuperAdmin,
     setSelectedStudent,
     setChangeSupervisorTarget,
-    setChangeSupervisorId
+    setChangeSupervisorId,
+    setDeleteStudentTarget
 }: StudentsTabProps) => {
     return (
         <div className="space-y-8">
@@ -107,15 +109,24 @@ const StudentsTab = ({
                                 </td>
                                 <td className="px-10 py-6">
                                     {isSuperAdmin && (
-                                        <button
-                                            onClick={() => {
-                                                setChangeSupervisorTarget(stu);
-                                                setChangeSupervisorId(stu.supervisorId?._id || '');
-                                            }}
-                                            className="h-10 px-4 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all active:scale-95 flex items-center gap-2 shadow-sm"
-                                        >
-                                            <Briefcase className="h-3.5 w-3.5" /> Manage
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    setChangeSupervisorTarget(stu);
+                                                    setChangeSupervisorId(stu.supervisorId?._id || '');
+                                                }}
+                                                className="h-10 px-4 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all active:scale-95 flex items-center gap-2 shadow-sm"
+                                            >
+                                                <Briefcase className="h-3.5 w-3.5" /> Manage
+                                            </button>
+                                            <button
+                                                onClick={() => setDeleteStudentTarget(stu)}
+                                                className="h-10 w-10 rounded-xl border border-red-100 text-red-400 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all flex items-center justify-center shadow-sm"
+                                                title="Hard Delete Student"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </div>
                                     )}
                                 </td>
                             </tr>

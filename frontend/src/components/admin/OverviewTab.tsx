@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { UserCheck, Clock, UserPlus, Download } from 'lucide-react';
 import MetricCard from '../MetricCard';
 import ActionButton from '../ActionButton';

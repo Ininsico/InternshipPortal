@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import axios from 'axios';
 import {
     FileText,
@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 
 import API from '../config/api';
+import StatusTracker from '../components/StatusTracker';
 
 const API_BASE = API.STUDENT;
 
@@ -47,14 +48,12 @@ const StudentAgreementPage = () => {
             try {
                 const config = { headers: { Authorization: `Bearer ${token}` } };
 
-                // Fetch approved application
                 const appsRes = await axios.get(`${API_BASE}/applications`, config);
                 if (appsRes.data.success) {
                     const approved = appsRes.data.applications.find((a: any) => a.status === 'approved');
                     if (approved) setApplication(approved);
                 }
 
-                // Fetch existing agreement if any
                 if (user?.internshipStatus === 'agreement_submitted') {
                     const agreeRes = await axios.get(`${API_BASE}/agreement`, config);
                     if (agreeRes.data.success && agreeRes.data.agreement) {
@@ -152,6 +151,10 @@ const StudentAgreementPage = () => {
                         </p>
                     </div>
 
+                    <div className="mb-10 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                        <StatusTracker currentStatus={user?.internshipStatus || 'none'} />
+                    </div>
+
                     {isLocked ? (
                         <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-blue-500/5 border border-slate-100 overflow-hidden p-12 text-center">
                             <div className="w-24 h-24 bg-blue-50 rounded-[2rem] flex items-center justify-center mx-auto mb-8 text-blue-600">
@@ -187,7 +190,6 @@ const StudentAgreementPage = () => {
                                 </div>
                             )}
 
-                            {/* Sourcing Type Section */}
                             <div className="bg-white rounded-[2rem] border border-slate-100 p-8 shadow-sm">
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
@@ -213,7 +215,6 @@ const StudentAgreementPage = () => {
                                 </div>
                             </div>
 
-                            {/* Personal Details Section */}
                             <div className="bg-white rounded-[2rem] border border-slate-100 p-10 shadow-sm">
                                 <div className="flex items-center gap-3 mb-8">
                                     <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
@@ -254,7 +255,6 @@ const StudentAgreementPage = () => {
                                 </div>
                             </div>
 
-                            {/* Company & Supervisor Details - Only if 'Self' */}
                             {formData.sourcingType === 'Self' && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
@@ -270,7 +270,7 @@ const StudentAgreementPage = () => {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="md:col-span-2 space-y-3">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Company Physical Address</label>
+                                            <label className="text-[10px) font-black uppercase tracking-widest text-slate-400 ml-1">Company Physical Address</label>
                                             <div className="relative group">
                                                 <Building2 className="absolute left-5 top-5 w-4 h-4 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
                                                 <textarea

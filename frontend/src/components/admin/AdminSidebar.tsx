@@ -68,7 +68,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, isSuperAdmin, user, logout }: A
             className="relative flex-shrink-0 h-screen flex flex-col bg-white border-r border-blue-50 overflow-hidden"
             style={{ minWidth: collapsed ? 72 : 256 }}
         >
-            {/* ── Logo ── */}
+
             <div className={`flex items-center h-16 border-b border-blue-50 flex-shrink-0 ${collapsed ? 'justify-center px-0' : 'px-5 gap-3'}`}>
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-500/25">
                     <ShieldCheck className="h-4 w-4 text-white" />
@@ -89,7 +89,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, isSuperAdmin, user, logout }: A
                 </AnimatePresence>
             </div>
 
-            {/* ── Collapse Toggle ── */}
+
             <button
                 onClick={() => setCollapsed(c => !c)}
                 className="absolute -right-3 top-[60px] z-50 h-6 w-6 rounded-full bg-white border border-blue-100 shadow-md flex items-center justify-center text-blue-500 hover:bg-blue-50 hover:text-blue-700 transition-colors"
@@ -97,7 +97,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, isSuperAdmin, user, logout }: A
                 {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
             </button>
 
-            {/* ── Navigation ── */}
+
             <nav className="flex-1 flex flex-col justify-between py-4 px-2 min-h-0">
                 <div className="space-y-5">
                     {/* Main section */}
@@ -130,7 +130,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, isSuperAdmin, user, logout }: A
                     </div>
                 </div>
 
-                {/* ── User + Logout ── */}
+
                 <div className="mt-4 border-t border-blue-50 pt-4 space-y-1">
                     {/* User chip */}
                     <div className={`flex items-center gap-3 rounded-xl bg-blue-50 ${collapsed ? 'justify-center p-2' : 'px-3 py-2.5'}`}>

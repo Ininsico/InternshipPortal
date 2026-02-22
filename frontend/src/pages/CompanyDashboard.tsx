@@ -4,8 +4,8 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import {
     LayoutDashboard, Users, ClipboardList, BarChart2,
-    LogOut, Plus, Loader2, CheckCircle2, XCircle, Clock,
-    ChevronDown, ChevronUp, Send, Star, AlertCircle, Briefcase, File, ArrowUpRight, Pencil
+    LogOut, Plus, Loader2,
+    Send, Star, Briefcase, File, ArrowUpRight, Pencil
 } from 'lucide-react';
 
 import API from '../config/api';
@@ -39,13 +39,11 @@ const CompanyDashboard = () => {
     const [submissions, setSubmissions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // New task form
     const [showTaskModal, setShowTaskModal] = useState(false);
     const [taskForm, setTaskForm] = useState({ title: '', description: '', deadline: '', maxMarks: 100, assignedTo: '' });
     const [taskLoading, setTaskLoading] = useState(false);
     const [taskError, setTaskError] = useState('');
 
-    // Grade modal
     const [gradeTarget, setGradeTarget] = useState<any | null>(null);
     const [gradeForm, setGradeForm] = useState({ marks: '', feedback: '' });
     const [gradeLoading, setGradeLoading] = useState(false);
@@ -129,7 +127,6 @@ const CompanyDashboard = () => {
 
     return (
         <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
-            {/* Sidebar */}
             <aside className="flex w-64 flex-col bg-white border-r border-slate-100 shadow-sm">
                 <div className="px-6 py-8 border-b border-slate-100">
                     <div className="flex items-center gap-3">
@@ -164,7 +161,6 @@ const CompanyDashboard = () => {
                 </div>
             </aside>
 
-            {/* Main */}
             <main className="flex-1 overflow-y-auto p-8">
                 {loading ? (
                     <div className="flex items-center justify-center h-full">
@@ -173,7 +169,6 @@ const CompanyDashboard = () => {
                 ) : (
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-6xl mx-auto space-y-8">
 
-                        {/* Header */}
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-1">Company Portal</p>
                             <h1 className="text-3xl font-black text-slate-900">
@@ -184,7 +179,6 @@ const CompanyDashboard = () => {
                             </h1>
                         </div>
 
-                        {/* OVERVIEW */}
                         {activeTab === 'overview' && (
                             <div className="space-y-6">
                                 <div className="grid grid-cols-3 gap-6">
@@ -215,7 +209,6 @@ const CompanyDashboard = () => {
                             </div>
                         )}
 
-                        {/* STUDENTS */}
                         {activeTab === 'students' && (
                             <div className="rounded-2xl bg-white border border-slate-100 shadow-sm overflow-hidden">
                                 <div className="border-b border-slate-100 px-8 py-6 bg-slate-50/50">
@@ -256,7 +249,6 @@ const CompanyDashboard = () => {
                             </div>
                         )}
 
-                        {/* TASKS */}
                         {activeTab === 'tasks' && (
                             <div className="space-y-4">
                                 <div className="flex justify-end">
@@ -289,7 +281,6 @@ const CompanyDashboard = () => {
                             </div>
                         )}
 
-                        {/* SUBMISSIONS */}
                         {activeTab === 'submissions' && (
                             <div className="rounded-2xl bg-white border border-slate-100 shadow-sm overflow-hidden">
                                 <div className="border-b border-slate-100 px-8 py-6 bg-slate-50/50">
@@ -352,7 +343,6 @@ const CompanyDashboard = () => {
                 )}
             </main>
 
-            {/* CREATE TASK MODAL */}
             <AnimatePresence>
                 {showTaskModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setShowTaskModal(false)}>
@@ -401,7 +391,6 @@ const CompanyDashboard = () => {
                 )}
             </AnimatePresence>
 
-            {/* GRADE MODAL */}
             <AnimatePresence>
                 {gradeTarget && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setGradeTarget(null)}>

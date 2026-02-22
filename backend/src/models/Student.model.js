@@ -48,6 +48,13 @@ const StudentSchema = new mongoose.Schema(
             type: Boolean,
             default: true,
         },
+        // Email verification (required for new signups)
+        isEmailVerified: {
+            type: Boolean,
+            default: false,
+        },
+        emailOtp: String,
+        emailOtpExpire: Date,
         resetPasswordToken: String,
         resetPasswordExpire: Date,
         supervisorId: {

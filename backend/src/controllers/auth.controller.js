@@ -3,12 +3,185 @@ const crypto = require('crypto');
 const Admin = require('../models/Admin.model');
 const Student = require('../models/Student.model');
 const { studentLoginSchema, adminLoginSchema, forgotPasswordSchema, resetPasswordSchema } = require('../schemas/auth.schema');
-const { sendEmail, passwordResetTemplate } = require('../utils/email.util');
+const { sendEmail, passwordResetTemplate, otpVerificationTemplate } = require('../utils/email.util');
 
 const signToken = (payload) =>
     jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
 
 const formatZodError = (err) => err.errors.map((e) => e.message).join(', ');
+
+/** Generate a random 6-digit numeric OTP */
+const generateOtp = () => String(Math.floor(100000 + Math.random() * 900000));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/auth/signup/student
+// Requires @cuiatd.edu.pk email. Creates unverified student, sends OTP.
+// ─────────────────────────────────────────────────────────────────────────────
+const signupStudent = async (req, res) => {
+    const { name, email, rollNumber, password } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !rollNumber || !password) {
+        return res.status(400).json({ success: false, message: 'Name, email, roll number, and password are all required.' });
+    }
+
+    // Enforce university email
+    if (!email.toLowerCase().endsWith('@cuiatd.edu.pk')) {
+        return res.status(400).json({ success: false, message: 'You must use your @cuiatd.edu.pk university email to register.' });
+    }
+
+    if (password.length < 6) {
+        return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.' });
+    }
+
+    try {
+        // Check if email already registered
+        const existingEmail = await Student.findOne({ email: email.toLowerCase() });
+        if (existingEmail) {
+            if (existingEmail.isEmailVerified) {
+                return res.status(400).json({ success: false, message: 'An account with this email already exists. Please sign in.' });
+            }
+            // Unverified — resend OTP below
+            const otp = generateOtp();
+            existingEmail.emailOtp = otp;
+            existingEmail.emailOtpExpire = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+            await existingEmail.save();
+            const html = otpVerificationTemplate(existingEmail.name, otp);
+            await sendEmail(existingEmail.email, 'Verify Your Email — CU Portal', html);
+            return res.json({ success: true, message: 'A new verification code has been sent to your email.', pendingEmail: existingEmail.email });
+        }
+
+        // Check roll number uniqueness
+        const existingRoll = await Student.findOne({ rollNumber: rollNumber.toUpperCase() });
+        if (existingRoll) {
+            return res.status(400).json({ success: false, message: 'A student with this roll number already exists.' });
+        }
+
+        // Parse rollNumber to extract session, degree, serialNo
+        // Expected format: FA21-BCS-015
+        const rollParts = rollNumber.toUpperCase().trim().match(/^([A-Z]{2}\d{2})-([A-Z]{2,3})-(\d+)$/);
+        if (!rollParts) {
+            return res.status(400).json({ success: false, message: 'Invalid roll number format. Expected: FA21-BCS-015' });
+        }
+        const [, session, degree, serialNo] = rollParts;
+
+        const otp = generateOtp();
+        const student = await Student.create({
+            name: name.trim(),
+            email: email.toLowerCase(),
+            rollNumber: rollNumber.toUpperCase().trim(),
+            session,
+            degree,
+            serialNo,
+            passwordHash: password,   // schema pre-save hook hashes this
+            isActive: false,           // becomes active after email verification
+            isEmailVerified: false,
+            emailOtp: otp,
+            emailOtpExpire: new Date(Date.now() + 10 * 60 * 1000),
+        });
+
+        const html = otpVerificationTemplate(student.name, otp);
+        await sendEmail(student.email, 'Verify Your Email — CU Portal', html);
+
+        return res.status(201).json({
+            success: true,
+            message: 'Account created! A 6-digit verification code has been sent to your university email.',
+            pendingEmail: student.email,
+        });
+    } catch (err) {
+        console.error('signupStudent:', err);
+        return res.status(500).json({ success: false, message: 'Server error. Please try again.' });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/auth/verify-otp
+// Verifies the OTP and activates the student account.
+// ─────────────────────────────────────────────────────────────────────────────
+const verifyOtp = async (req, res) => {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+        return res.status(400).json({ success: false, message: 'Email and OTP are required.' });
+    }
+
+    try {
+        const student = await Student.findOne({ email: email.toLowerCase() });
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'No account found for this email.' });
+        }
+        if (student.isEmailVerified) {
+            return res.status(400).json({ success: false, message: 'Email is already verified. Please sign in.' });
+        }
+        if (!student.emailOtp || !student.emailOtpExpire) {
+            return res.status(400).json({ success: false, message: 'No OTP found. Please request a new one.' });
+        }
+        if (new Date() > student.emailOtpExpire) {
+            return res.status(400).json({ success: false, message: 'Verification code has expired. Please request a new one.' });
+        }
+        if (student.emailOtp !== otp.trim()) {
+            return res.status(400).json({ success: false, message: 'Incorrect verification code. Please try again.' });
+        }
+
+        // Mark verified & activate account
+        student.isEmailVerified = true;
+        student.isActive = true;
+        student.emailOtp = undefined;
+        student.emailOtpExpire = undefined;
+        await student.save();
+
+        const token = signToken({ id: student._id, role: 'student', rollNumber: student.rollNumber });
+
+        return res.json({
+            success: true,
+            message: 'Email verified! Welcome to the CU Internship Portal.',
+            token,
+            user: {
+                id: student._id,
+                name: student.name,
+                rollNumber: student.rollNumber,
+                email: student.email,
+                role: 'student',
+                internshipStatus: student.internshipStatus,
+            },
+        });
+    } catch (err) {
+        console.error('verifyOtp:', err);
+        return res.status(500).json({ success: false, message: 'Server error. Please try again.' });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/auth/resend-otp
+// Resends a new OTP to the given email (for unverified accounts).
+// ─────────────────────────────────────────────────────────────────────────────
+const resendOtp = async (req, res) => {
+    const { email } = req.body;
+    if (!email) {
+        return res.status(400).json({ success: false, message: 'Email is required.' });
+    }
+    try {
+        const student = await Student.findOne({ email: email.toLowerCase() });
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'No account found for this email.' });
+        }
+        if (student.isEmailVerified) {
+            return res.status(400).json({ success: false, message: 'Account is already verified.' });
+        }
+
+        const otp = generateOtp();
+        student.emailOtp = otp;
+        student.emailOtpExpire = new Date(Date.now() + 10 * 60 * 1000);
+        await student.save();
+
+        const html = otpVerificationTemplate(student.name, otp);
+        await sendEmail(student.email, 'Your New Verification Code — CU Portal', html);
+
+        return res.json({ success: true, message: 'A new verification code has been sent.' });
+    } catch (err) {
+        console.error('resendOtp:', err);
+        return res.status(500).json({ success: false, message: 'Server error. Please try again.' });
+    }
+};
 
 const loginStudent = async (req, res) => {
     const parse = studentLoginSchema.safeParse(req.body);
@@ -181,7 +354,7 @@ const forgotPassword = async (req, res) => {
 
         await userInstance.save();
 
-        const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
         const html = passwordResetTemplate(userInstance.name, resetUrl);
 
         await sendEmail(userInstance.email, 'Password Reset Request - CU Portal', html);
@@ -233,4 +406,49 @@ const resetPassword = async (req, res) => {
     }
 };
 
-module.exports = { loginStudent, loginAdmin, logout, getMe, forgotPassword, resetPassword };
+const completeOnboarding = async (req, res) => {
+    const { token, password, name } = req.body;
+
+    if (!token || !password) {
+        return res.status(400).json({ success: false, message: 'Token and password are required.' });
+    }
+
+    try {
+        const resetPasswordToken = crypto.createHash('sha256').update(token).digest('hex');
+
+        const admin = await Admin.findOne({
+            resetPasswordToken,
+            resetPasswordExpire: { $gt: Date.now() }
+        });
+
+        if (!admin) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired invitation token.' });
+        }
+
+        if (name) admin.name = name;
+        admin.passwordHash = password;
+        admin.isActive = true;
+        admin.resetPasswordToken = undefined;
+        admin.resetPasswordExpire = undefined;
+
+        await admin.save();
+
+        return res.json({ success: true, message: 'Account activation successful. You can now log in.' });
+    } catch (err) {
+        console.error('completeOnboarding:', err);
+        return res.status(500).json({ success: false, message: 'Error completing onboarding.' });
+    }
+};
+
+module.exports = {
+    signupStudent,
+    verifyOtp,
+    resendOtp,
+    loginStudent,
+    loginAdmin,
+    logout,
+    getMe,
+    forgotPassword,
+    resetPassword,
+    completeOnboarding
+};

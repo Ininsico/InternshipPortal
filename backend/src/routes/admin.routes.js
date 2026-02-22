@@ -12,6 +12,7 @@ const {
     getVerifiedStudents,
     assignInternship,
     deleteAdmin,
+    deleteStudent,
     updateAdmin,
     changeSupervisor,
     getPartneredCompanies
@@ -137,6 +138,19 @@ router.put('/faculty/:adminId', requireRole('super_admin'), updateAdmin);
  *         required: true
  */
 router.delete('/faculty/:adminId', requireRole('super_admin'), deleteAdmin);
+
+/**
+ * @openapi
+ * /api/admin/students/{studentId}:
+ *   delete:
+ *     summary: Delete a student record (Super Admin)
+ *     tags: [Admin]
+ *     parameters:
+ *       - in: path
+ *         name: studentId
+ *         required: true
+ */
+router.delete('/students/:studentId', requireRole('super_admin'), deleteStudent);
 
 /**
  * @openapi

@@ -113,6 +113,60 @@ const passwordResetTemplate = (userName, resetLink) => {
     `;
 };
 
+/**
+ * Generates HTML email template for OTP email verification
+ */
+const otpVerificationTemplate = (userName, otp) => {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email - CU Portal</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 30px -5px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
+                    <tr>
+                        <td style="background-color: #2563eb; padding: 50px 40px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 900; letter-spacing: -1px; text-transform: uppercase;">CU PORTAL.</h1>
+                            <p style="margin: 10px 0 0 0; color: #bfdbfe; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; font-weight: bold;">Email Verification</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 50px 40px; text-align: center;">
+                            <h2 style="margin: 0 0 12px 0; color: #0f172a; font-size: 22px; font-weight: 800;">Hello, ${userName}!</h2>
+                            <p style="margin: 0 0 40px 0; color: #475569; font-size: 15px; line-height: 1.6; font-weight: 500;">
+                                Use the verification code below to complete your registration.
+                                <br>This code expires in <strong>10 minutes</strong>.
+                            </p>
+                            <div style="background-color: #eff6ff; border: 2px dashed #bfdbfe; border-radius: 20px; padding: 36px 40px; margin: 0 auto 40px; display: inline-block; min-width: 260px;">
+                                <p style="margin: 0 0 8px 0; color: #3b82f6; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 3px;">Your Verification Code</p>
+                                <p style="margin: 0; color: #1e40af; font-size: 52px; font-weight: 900; letter-spacing: 12px; font-family: 'Courier New', monospace;">${otp}</p>
+                            </div>
+                            <p style="margin: 0; color: #94a3b8; font-size: 13px; font-weight: 500;">
+                                If you did not request this, you can safely ignore this email.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background-color: #f1f5f9; padding: 30px 40px; text-align: center; border-top: 1px solid #e2e8f0;">
+                            <p style="margin: 0; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">&copy; 2026 COMSATS UNIVERSITY // ALL RIGHTS RESERVED</p>
+                            <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 10px; font-weight: 600;">Automated System Transmission</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `;
+};
+
 const staffInvitationTemplate = (role, setupLink) => {
     const roleName = role.replace('_', ' ').toUpperCase();
     return `
@@ -169,5 +223,6 @@ module.exports = {
     generateSetupToken,
     sendEmail,
     passwordResetTemplate,
-    staffInvitationTemplate
+    staffInvitationTemplate,
+    otpVerificationTemplate
 };

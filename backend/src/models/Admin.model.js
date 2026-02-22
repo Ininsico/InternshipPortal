@@ -35,6 +35,8 @@ const AdminSchema = new mongoose.Schema(
         },
         resetPasswordToken: String,
         resetPasswordExpire: Date,
+        invitationToken: String,
+        invitationExpire: Date,
     },
     { timestamps: true }
 );

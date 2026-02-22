@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, UserPlus, Pencil, Trash2, ShieldCheck, ArrowUpRight, Loader2, ClipboardList } from 'lucide-react';
-import StatusPill from '../StatusPill';
+import { X, Trash2, Loader2 } from 'lucide-react';
+
 
 interface ModalsProps {
     showAddAdminModal: boolean;
@@ -22,6 +22,11 @@ interface ModalsProps {
     setDeleteFaculty: (v: any) => void;
     handleDeleteFaculty: () => void;
     deleteFacultyLoading: boolean;
+
+    deleteStudent: any;
+    setDeleteStudent: (v: any) => void;
+    handleDeleteStudent: () => void;
+    deleteStudentLoading: boolean;
 
     viewApp: any;
     setViewApp: (v: any) => void;
@@ -48,7 +53,7 @@ interface ModalsProps {
 const AdminDashboardModals = (props: ModalsProps) => {
     return (
         <>
-            {/* ADD ADMIN MODAL */}
+
             <AnimatePresence>
                 {props.showAddAdminModal && (
                     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => props.setShowAddAdminModal(false)}>
@@ -92,7 +97,7 @@ const AdminDashboardModals = (props: ModalsProps) => {
                 )}
             </AnimatePresence>
 
-            {/* EDIT FACULTY MODAL */}
+
             <AnimatePresence>
                 {props.editFaculty && (
                     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => props.setEditFaculty(null)}>
@@ -114,7 +119,7 @@ const AdminDashboardModals = (props: ModalsProps) => {
                 )}
             </AnimatePresence>
 
-            {/* DELETE FACULTY MODAL */}
+
             <AnimatePresence>
                 {props.deleteFaculty && (
                     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => props.setDeleteFaculty(null)}>
@@ -135,7 +140,32 @@ const AdminDashboardModals = (props: ModalsProps) => {
                 )}
             </AnimatePresence>
 
-            {/* VIEW APPLICATION MODAL */}
+            {/* DELETE STUDENT MODAL */}
+            <AnimatePresence>
+                {props.deleteStudent && (
+                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => props.setDeleteStudent(null)}>
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl bg-white p-10 shadow-2xl text-center" onClick={e => e.stopPropagation()}>
+                            <div className="h-20 w-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <Trash2 className="h-10 w-10" />
+                            </div>
+                            <h3 className="text-xl font-black text-slate-900 mb-2 italic tracking-tight uppercase">System Wipeout?</h3>
+                            <p className="text-sm font-bold text-slate-400 mb-8 leading-relaxed italic">
+                                Are you sure you want to permanently delete <span className="text-slate-900 font-black">"{props.deleteStudent.name}"</span>?
+                                <br /><br />
+                                <span className="text-red-500 font-black">WARNING:</span> This will wipe out all applications, agreements, submissions, and reports associated with this student. This cannot be undone.
+                            </p>
+                            <div className="flex gap-4">
+                                <button onClick={() => props.setDeleteStudent(null)} className="flex-1 h-14 rounded-2xl border border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Abort</button>
+                                <button onClick={props.handleDeleteStudent} disabled={props.deleteStudentLoading} className="flex-1 h-14 rounded-2xl bg-red-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all active:scale-95 disabled:opacity-50">
+                                    {props.deleteStudentLoading ? 'Wiping Out...' : 'Complete Wipeout'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+
             <AnimatePresence>
                 {props.viewApp && (
                     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => props.setViewApp(null)}>
@@ -178,7 +208,7 @@ const AdminDashboardModals = (props: ModalsProps) => {
                 )}
             </AnimatePresence>
 
-            {/* INTERNSHIP ASSIGNMENT MODAL */}
+
             <AnimatePresence>
                 {props.assignTarget && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => props.setAssignTarget(null)}>
@@ -248,7 +278,7 @@ const AdminDashboardModals = (props: ModalsProps) => {
                 )}
             </AnimatePresence>
 
-            {/* CHANGE SUPERVISOR MODAL */}
+
             <AnimatePresence>
                 {props.changeSupervisorTarget && (
                     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => props.setChangeSupervisorTarget(null)}>

@@ -37,7 +37,6 @@ const FacultyDashboard = () => {
     const [reports, setReports] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Report form
     const [showReportModal, setShowReportModal] = useState(false);
     const [reportTarget, setReportTarget] = useState<any | null>(null);
     const [reportForm, setReportForm] = useState({
@@ -48,7 +47,6 @@ const FacultyDashboard = () => {
     const [reportLoading, setReportLoading] = useState(false);
     const [reportError, setReportError] = useState('');
 
-    // Grade modal
     const [gradeTarget, setGradeTarget] = useState<any | null>(null);
     const [gradeForm, setGradeForm] = useState({ marks: '', feedback: '' });
     const [gradeLoading, setGradeLoading] = useState(false);
@@ -154,7 +152,6 @@ const FacultyDashboard = () => {
 
     return (
         <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
-            {/* Sidebar */}
             <aside className="flex w-64 flex-col bg-white border-r border-slate-100 shadow-sm">
                 <div className="px-6 py-8 border-b border-slate-100">
                     <div className="flex items-center gap-3">
@@ -189,7 +186,6 @@ const FacultyDashboard = () => {
                 </div>
             </aside>
 
-            {/* Main */}
             <main className="flex-1 overflow-y-auto p-8">
                 {loading ? (
                     <div className="flex items-center justify-center h-full">
@@ -198,7 +194,6 @@ const FacultyDashboard = () => {
                 ) : (
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-6xl mx-auto space-y-8">
 
-                        {/* Header */}
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-widest text-teal-500 mb-1">Faculty Portal</p>
                             <h1 className="text-3xl font-black text-slate-900">
@@ -209,7 +204,6 @@ const FacultyDashboard = () => {
                             </h1>
                         </div>
 
-                        {/* OVERVIEW */}
                         {activeTab === 'overview' && (
                             <div className="space-y-6">
                                 <div className="grid grid-cols-3 gap-6">
@@ -245,7 +239,6 @@ const FacultyDashboard = () => {
                             </div>
                         )}
 
-                        {/* STUDENTS */}
                         {activeTab === 'students' && (
                             <div className="rounded-2xl bg-white border border-slate-100 shadow-sm overflow-hidden">
                                 <div className="border-b border-slate-100 px-8 py-6 bg-slate-50/50">
@@ -300,7 +293,6 @@ const FacultyDashboard = () => {
                             </div>
                         )}
 
-                        {/* SUBMISSIONS */}
                         {activeTab === 'submissions' && (
                             <div className="rounded-2xl bg-white border border-slate-100 shadow-sm overflow-hidden">
                                 <div className="border-b border-slate-100 px-8 py-6 bg-slate-50/50">
@@ -360,7 +352,6 @@ const FacultyDashboard = () => {
                             </div>
                         )}
 
-                        {/* REPORTS */}
                         {activeTab === 'reports' && (
                             <div className="space-y-4">
                                 {reports.length === 0 ? (
@@ -404,7 +395,6 @@ const FacultyDashboard = () => {
                 )}
             </main>
 
-            {/* REPORT MODAL */}
             <AnimatePresence>
                 {showReportModal && reportTarget && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6 overflow-y-auto" onClick={() => setShowReportModal(false)}>
@@ -465,7 +455,6 @@ const FacultyDashboard = () => {
                 )}
             </AnimatePresence>
 
-            {/* GRADE MODAL */}
             <AnimatePresence>
                 {gradeTarget && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setGradeTarget(null)}>
