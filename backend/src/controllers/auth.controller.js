@@ -25,6 +25,12 @@ const loginStudent = async (req, res) => {
             return res.status(401).json({ success: false, message: 'Student not found or account inactive.' });
         }
 
+        // Enforce allowed degrees
+        const allowedDegrees = ['BSE', 'BCS', 'BBA'];
+        if (!allowedDegrees.includes(student.degree)) {
+            return res.status(403).json({ success: false, message: `Access denied. Your degree (${student.degree}) is not authorized for this portal.` });
+        }
+
         const match = await student.comparePassword(password);
         if (!match) {
             return res.status(401).json({ success: false, message: 'Incorrect password.' });

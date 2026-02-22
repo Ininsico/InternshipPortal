@@ -24,7 +24,7 @@ router.use(loadAdmin);
  *     tags: [Company]
  *     responses:
  *       200:
- *         description: List of students
+ *         description: Success
  */
 router.get('/students', getMyStudents);
 
@@ -36,7 +36,7 @@ router.get('/students', getMyStudents);
  *     tags: [Company]
  *     responses:
  *       200:
- *         description: List of tasks
+ *         description: Success
  */
 router.get('/tasks', getMyTasks);
 
@@ -46,9 +46,21 @@ router.get('/tasks', getMyTasks);
  *   post:
  *     summary: Create a new task for interns
  *     tags: [Company]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [title, description, marks, deadline]
+ *             properties:
+ *               title: { type: string }
+ *               description: { type: string }
+ *               marks: { type: number }
+ *               deadline: { type: string, format: date-time }
  *     responses:
  *       201:
- *         description: Task created
+ *         description: Success
  */
 router.post('/tasks', createTask);
 
@@ -56,15 +68,13 @@ router.post('/tasks', createTask);
  * @openapi
  * /api/company/tasks/{taskId}:
  *   put:
- *     summary: Update a task
+ *     summary: Update an existing task
  *     tags: [Company]
  *     parameters:
  *       - in: path
  *         name: taskId
  *         required: true
- *     responses:
- *       200:
- *         description: Task updated
+ *         schema: { type: string }
  */
 router.put('/tasks/:taskId', updateTask);
 
@@ -78,6 +88,7 @@ router.put('/tasks/:taskId', updateTask);
  *       - in: path
  *         name: taskId
  *         required: true
+ *         schema: { type: string }
  */
 router.delete('/tasks/:taskId', deleteTask);
 
@@ -85,8 +96,11 @@ router.delete('/tasks/:taskId', deleteTask);
  * @openapi
  * /api/company/submissions:
  *   get:
- *     summary: Get all submissions for company tasks
+ *     summary: Get all student submissions for this company
  *     tags: [Company]
+ *     responses:
+ *       200:
+ *         description: Success
  */
 router.get('/submissions', getSubmissions);
 
@@ -100,17 +114,20 @@ router.get('/submissions', getSubmissions);
  *       - in: path
  *         name: submissionId
  *         required: true
+ *         schema: { type: string }
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required: [marks]
  *             properties:
- *               marks:
- *                 type: number
- *               feedback:
- *                 type: string
+ *               marks: { type: number }
+ *               feedback: { type: string }
+ *     responses:
+ *       200:
+ *         description: Success
  */
 router.put('/submissions/:submissionId/grade', gradeSubmission);
 

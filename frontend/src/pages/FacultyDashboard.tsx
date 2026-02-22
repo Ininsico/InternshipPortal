@@ -315,6 +315,15 @@ const FacultyDashboard = () => {
                                                         <p className="text-sm font-black text-slate-900">{sub.student?.name} <span className="text-slate-400 font-bold">— {sub.task?.title}</span></p>
                                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">{sub.student?.rollNumber} · {sub.student?.assignedCompany} · {new Date(sub.submittedAt).toLocaleDateString()}</p>
                                                         <p className="text-sm text-slate-600 mt-2 line-clamp-2">{sub.content}</p>
+                                                        {sub.attachments && sub.attachments.length > 0 && (
+                                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                                {sub.attachments.map((f: any, i: number) => (
+                                                                    <a key={i} href={f.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-slate-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-tight text-slate-500 hover:text-teal-600 hover:border-teal-100 transition-all shadow-sm">
+                                                                        <FileText className="h-3 w-3" /> {f.originalname}
+                                                                    </a>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                         {sub.companyGrade?.marks != null && (
                                                             <p className="mt-1.5 text-xs font-bold text-purple-600">Company grade: {sub.companyGrade.marks}/{sub.task?.maxMarks} — {sub.companyGrade.feedback || 'No feedback'}</p>
                                                         )}
@@ -455,8 +464,17 @@ const FacultyDashboard = () => {
                                 <h2 className="text-lg font-black text-slate-900">{gradeTarget.student?.name}</h2>
                                 <p className="text-xs font-bold text-slate-400 mt-0.5">{gradeTarget.task?.title}</p>
                             </div>
-                            <div className="px-8 py-4 bg-slate-50 border-b border-slate-100">
-                                <p className="text-xs font-bold text-slate-600 line-clamp-3">{gradeTarget.content}</p>
+                            <div className="px-8 py-5 bg-slate-50 border-b border-slate-100">
+                                <p className="text-xs font-bold text-slate-600 mb-3">{gradeTarget.content}</p>
+                                {gradeTarget.attachments && gradeTarget.attachments.length > 0 && (
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {gradeTarget.attachments.map((f: any, i: number) => (
+                                            <a key={i} href={f.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-xl bg-white border border-slate-100 px-4 py-2.5 text-[10px] font-black uppercase text-teal-600 hover:shadow-md transition-all">
+                                                <span className="flex items-center gap-2 truncate"><FileText className="h-4 w-4" /> {f.originalname}</span>
+                                            </a>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <form onSubmit={handleGrade} className="p-8 space-y-5">
                                 <div>

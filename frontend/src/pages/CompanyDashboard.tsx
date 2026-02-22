@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import {
     LayoutDashboard, Users, ClipboardList, BarChart2,
     LogOut, Plus, Loader2, CheckCircle2, XCircle, Clock,
-    ChevronDown, ChevronUp, Send, Star, AlertCircle, Briefcase
+    ChevronDown, ChevronUp, Send, Star, AlertCircle, Briefcase, File, ArrowUpRight
 } from 'lucide-react';
 
 const API_BASE = 'http://localhost:5000/api/company';
@@ -304,6 +304,15 @@ const CompanyDashboard = () => {
                                                         <p className="text-sm font-black text-slate-900">{sub.student?.name} <span className="text-slate-400 font-bold">— {sub.task?.title}</span></p>
                                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">{sub.student?.rollNumber} · Submitted {new Date(sub.submittedAt).toLocaleDateString()}</p>
                                                         <p className="text-sm text-slate-600 mt-2 line-clamp-2">{sub.content}</p>
+                                                        {sub.attachments && sub.attachments.length > 0 && (
+                                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                                {sub.attachments.map((f: any, i: number) => (
+                                                                    <a key={i} href={f.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-slate-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-tight text-slate-500 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm">
+                                                                        <File className="h-3 w-3" /> {f.originalname}
+                                                                    </a>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     <div className="flex flex-col items-end gap-2 shrink-0">
                                                         <StatusBadge status={sub.status} />
@@ -391,8 +400,18 @@ const CompanyDashboard = () => {
                                 <h2 className="text-lg font-black text-slate-900">{gradeTarget.student?.name}</h2>
                                 <p className="text-xs font-bold text-slate-400 mt-0.5">{gradeTarget.task?.title}</p>
                             </div>
-                            <div className="px-8 py-4 bg-slate-50 border-b border-slate-100">
-                                <p className="text-xs font-bold text-slate-600 line-clamp-3">{gradeTarget.content}</p>
+                            <div className="px-8 py-5 bg-slate-50 border-b border-slate-100">
+                                <p className="text-xs font-bold text-slate-600 mb-3">{gradeTarget.content}</p>
+                                {gradeTarget.attachments && gradeTarget.attachments.length > 0 && (
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {gradeTarget.attachments.map((f: any, i: number) => (
+                                            <a key={i} href={f.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-xl bg-white border border-slate-100 px-4 py-2.5 text-[10px] font-black uppercase text-indigo-600 hover:shadow-md transition-all">
+                                                <span className="flex items-center gap-2 truncate"><File className="h-3.5 w-3.5" /> {f.originalname}</span>
+                                                <ArrowUpRight className="h-3.5 w-3.5 opacity-40" />
+                                            </a>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <form onSubmit={handleGrade} className="p-8 space-y-5">
                                 <div>

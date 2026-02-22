@@ -66,6 +66,7 @@ const StudentSchema = new mongoose.Schema(
         siteSupervisorName: { type: String, trim: true, default: null },
         siteSupervisorEmail: { type: String, trim: true, default: null },
         siteSupervisorPhone: { type: String, trim: true, default: null },
+        profilePicture: { type: String, default: null },
     },
     { timestamps: true }
 );

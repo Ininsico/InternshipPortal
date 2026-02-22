@@ -6,6 +6,7 @@ const AgreementSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Student',
             required: true,
+            unique: true,
         },
         applicationId: {
             type: mongoose.Schema.Types.ObjectId,

@@ -18,11 +18,17 @@ const SubmissionSchema = new mongoose.Schema(
             required: [true, 'Submission content is required'],
             trim: true,
         },
-        // Optional file URL (future use)
-        fileUrl: {
-            type: String,
-            default: null,
-        },
+        // List of uploaded files
+        attachments: [
+            {
+                filename: { type: String, required: true },
+                originalname: { type: String, required: true },
+                path: { type: String, required: true },
+                mimetype: { type: String, required: true },
+                size: { type: Number, required: true },
+                url: { type: String, required: true }
+            }
+        ],
         submittedAt: {
             type: Date,
             default: Date.now,

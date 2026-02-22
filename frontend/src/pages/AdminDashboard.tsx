@@ -78,9 +78,11 @@ const AdminDashboard = () => {
     const [changeSupervisorLoading, setChangeSupervisorLoading] = useState(false);
     const [changeSupervisorError, setChangeSupervisorError] = useState('');
     const [companyAdmins, setCompanyAdmins] = useState<any[]>([]);
-    const [reports, setReports] = useState<any[]>([]);
     const [viewApp, setViewApp] = useState<any | null>(null);
     const [viewAppLoading, setViewAppLoading] = useState(false);
+    const [partneredCompanies, setPartneredCompanies] = useState<any[]>([]);
+    const [reports, setReports] = useState<any[]>([]);
+    const [selectedReport, setSelectedReport] = useState<any | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -102,18 +104,20 @@ const AdminDashboard = () => {
                 }
 
                 if (user?.role === 'super_admin') {
-                    const [facultyRes, agreementsRes, verifiedRes, companyAdminRes, reportsRes] = await Promise.all([
+                    const [facultyRes, agreementsRes, verifiedRes, companyAdminRes, reportsRes, partneredRes] = await Promise.all([
                         axios.get(`${API_BASE}/faculty`, config),
                         axios.get(`${API_BASE}/agreements`, config),
                         axios.get(`${API_BASE}/verified-students`, config),
                         axios.get(`${API_BASE}/company-admins`, config),
                         axios.get(`${API_BASE}/reports`, config),
+                        axios.get(`${API_BASE}/partnered-companies`, config),
                     ]);
                     if (facultyRes.data.success) setFaculty(facultyRes.data.admins);
                     if (agreementsRes.data.success) setAgreements(agreementsRes.data.agreements);
                     if (verifiedRes.data.success) setVerifiedStudents(verifiedRes.data.students);
                     if (companyAdminRes.data.success) setCompanyAdmins(companyAdminRes.data.admins);
                     if (reportsRes.data.success) setReports(reportsRes.data.reports);
+                    if (partneredRes.data.success) setPartneredCompanies(partneredRes.data.companies);
                 }
             } catch (err) {
                 console.error(err);
@@ -576,43 +580,60 @@ const AdminDashboard = () => {
                                 )}
 
                                 {activeTab === 'reports' && (
-                                    <div className="space-y-6">
-                                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Faculty Internship Reports ({reports.length})</h3>
+                                    <div className="space-y-8">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Faculty Internship Reports ({reports.length})</h3>
+                                        </div>
                                         {reports.length === 0 ? (
-                                            <div className="rounded-2xl border border-slate-100 bg-white py-20 text-center shadow-sm">
+                                            <div className="rounded-3xl border border-slate-100 bg-white py-20 text-center shadow-sm">
+                                                <div className="mx-auto w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-4">
+                                                    <FileText className="h-8 w-8 text-slate-200" />
+                                                </div>
                                                 <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No reports submitted yet.</p>
                                             </div>
                                         ) : (
-                                            reports.map((r: any) => (
-                                                <div key={r._id} className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100 transition-all">
-                                                    <div className="flex items-start justify-between gap-6">
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="h-12 w-12 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600 font-black text-lg">{r.student?.name?.[0]}</div>
-                                                            <div>
-                                                                <h4 className="text-base font-black text-slate-900">{r.student?.name}</h4>
-                                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">{r.student?.rollNumber} · {r.student?.assignedCompany || 'No company'}</p>
-                                                                <p className="text-[10px] font-bold text-blue-600 mt-0.5">by {r.createdBy?.name}</p>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                {reports.map((r: any) => (
+                                                    <motion.div
+                                                        key={r._id}
+                                                        whileHover={{ y: -4 }}
+                                                        onClick={() => setSelectedReport(r)}
+                                                        className="group cursor-pointer rounded-3xl border border-slate-100 bg-white p-6 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 transition-all"
+                                                    >
+                                                        <div className="flex items-start justify-between mb-4">
+                                                            <div className="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 font-black text-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                                                {r.student?.name?.[0]}
+                                                            </div>
+                                                            <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${r.overallRating >= 75 ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                                                                {r.completionStatus}
                                                             </div>
                                                         </div>
-                                                        <div className="text-right shrink-0">
-                                                            <div className={`text-2xl font-black ${r.overallRating >= 75 ? 'text-emerald-600' : r.overallRating >= 50 ? 'text-amber-500' : 'text-red-500'}`}>{r.overallRating}/100</div>
-                                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-0.5">{r.recommendation?.replace('_', ' ')}</p>
-                                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 mt-0.5">{r.completionStatus}</p>
+                                                        <h4 className="text-base font-black text-slate-900 mb-1">{r.student?.name}</h4>
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">{r.student?.rollNumber}</p>
+
+                                                        <div className="space-y-3 mb-6">
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Company</span>
+                                                                <span className="text-xs font-bold text-slate-900">{r.student?.assignedCompany}</span>
+                                                            </div>
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Performance</span>
+                                                                <span className="text-sm font-black text-blue-600">{r.overallRating}%</span>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <p className="mt-4 text-sm text-slate-600 font-medium">{r.summary}</p>
-                                                    {r.scores && (
-                                                        <div className="mt-4 grid grid-cols-4 gap-3">
-                                                            {Object.entries(r.scores).map(([k, v]: [string, any]) => (
-                                                                <div key={k} className="text-center bg-slate-50 rounded-xl p-3">
-                                                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{k}</p>
-                                                                    <p className="text-lg font-black text-teal-600">{v}</p>
+
+                                                        <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center text-[8px] font-black text-slate-500">
+                                                                    {r.createdBy?.name?.charAt(0)}
                                                                 </div>
-                                                            ))}
+                                                                <span className="text-[10px] font-bold text-slate-400">By {r.createdBy?.name}</span>
+                                                            </div>
+                                                            <ArrowUpRight className="h-4 w-4 text-slate-300 group-hover:text-blue-600 transition-colors" />
                                                         </div>
-                                                    )}
-                                                </div>
-                                            ))
+                                                    </motion.div>
+                                                ))}
+                                            </div>
                                         )}
                                     </div>
                                 )}
@@ -793,7 +814,14 @@ const AdminDashboard = () => {
                                                                     <button
                                                                         onClick={() => {
                                                                             setAssignTarget(stu);
-                                                                            setAssignForm({ facultySupervisorId: stu.supervisorId?._id || '', assignedCompany: '', assignedPosition: '', siteSupervisorName: '', siteSupervisorEmail: '', siteSupervisorPhone: '' });
+                                                                            setAssignForm({
+                                                                                facultySupervisorId: stu.supervisorId?._id || '',
+                                                                                assignedCompany: stu.latestApplication?.companyName || '',
+                                                                                assignedPosition: stu.latestApplication?.position || '',
+                                                                                siteSupervisorName: '', // Usually not in app, but we can pre-set if needed
+                                                                                siteSupervisorEmail: '',
+                                                                                siteSupervisorPhone: ''
+                                                                            });
                                                                             setAssignError('');
                                                                         }}
                                                                         className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-700 transition-all"
@@ -865,176 +893,207 @@ const AdminDashboard = () => {
                             </motion.div>
                         )}
                     </AnimatePresence>
-                </div>
-            </main>
+                </div >
+            </main >
 
             {/* INTERNSHIP ASSIGNMENT MODAL */}
-            {assignTarget && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setAssignTarget(null)}>
-                    <motion.div
-                        initial={{ opacity: 0, y: 24 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="w-full max-w-lg rounded-3xl border border-slate-100 bg-white shadow-2xl shadow-blue-500/10 overflow-hidden"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div className="border-b border-slate-100 px-8 py-6 bg-slate-50/50">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">Internship Assignment</p>
-                            <h2 className="text-lg font-black text-slate-900">{assignTarget.name}</h2>
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">{assignTarget.rollNumber} · {assignTarget.degree}</p>
-                        </div>
-                        <form onSubmit={handleAssignInternship} className="p-8 space-y-5 max-h-[70vh] overflow-y-auto">
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Faculty Supervisor *</label>
-                                <select
-                                    required
-                                    value={assignForm.facultySupervisorId}
-                                    onChange={e => setAssignForm({ ...assignForm, facultySupervisorId: e.target.value })}
-                                    className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all"
-                                >
-                                    <option value="">— Select Faculty Supervisor —</option>
-                                    {faculty.map((f: any) => (
-                                        <option key={f._id} value={f._id}>{f.name} ({f.email})</option>
-                                    ))}
-                                </select>
+            {
+                assignTarget && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setAssignTarget(null)}>
+                        <motion.div
+                            initial={{ opacity: 0, y: 24 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="w-full max-w-lg rounded-3xl border border-slate-100 bg-white shadow-2xl shadow-blue-500/10 overflow-hidden"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="border-b border-slate-100 px-8 py-6 bg-slate-50/50">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">Internship Assignment</p>
+                                <h2 className="text-lg font-black text-slate-900">{assignTarget.name}</h2>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">{assignTarget.rollNumber} · {assignTarget.degree}</p>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <form onSubmit={handleAssignInternship} className="p-8 space-y-5 max-h-[70vh] overflow-y-auto">
                                 <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Company Name *</label>
-                                    <input required value={assignForm.assignedCompany} onChange={e => setAssignForm({ ...assignForm, assignedCompany: e.target.value })} placeholder="e.g. PTCL" className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-slate-300" />
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Faculty Supervisor *</label>
+                                    <select
+                                        required
+                                        value={assignForm.facultySupervisorId}
+                                        onChange={e => setAssignForm({ ...assignForm, facultySupervisorId: e.target.value })}
+                                        className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all"
+                                    >
+                                        <option value="">— Select Faculty Supervisor —</option>
+                                        {faculty.map((f: any) => (
+                                            <option key={f._id} value={f._id}>{f.name} ({f.email})</option>
+                                        ))}
+                                    </select>
                                 </div>
+                                <div className="p-4 rounded-xl bg-blue-50/30 border border-blue-50">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-2 block">Quick Select: Partnered Company</label>
+                                    <select
+                                        onChange={e => {
+                                            const co = partneredCompanies.find(c => c._id === e.target.value);
+                                            if (co) {
+                                                setAssignForm({
+                                                    ...assignForm,
+                                                    assignedCompany: co.company,
+                                                    siteSupervisorName: co.name,
+                                                    siteSupervisorEmail: co.email
+                                                });
+                                            }
+                                        }}
+                                        className="w-full h-10 rounded-lg bg-white border border-blue-100 px-3 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-200 transition-all"
+                                    >
+                                        <option value="">— Select if Partnered —</option>
+                                        {partneredCompanies.map((c: any) => (
+                                            <option key={c._id} value={c._id}>{c.company} ({c.name})</option>
+                                        ))}
+                                    </select>
+                                    <p className="text-[9px] font-bold text-blue-400 mt-2 italic px-1">Note: This will auto-fill the details below. You can still edit them.</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Company Name *</label>
+                                        <input required value={assignForm.assignedCompany} onChange={e => setAssignForm({ ...assignForm, assignedCompany: e.target.value })} placeholder="e.g. PTCL" className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-slate-300" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Position / Role *</label>
+                                        <input required value={assignForm.assignedPosition} onChange={e => setAssignForm({ ...assignForm, assignedPosition: e.target.value })} placeholder="e.g. Software Intern" className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-slate-300" />
+                                    </div>
+                                </div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 pt-2 border-t border-slate-100">Site Supervisor (Optional)</p>
                                 <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Position / Role *</label>
-                                    <input required value={assignForm.assignedPosition} onChange={e => setAssignForm({ ...assignForm, assignedPosition: e.target.value })} placeholder="e.g. Software Intern" className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-slate-300" />
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Full Name</label>
+                                    <input value={assignForm.siteSupervisorName} onChange={e => setAssignForm({ ...assignForm, siteSupervisorName: e.target.value })} placeholder="Mr. Khalid Ahmed" className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-slate-300" />
                                 </div>
-                            </div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 pt-2 border-t border-slate-100">Site Supervisor (Optional)</p>
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Full Name</label>
-                                <input value={assignForm.siteSupervisorName} onChange={e => setAssignForm({ ...assignForm, siteSupervisorName: e.target.value })} placeholder="Mr. Khalid Ahmed" className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-slate-300" />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Email</label>
-                                    <input type="email" value={assignForm.siteSupervisorEmail} onChange={e => setAssignForm({ ...assignForm, siteSupervisorEmail: e.target.value })} placeholder="supervisor@company.com" className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-slate-300" />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Email</label>
+                                        <input type="email" value={assignForm.siteSupervisorEmail} onChange={e => setAssignForm({ ...assignForm, siteSupervisorEmail: e.target.value })} placeholder="supervisor@company.com" className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-slate-300" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Phone</label>
+                                        <input value={assignForm.siteSupervisorPhone} onChange={e => setAssignForm({ ...assignForm, siteSupervisorPhone: e.target.value })} placeholder="+92 300 0000000" className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-slate-300" />
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Phone</label>
-                                    <input value={assignForm.siteSupervisorPhone} onChange={e => setAssignForm({ ...assignForm, siteSupervisorPhone: e.target.value })} placeholder="+92 300 0000000" className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-slate-300" />
+                                {assignError && <p className="text-xs font-bold text-red-500 bg-red-50 rounded-lg px-4 py-3">{assignError}</p>}
+                                <div className="flex gap-4 pt-2">
+                                    <button type="button" onClick={() => setAssignTarget(null)} className="flex-1 h-12 rounded-2xl border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
+                                    <button type="submit" disabled={assignLoading} className="flex-1 h-12 rounded-2xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2">
+                                        {assignLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardList className="h-4 w-4" />}
+                                        {assignLoading ? 'Assigning...' : 'Confirm Assignment'}
+                                    </button>
                                 </div>
-                            </div>
-                            {assignError && <p className="text-xs font-bold text-red-500 bg-red-50 rounded-lg px-4 py-3">{assignError}</p>}
-                            <div className="flex gap-4 pt-2">
-                                <button type="button" onClick={() => setAssignTarget(null)} className="flex-1 h-12 rounded-2xl border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
-                                <button type="submit" disabled={assignLoading} className="flex-1 h-12 rounded-2xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2">
-                                    {assignLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardList className="h-4 w-4" />}
-                                    {assignLoading ? 'Assigning...' : 'Confirm Assignment'}
-                                </button>
-                            </div>
-                        </form>
-                    </motion.div>
-                </div>
-            )}
+                            </form>
+                        </motion.div>
+                    </div>
+                )
+            }
 
             {/* CHANGE SUPERVISOR MODAL */}
-            {changeSupervisorTarget && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setChangeSupervisorTarget(null)}>
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md rounded-3xl border border-slate-100 bg-white shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-                        <div className="border-b border-slate-100 px-8 py-6 bg-slate-50/50">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">Change Faculty Supervisor</p>
-                            <h2 className="text-lg font-black text-slate-900">{changeSupervisorTarget.name}</h2>
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">{changeSupervisorTarget.rollNumber}</p>
-                        </div>
-                        <form onSubmit={handleChangeSupervisor} className="p-8 space-y-5">
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Assign Supervisor</label>
-                                <select
-                                    value={changeSupervisorId}
-                                    onChange={e => setChangeSupervisorId(e.target.value)}
-                                    className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all"
-                                >
-                                    <option value="">— Remove Supervisor —</option>
-                                    {faculty.map((f: any) => (
-                                        <option key={f._id} value={f._id}>{f.name} ({f.email})</option>
-                                    ))}
-                                </select>
-                                {!changeSupervisorId && <p className="text-[10px] text-amber-500 font-bold mt-1.5">⚠ Student will have no supervisor assigned.</p>}
+            {
+                changeSupervisorTarget && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setChangeSupervisorTarget(null)}>
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md rounded-3xl border border-slate-100 bg-white shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                            <div className="border-b border-slate-100 px-8 py-6 bg-slate-50/50">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">Change Faculty Supervisor</p>
+                                <h2 className="text-lg font-black text-slate-900">{changeSupervisorTarget.name}</h2>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">{changeSupervisorTarget.rollNumber}</p>
                             </div>
-                            {changeSupervisorError && <p className="text-xs font-bold text-red-500 bg-red-50 rounded-lg px-4 py-3">{changeSupervisorError}</p>}
-                            <div className="flex gap-4">
-                                <button type="button" onClick={() => setChangeSupervisorTarget(null)} className="flex-1 h-12 rounded-2xl border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
-                                <button type="submit" disabled={changeSupervisorLoading} className="flex-1 h-12 rounded-2xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2">
-                                    {changeSupervisorLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
-                                    {changeSupervisorLoading ? 'Saving...' : 'Confirm'}
-                                </button>
-                            </div>
-                        </form>
-                    </motion.div>
-                </div>
-            )}
+                            <form onSubmit={handleChangeSupervisor} className="p-8 space-y-5">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Assign Supervisor</label>
+                                    <select
+                                        value={changeSupervisorId}
+                                        onChange={e => setChangeSupervisorId(e.target.value)}
+                                        className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all"
+                                    >
+                                        <option value="">— Remove Supervisor —</option>
+                                        {faculty.map((f: any) => (
+                                            <option key={f._id} value={f._id}>{f.name} ({f.email})</option>
+                                        ))}
+                                    </select>
+                                    {!changeSupervisorId && <p className="text-[10px] text-amber-500 font-bold mt-1.5">⚠ Student will have no supervisor assigned.</p>}
+                                </div>
+                                {changeSupervisorError && <p className="text-xs font-bold text-red-500 bg-red-50 rounded-lg px-4 py-3">{changeSupervisorError}</p>}
+                                <div className="flex gap-4">
+                                    <button type="button" onClick={() => setChangeSupervisorTarget(null)} className="flex-1 h-12 rounded-2xl border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
+                                    <button type="submit" disabled={changeSupervisorLoading} className="flex-1 h-12 rounded-2xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2">
+                                        {changeSupervisorLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
+                                        {changeSupervisorLoading ? 'Saving...' : 'Confirm'}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )
+            }
 
             {/* EDIT FACULTY MODAL */}
-            {editFaculty && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setEditFaculty(null)}>
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md rounded-3xl border border-slate-100 bg-white shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-                        <div className="border-b border-slate-100 px-8 py-6 bg-slate-50/50">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">Edit Faculty Details</p>
-                            <h2 className="text-lg font-black text-slate-900">{editFaculty.name}</h2>
-                        </div>
-                        <form onSubmit={handleEditFaculty} className="p-8 space-y-5">
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Full Name</label>
-                                <input required value={editFacultyForm.name} onChange={e => setEditFacultyForm({ ...editFacultyForm, name: e.target.value })} className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100" />
+            {
+                editFaculty && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setEditFaculty(null)}>
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md rounded-3xl border border-slate-100 bg-white shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                            <div className="border-b border-slate-100 px-8 py-6 bg-slate-50/50">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">Edit Faculty Details</p>
+                                <h2 className="text-lg font-black text-slate-900">{editFaculty.name}</h2>
                             </div>
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Email Address</label>
-                                <input required type="email" value={editFacultyForm.email} onChange={e => setEditFacultyForm({ ...editFacultyForm, email: e.target.value })} className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100" />
-                            </div>
-                            {editFacultyError && <p className="text-xs font-bold text-red-500 bg-red-50 rounded-lg px-4 py-3">{editFacultyError}</p>}
-                            <div className="flex gap-4">
-                                <button type="button" onClick={() => setEditFaculty(null)} className="flex-1 h-12 rounded-2xl border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
-                                <button type="submit" disabled={editFacultyLoading} className="flex-1 h-12 rounded-2xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2">
-                                    {editFacultyLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
-                                    {editFacultyLoading ? 'Saving...' : 'Save Changes'}
-                                </button>
-                            </div>
-                        </form>
-                    </motion.div>
-                </div>
-            )}
+                            <form onSubmit={handleEditFaculty} className="p-8 space-y-5">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Full Name</label>
+                                    <input required value={editFacultyForm.name} onChange={e => setEditFacultyForm({ ...editFacultyForm, name: e.target.value })} className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Email Address</label>
+                                    <input required type="email" value={editFacultyForm.email} onChange={e => setEditFacultyForm({ ...editFacultyForm, email: e.target.value })} className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100" />
+                                </div>
+                                {editFacultyError && <p className="text-xs font-bold text-red-500 bg-red-50 rounded-lg px-4 py-3">{editFacultyError}</p>}
+                                <div className="flex gap-4">
+                                    <button type="button" onClick={() => setEditFaculty(null)} className="flex-1 h-12 rounded-2xl border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
+                                    <button type="submit" disabled={editFacultyLoading} className="flex-1 h-12 rounded-2xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2">
+                                        {editFacultyLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
+                                        {editFacultyLoading ? 'Saving...' : 'Save Changes'}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )
+            }
 
             {/* DELETE FACULTY CONFIRMATION MODAL */}
-            {deleteFaculty && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setDeleteFaculty(null)}>
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl border border-slate-100 bg-white shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-                        <div className="p-8">
-                            <div className="flex items-center justify-center mb-6">
-                                <div className="h-14 w-14 rounded-2xl bg-red-50 flex items-center justify-center">
-                                    <Trash2 className="h-6 w-6 text-red-500" />
+            {
+                deleteFaculty && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setDeleteFaculty(null)}>
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl border border-slate-100 bg-white shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                            <div className="p-8">
+                                <div className="flex items-center justify-center mb-6">
+                                    <div className="h-14 w-14 rounded-2xl bg-red-50 flex items-center justify-center">
+                                        <Trash2 className="h-6 w-6 text-red-500" />
+                                    </div>
+                                </div>
+                                <h2 className="text-center text-xl font-black text-slate-900">Delete Faculty Member?</h2>
+                                <p className="mt-2 text-center text-sm font-bold text-slate-500">{deleteFaculty.name}</p>
+                                {deleteFaculty.assignedCount > 0 ? (
+                                    <div className="mt-5 rounded-xl bg-amber-50 border border-amber-100 px-5 py-4">
+                                        <p className="text-xs font-black text-amber-700 uppercase tracking-wider">⚠ Warning</p>
+                                        <p className="mt-1 text-sm font-bold text-amber-600">
+                                            <span className="text-amber-700">{deleteFaculty.assignedCount} student{deleteFaculty.assignedCount !== 1 ? 's are' : ' is'} currently assigned</span> to this supervisor. They will show <span className="text-amber-700">"Not Assigned"</span> after deletion.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <p className="mt-4 text-center text-xs font-bold text-slate-400">No students are currently assigned to this supervisor.</p>
+                                )}
+                                <div className="flex gap-4 mt-7">
+                                    <button onClick={() => setDeleteFaculty(null)} className="flex-1 h-12 rounded-2xl border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
+                                    <button onClick={handleDeleteFaculty} disabled={deleteFacultyLoading} className="flex-1 h-12 rounded-2xl bg-red-500 text-white text-xs font-black uppercase tracking-widest hover:bg-red-600 transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2">
+                                        {deleteFacultyLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                        {deleteFacultyLoading ? 'Deleting...' : 'Yes, Delete'}
+                                    </button>
                                 </div>
                             </div>
-                            <h2 className="text-center text-xl font-black text-slate-900">Delete Faculty Member?</h2>
-                            <p className="mt-2 text-center text-sm font-bold text-slate-500">{deleteFaculty.name}</p>
-                            {deleteFaculty.assignedCount > 0 ? (
-                                <div className="mt-5 rounded-xl bg-amber-50 border border-amber-100 px-5 py-4">
-                                    <p className="text-xs font-black text-amber-700 uppercase tracking-wider">⚠ Warning</p>
-                                    <p className="mt-1 text-sm font-bold text-amber-600">
-                                        <span className="text-amber-700">{deleteFaculty.assignedCount} student{deleteFaculty.assignedCount !== 1 ? 's are' : ' is'} currently assigned</span> to this supervisor. They will show <span className="text-amber-700">"Not Assigned"</span> after deletion.
-                                    </p>
-                                </div>
-                            ) : (
-                                <p className="mt-4 text-center text-xs font-bold text-slate-400">No students are currently assigned to this supervisor.</p>
-                            )}
-                            <div className="flex gap-4 mt-7">
-                                <button onClick={() => setDeleteFaculty(null)} className="flex-1 h-12 rounded-2xl border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
-                                <button onClick={handleDeleteFaculty} disabled={deleteFacultyLoading} className="flex-1 h-12 rounded-2xl bg-red-500 text-white text-xs font-black uppercase tracking-widest hover:bg-red-600 transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2">
-                                    {deleteFacultyLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                                    {deleteFacultyLoading ? 'Deleting...' : 'Yes, Delete'}
-                                </button>
-                            </div>
-                        </div>
-                    </motion.div>
-                </div>
-            )}
+                        </motion.div>
+                    </div>
+                )
+            }
 
             {/* VIEW APPLICATION MODAL */}
             <AnimatePresence>
@@ -1101,35 +1160,118 @@ const AdminDashboard = () => {
                 )}
             </AnimatePresence>
 
-            {showAddAdminModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-xl p-6">
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-[2.5rem] border border-slate-100 bg-white p-12 shadow-2xl shadow-blue-500/5">
-                        <div className="mb-10 text-center">
-                            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Staff Account</h2>
-                            <p className="mt-2 text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Create New Administrator</p>
+            {/* REPORT DETAILS MODAL */}
+            {selectedReport && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-6" onClick={() => setSelectedReport(null)}>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="w-full max-w-2xl rounded-[2.5rem] border border-slate-100 bg-white shadow-2xl overflow-hidden"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="p-10">
+                            <div className="flex items-start justify-between mb-8">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 mb-2">Detailed Internship Report</p>
+                                    <h2 className="text-3xl font-black text-slate-900 tracking-tight">{selectedReport.student?.name}</h2>
+                                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mt-1">
+                                        {selectedReport.student?.rollNumber} · {selectedReport.student?.degree}
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-4xl font-black text-blue-600">{selectedReport.overallRating}%</div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Final Score</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-8 mb-10">
+                                <div className="space-y-4">
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Company Info</p>
+                                        <p className="text-sm font-bold text-slate-900">{selectedReport.student?.assignedCompany}</p>
+                                        <p className="text-xs font-bold text-slate-400">{selectedReport.student?.assignedPosition}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Faculty Supervisor</p>
+                                        <p className="text-sm font-bold text-slate-900">{selectedReport.createdBy?.name}</p>
+                                        <p className="text-xs font-bold text-slate-400">{selectedReport.createdBy?.email}</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-4">
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Status</p>
+                                        <div className="flex gap-2">
+                                            <StatusPill status={selectedReport.completionStatus} />
+                                            <StatusPill status={selectedReport.recommendation} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Submitted On</p>
+                                        <p className="text-sm font-bold text-slate-900">{new Date(selectedReport.createdAt).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-slate-50 rounded-3xl p-8 mb-10">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+                                    <FileText className="h-3 w-3" /> Professional Evaluation Summary
+                                </p>
+                                <p className="text-sm text-slate-600 leading-relaxed font-medium line-clamp-6">
+                                    {selectedReport.summary}
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-4 gap-4">
+                                {Object.entries(selectedReport.scores || {}).map(([key, val]: [string, any]) => (
+                                    <div key={key} className="text-center rounded-2xl border border-slate-100 p-4">
+                                        <p className="text-[9px] font-black uppercase tracking-[0.1em] text-slate-400 mb-1">{key}</p>
+                                        <p className="text-xl font-black text-slate-900">{val}</p>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <button
+                                onClick={() => setSelectedReport(null)}
+                                className="w-full h-14 bg-slate-900 text-white rounded-2xl mt-10 text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95"
+                            >
+                                Close Report
+                            </button>
                         </div>
-                        <form onSubmit={handleCreateAdmin} className="space-y-6">
-                            <Input label="Full Name" value={newAdmin.name} onChange={e => setNewAdmin({ ...newAdmin, name: e.target.value })} placeholder="Prof. Ahmad" />
-                            <Input label="Email Address" type="email" value={newAdmin.email} onChange={e => setNewAdmin({ ...newAdmin, email: e.target.value })} placeholder="staff@comsats.edu.pk" />
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Account Role</label>
-                                <select value={newAdmin.role} onChange={e => setNewAdmin({ ...newAdmin, role: e.target.value, company: '' })} className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all">
-                                    <option value="admin">Faculty Supervisor</option>
-                                    <option value="company_admin">Company Admin</option>
-                                </select>
-                            </div>
-                            {newAdmin.role === 'company_admin' && (
-                                <Input label="Company Name" value={newAdmin.company} onChange={e => setNewAdmin({ ...newAdmin, company: e.target.value })} placeholder="e.g. PTCL, Systems Ltd" />
-                            )}
-                            <div className="flex gap-4 pt-6">
-                                <button type="button" onClick={() => setShowAddAdminModal(false)} className="flex-1 h-14 rounded-2xl border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
-                                <button type="submit" className="flex-1 h-14 rounded-2xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-500/30 hover:bg-blue-700 transition-all active:scale-95">Create Account</button>
-                            </div>
-                        </form>
                     </motion.div>
                 </div>
             )}
-        </div>
+
+            {
+                showAddAdminModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-xl p-6">
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-[2.5rem] border border-slate-100 bg-white p-12 shadow-2xl shadow-blue-500/5">
+                            <div className="mb-10 text-center">
+                                <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Staff Account</h2>
+                                <p className="mt-2 text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Create New Administrator</p>
+                            </div>
+                            <form onSubmit={handleCreateAdmin} className="space-y-6">
+                                <Input label="Full Name" value={newAdmin.name} onChange={e => setNewAdmin({ ...newAdmin, name: e.target.value })} placeholder="Prof. Ahmad" />
+                                <Input label="Email Address" type="email" value={newAdmin.email} onChange={e => setNewAdmin({ ...newAdmin, email: e.target.value })} placeholder="staff@comsats.edu.pk" />
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Account Role</label>
+                                    <select value={newAdmin.role} onChange={e => setNewAdmin({ ...newAdmin, role: e.target.value, company: '' })} className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all">
+                                        <option value="admin">Faculty Supervisor</option>
+                                        <option value="company_admin">Company Admin</option>
+                                    </select>
+                                </div>
+                                {newAdmin.role === 'company_admin' && (
+                                    <Input label="Company Name" value={newAdmin.company} onChange={e => setNewAdmin({ ...newAdmin, company: e.target.value })} placeholder="e.g. PTCL, Systems Ltd" />
+                                )}
+                                <div className="flex gap-4 pt-6">
+                                    <button type="button" onClick={() => setShowAddAdminModal(false)} className="flex-1 h-14 rounded-2xl border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
+                                    <button type="submit" className="flex-1 h-14 rounded-2xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-500/30 hover:bg-blue-700 transition-all active:scale-95">Create Account</button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )
+            }
+        </div >
     );
 };
 

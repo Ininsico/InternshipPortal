@@ -16,10 +16,14 @@ import {
     ArrowUpRight,
     Bell,
     ClipboardList,
-    CheckCircle2
+    CheckCircle2,
+    Paperclip,
+    Upload,
+    File,
+    Camera
 } from 'lucide-react';
 
-type TabKey = 'overview' | 'applications' | 'tasks' | 'documents' | 'profile';
+type TabKey = 'overview' | 'applications' | 'tasks' | 'profile';
 
 const API_BASE = 'http://localhost:5000/api/student';
 
@@ -34,9 +38,11 @@ const StudentDashboard = () => {
     const [myReport, setMyReport] = useState<any>(null);
     const [submitTarget, setSubmitTarget] = useState<any | null>(null);
     const [submitContent, setSubmitContent] = useState('');
+    const [submitFiles, setSubmitFiles] = useState<File[]>([]);
     const [submitLoading, setSubmitLoading] = useState(false);
     const [showApplyModal, setShowApplyModal] = useState(false);
     const [newApp, setNewApp] = useState({ companyName: '', position: '', description: '' });
+    const [profileImageLoading, setProfileImageLoading] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -86,12 +92,35 @@ const StudentDashboard = () => {
         if (!submitTarget) return;
         setSubmitLoading(true);
         try {
-            const config = { headers: { Authorization: `Bearer ${token}` } };
-            const { data } = await axios.post(`${API_BASE}/submit-task`, { taskId: submitTarget._id, content: submitContent }, config);
+            const formData = new FormData();
+            formData.append('taskId', submitTarget._id);
+            formData.append('content', submitContent || 'Assignment Submission');
+
+            submitFiles.forEach(file => {
+                formData.append('files', file);
+            });
+
+            const config = {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            };
+            const { data } = await axios.post(`${API_BASE}/submit-task`, formData, config);
             if (data.success) {
-                setSubmissions(prev => [...prev, data.submission]);
+                // Update local task submission status
+                setSubmissions(prev => {
+                    const existingIdx = prev.findIndex(s => (s.task?._id || s.task) === submitTarget._id);
+                    if (existingIdx > -1) {
+                        const updated = [...prev];
+                        updated[existingIdx] = data.submission;
+                        return updated;
+                    }
+                    return [data.submission, ...prev];
+                });
                 setSubmitTarget(null);
                 setSubmitContent('');
+                setSubmitFiles([]);
             }
         } catch (err) {
             console.error(err);
@@ -104,9 +133,34 @@ const StudentDashboard = () => {
         { key: 'overview', label: 'Overview', icon: LayoutDashboard },
         { key: 'applications', label: 'Applications', icon: Briefcase },
         { key: 'tasks', label: 'My Tasks', icon: ClipboardList },
-        { key: 'documents', label: 'Documents', icon: FileText },
         { key: 'profile', label: 'My Profile', icon: User },
     ];
+
+    const handleProfilePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || !e.target.files[0]) return;
+
+        const file = e.target.files[0];
+        const formData = new FormData();
+        formData.append('profilePicture', file);
+
+        setProfileImageLoading(true);
+        try {
+            const config = {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            };
+            const { data } = await axios.post(`${API_BASE}/profile-picture`, formData, config);
+            if (data.success) {
+                setProfile((prev: any) => ({ ...prev, profilePicture: data.profilePicture }));
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setProfileImageLoading(false);
+        }
+    };
 
     return (
         <div className="flex min-h-screen bg-white">
@@ -180,8 +234,15 @@ const StudentDashboard = () => {
                                             <div className="lg:col-span-2 rounded-2xl border border-slate-100 bg-white overflow-hidden shadow-sm">
                                                 <div className="flex items-center justify-between border-b border-slate-100 px-8 py-6">
                                                     <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900">Recent Applications</h3>
-                                                    <button onClick={() => setShowApplyModal(true)} className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95">
-                                                        <Plus className="h-3.5 w-3.5" /> New Application
+                                                    <button
+                                                        onClick={() => setShowApplyModal(true)}
+                                                        disabled={applications.length > 0}
+                                                        className={`flex items-center gap-2 rounded-lg px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition-all shadow-lg ${applications.length > 0
+                                                                ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                                                                : 'bg-blue-600 shadow-blue-500/20 hover:bg-blue-700 active:scale-95'
+                                                            }`}
+                                                    >
+                                                        <Plus className="h-3.5 w-3.5" /> {applications.length > 0 ? 'Application Submitted' : 'New Application'}
                                                     </button>
                                                 </div>
                                                 <div className="divide-y divide-slate-50">
@@ -227,8 +288,15 @@ const StudentDashboard = () => {
                                     <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
                                         <div className="border-b border-slate-100 px-8 py-6 flex justify-between items-center bg-slate-50/50">
                                             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900">All Applications ({applications.length})</h3>
-                                            <button onClick={() => setShowApplyModal(true)} className="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-blue-700 shadow-lg shadow-blue-600/10">
-                                                <Plus className="h-3.5 w-3.5" /> New Application
+                                            <button
+                                                onClick={() => setShowApplyModal(true)}
+                                                disabled={applications.length > 0}
+                                                className={`flex items-center gap-2 rounded-lg px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition-all shadow-lg ${applications.length > 0
+                                                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                                                        : 'bg-blue-600 shadow-blue-600/10 hover:bg-blue-700'
+                                                    }`}
+                                            >
+                                                <Plus className="h-3.5 w-3.5" /> {applications.length > 0 ? 'Already Applied' : 'New Application'}
                                             </button>
                                         </div>
                                         <table className="w-full text-left border-collapse">
@@ -290,6 +358,25 @@ const StudentDashboard = () => {
                                                                     <h4 className="text-base font-black text-slate-900">{task.title}</h4>
                                                                     <p className="text-sm text-slate-500 mt-1 font-medium">{task.description}</p>
                                                                     {task.maxMarks && <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Max: {task.maxMarks} marks</p>}
+
+                                                                    {sub && sub.attachments && sub.attachments.length > 0 && (
+                                                                        <div className="mt-4 flex flex-wrap gap-2">
+                                                                            {sub.attachments.map((file: any, i: number) => (
+                                                                                <a
+                                                                                    key={i}
+                                                                                    href={file.url}
+                                                                                    target="_blank"
+                                                                                    rel="noopener noreferrer"
+                                                                                    className="inline-flex items-center gap-2 rounded-lg bg-slate-50 border border-slate-100 px-3 py-1.5 text-[10px] font-bold text-slate-600 hover:bg-white hover:text-blue-600 transition-all shadow-sm"
+                                                                                >
+                                                                                    <File className="h-3 w-3" /> {file.originalname}
+                                                                                </a>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                    {sub && sub.content && sub.content !== 'Assignment Submission' && (
+                                                                        <p className="mt-3 text-xs text-slate-400 italic">"{sub.content}"</p>
+                                                                    )}
                                                                 </div>
                                                                 <div className="shrink-0 text-right">
                                                                     {sub ? (
@@ -304,10 +391,10 @@ const StudentDashboard = () => {
                                                                         </div>
                                                                     ) : (
                                                                         <button
-                                                                            onClick={() => { setSubmitTarget(task); setSubmitContent(''); }}
+                                                                            onClick={() => { setSubmitTarget(task); setSubmitContent(''); setSubmitFiles([]); }}
                                                                             className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-700 transition-all active:scale-95"
                                                                         >
-                                                                            <Plus className="h-3.5 w-3.5" /> Submit
+                                                                            <Plus className="h-3.5 w-3.5" /> Submit Work
                                                                         </button>
                                                                     )}
                                                                 </div>
@@ -344,16 +431,40 @@ const StudentDashboard = () => {
                                 )}
 
                                 {activeTab === 'profile' && (
-                                    <div className="max-w-xl mx-auto space-y-8 py-12">
-                                        <div className="text-center space-y-4">
-                                            <div className="inline-flex h-24 w-24 items-center justify-center rounded-[2.5rem] bg-blue-600 text-white text-3xl font-black shadow-2xl shadow-blue-500/30 mb-4 ring-8 ring-blue-50">
-                                                {user?.name[0]}
+                                    <div className="max-w-xl mx-auto space-y-8 py-12 text-center">
+                                        <div className="relative inline-block group mb-8">
+                                            <div className="h-32 w-32 rounded-[2.5rem] bg-indigo-600 text-white text-4xl font-black shadow-2xl shadow-indigo-500/30 overflow-hidden ring-8 ring-indigo-50 flex items-center justify-center relative">
+                                                {profile?.profilePicture ? (
+                                                    <img src={profile.profilePicture} alt={profile.name} className="h-full w-full object-cover" />
+                                                ) : (
+                                                    profile?.name?.[0]
+                                                )}
+
+                                                {profileImageLoading && (
+                                                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
+                                                        <Loader2 className="h-6 w-6 animate-spin text-white" />
+                                                    </div>
+                                                )}
                                             </div>
-                                            <h2 className="text-2xl font-black text-slate-900 leading-none capitalize">{profile?.name}</h2>
-                                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600 mb-8">{profile?.rollNumber}</p>
+
+                                            <label className="absolute -bottom-1 -right-1 h-10 w-10 bg-white border border-slate-100 rounded-xl shadow-lg flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-all text-slate-400 hover:text-indigo-600 group-hover:scale-110">
+                                                <Camera className="h-4 w-4" />
+                                                <input
+                                                    type="file"
+                                                    className="hidden"
+                                                    accept="image/*"
+                                                    onChange={handleProfilePictureChange}
+                                                    disabled={profileImageLoading}
+                                                />
+                                            </label>
                                         </div>
 
-                                        <div className="grid grid-cols-1 gap-4">
+                                        <div className="space-y-1 mb-10">
+                                            <h2 className="text-2xl font-black text-slate-900 leading-none capitalize">{profile?.name}</h2>
+                                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-600">{profile?.rollNumber}</p>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-4 text-left">
                                             <ProfileField label="University Email" value={profile?.email} />
                                             <div className="grid grid-cols-2 gap-4">
                                                 <ProfileField label="Current Session" value={profile?.session} />
@@ -402,21 +513,73 @@ const StudentDashboard = () => {
                         </div>
                         <form onSubmit={handleSubmitTask} className="space-y-6">
                             <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Submission Content *</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Submission Comments</label>
                                 <textarea
-                                    required
-                                    rows={6}
+                                    rows={3}
                                     value={submitContent}
                                     onChange={e => setSubmitContent(e.target.value)}
                                     className="w-full rounded-2xl bg-slate-50 border-none p-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300 resize-none"
-                                    placeholder="Describe your work, attach details or share a link..."
+                                    placeholder="Brief notes about your submission..."
                                 />
                             </div>
-                            <div className="flex gap-4">
-                                <button type="button" onClick={() => setSubmitTarget(null)} className="flex-1 h-14 rounded-2xl border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
-                                <button type="submit" disabled={submitLoading} className="flex-1 h-14 rounded-2xl bg-indigo-600 text-white text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-500/30 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2">
-                                    {submitLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardList className="h-4 w-4" />}
-                                    {submitLoading ? 'Submitting...' : 'Submit Task'}
+
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Attachments (Screenshots, PDFs, Docs)</label>
+                                <div className="relative">
+                                    <input
+                                        type="file"
+                                        multiple
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                        onChange={(e) => {
+                                            if (e.target.files) {
+                                                setSubmitFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+                                            }
+                                        }}
+                                    />
+                                    <div className="rounded-2xl border-2 border-dashed border-slate-100 bg-slate-50/50 p-8 text-center group hover:border-blue-200 transition-all">
+                                        <div className="mx-auto w-12 h-12 rounded-xl bg-white border border-slate-100 flex items-center justify-center mb-3 text-slate-400 group-hover:text-blue-500 transition-colors shadow-sm">
+                                            <Upload className="h-6 w-6" />
+                                        </div>
+                                        <p className="text-xs font-black text-slate-900">Click to upload or drag and drop</p>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">PDF, JPG, PNG, DOCX (Max 10MB)</p>
+                                    </div>
+                                </div>
+
+                                {submitFiles.length > 0 && (
+                                    <div className="grid grid-cols-1 gap-2 mt-4">
+                                        {submitFiles.map((file, idx) => (
+                                            <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-8 w-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-blue-600">
+                                                        <File className="h-4 w-4" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[10px] font-black text-slate-900 truncate max-w-[180px]">{file.name}</p>
+                                                        <p className="text-[8px] font-bold text-slate-400 uppercase">{(file.size / 1024).toFixed(1)} KB</p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSubmitFiles(prev => prev.filter((_, i) => i !== idx))}
+                                                    className="p-1.5 hover:bg-white hover:text-red-500 rounded-lg text-slate-300 transition-all"
+                                                >
+                                                    <X className="h-3.5 w-3.5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex gap-4 pt-4">
+                                <button type="button" onClick={() => { setSubmitTarget(null); setSubmitFiles([]); }} className="flex-1 h-14 rounded-2xl border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
+                                <button
+                                    type="submit"
+                                    disabled={submitLoading || (submitFiles.length === 0 && !submitContent)}
+                                    className="flex-1 h-14 rounded-2xl bg-indigo-600 text-white text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-500/30 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2"
+                                >
+                                    {submitLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+                                    {submitLoading ? 'Uploading...' : 'Submit Work'}
                                 </button>
                             </div>
                         </form>

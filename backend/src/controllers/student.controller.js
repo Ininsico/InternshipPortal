@@ -33,28 +33,37 @@ const createApplication = async (req, res) => {
         const { companyName, position, description, internshipType, duration } = req.body;
 
         // Check if application already exists for this student
-        let application = await Application.findOne({ studentId: req.user.id });
+        const existingApp = await Application.findOne({ studentId: req.user.id });
 
-        if (application) {
-            // Update existing application
-            application.companyName = companyName;
-            application.position = position;
-            application.description = description;
-            application.internshipType = internshipType;
-            application.duration = duration;
-            application.status = 'pending'; // Reset status to pending if it was rejected
-            await application.save();
-        } else {
-            // Create new application
-            application = await Application.create({
-                studentId: req.user.id,
-                companyName,
-                position,
-                internshipType,
-                duration,
-                description
-            });
+        if (existingApp) {
+            if (existingApp.status !== 'rejected') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'You already have an active or approved application. Further changes are not allowed.'
+                });
+            }
+
+            // Allow update only if rejected
+            existingApp.companyName = companyName;
+            existingApp.position = position;
+            existingApp.internshipType = internshipType;
+            existingApp.duration = duration;
+            existingApp.description = description;
+            existingApp.status = 'pending'; // Reset to pending after correction
+            await existingApp.save();
+
+            return res.json({ success: true, application: existingApp });
         }
+
+        // Create new application
+        const application = await Application.create({
+            studentId: req.user.id,
+            companyName,
+            position,
+            internshipType,
+            duration,
+            description
+        });
 
         // Update student's internship status
         await Student.findByIdAndUpdate(req.user.id, {
@@ -155,8 +164,8 @@ const getMyTasks = async (req, res) => {
 const submitTask = async (req, res) => {
     try {
         const { taskId, content } = req.body;
-        if (!taskId || !content) {
-            return res.status(400).json({ success: false, message: 'taskId and content are required.' });
+        if (!taskId) {
+            return res.status(400).json({ success: false, message: 'taskId is required.' });
         }
 
         const student = await Student.findById(req.user.id);
@@ -167,13 +176,31 @@ const submitTask = async (req, res) => {
             return res.status(403).json({ success: false, message: 'Task is not assigned to your company.' });
         }
 
+        // Process uploaded files
+        let attachments = [];
+        if (req.files && req.files.length > 0) {
+            attachments = req.files.map(file => ({
+                filename: file.filename,
+                originalname: file.originalname,
+                path: file.path.replace(/\\/g, '/'), // Windows fix
+                mimetype: file.mimetype,
+                size: file.size,
+                url: `${req.protocol}://${req.get('host')}/uploads/submissions/${file.filename}`
+            }));
+        }
+
         const submission = await Submission.findOneAndUpdate(
             { task: taskId, student: req.user.id },
-            { content, submittedAt: new Date(), status: 'submitted' },
+            {
+                content: content || 'Documents submitted.',
+                attachments,
+                submittedAt: new Date(),
+                status: 'submitted'
+            },
             { upsert: true, new: true, setDefaultsOnInsert: true }
         );
 
-        res.json({ success: true, message: 'Submission saved.', submission });
+        res.json({ success: true, message: 'Submission saved successfully.', submission });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -202,6 +229,25 @@ const getMyReport = async (req, res) => {
     }
 };
 
+const updateProfilePicture = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'Please upload an image.' });
+        }
+
+        const student = await Student.findById(req.user.id);
+        if (!student) return res.status(404).json({ success: false, message: 'Student not found.' });
+
+        const url = `${req.protocol}://${req.get('host')}/uploads/profile/${req.file.filename}`;
+        student.profilePicture = url;
+        await student.save();
+
+        res.json({ success: true, profilePicture: url });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 module.exports = {
     getStudentProfile,
     getStudentApplications,
@@ -212,5 +258,6 @@ module.exports = {
     submitTask,
     getMySubmissions,
     getMyReport,
+    updateProfilePicture,
 };
 

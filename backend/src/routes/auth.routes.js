@@ -15,16 +15,14 @@ const { protect } = require('../middleware/auth.middleware');
  *         application/json:
  *           schema:
  *             type: object
+ *             required: [session, degree, rollNumber]
  *             properties:
- *               session:
- *                 type: string
- *               degree:
- *                 type: string
- *               rollNumber:
- *                 type: string
+ *               session: { type: string }
+ *               degree: { type: string }
+ *               rollNumber: { type: string }
  *     responses:
  *       200:
- *         description: Login successful
+ *         description: Success
  */
 router.post('/login/student', loginStudent);
 
@@ -40,14 +38,13 @@ router.post('/login/student', loginStudent);
  *         application/json:
  *           schema:
  *             type: object
+ *             required: [email, password]
  *             properties:
- *               email:
- *                 type: string
- *               password:
- *                 type: string
+ *               email: { type: string }
+ *               password: { type: string }
  *     responses:
  *       200:
- *         description: Login successful
+ *         description: Success
  */
 router.post('/login/admin', loginAdmin);
 
@@ -61,7 +58,7 @@ router.post('/login/admin', loginAdmin);
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Logout successful
+ *         description: Success
  */
 router.post('/logout', protect, logout);
 
@@ -69,13 +66,13 @@ router.post('/logout', protect, logout);
  * @openapi
  * /api/auth/me:
  *   get:
- *     summary: Get current user profile
+ *     summary: Get current authenticated user profile
  *     tags: [Auth]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: User data
+ *         description: Success
  */
 router.get('/me', protect, getMe);
 
@@ -83,11 +80,20 @@ router.get('/me', protect, getMe);
  * @openapi
  * /api/auth/forgot-password:
  *   post:
- *     summary: Request password reset
+ *     summary: Request password reset email
  *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email: { type: string }
  *     responses:
  *       200:
- *         description: Email sent
+ *         description: Success
  */
 router.post('/forgot-password', forgotPassword);
 
@@ -95,11 +101,21 @@ router.post('/forgot-password', forgotPassword);
  * @openapi
  * /api/auth/reset-password:
  *   post:
- *     summary: Reset password with token
+ *     summary: Reset password using token
  *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token, password]
+ *             properties:
+ *               token: { type: string }
+ *               password: { type: string }
  *     responses:
  *       200:
- *         description: Password updated
+ *         description: Success
  */
 router.post('/reset-password', resetPassword);
 

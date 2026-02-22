@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, GraduationCap, Loader2, AlertCircle, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -21,7 +21,7 @@ interface ApiResponse {
 }
 
 const SESSIONS = ['FA20', 'SP20', 'FA21', 'SP21', 'FA22', 'SP22', 'FA23', 'SP23', 'FA24', 'SP24'];
-const DEGREES = ['BCS', 'BSE', 'BBA', 'BEE', 'BME', 'BAR'];
+const DEGREES = ['BSE', 'BCS', 'BBA'];
 const API_BASE = 'http://localhost:5000/api/auth';
 
 const LandingPage = () => {
@@ -44,13 +44,16 @@ const LandingPage = () => {
     const [forgotLoading, setForgotLoading] = useState(false);
     const [forgotFeedback, setForgotFeedback] = useState<{ type: 'error' | 'success'; msg: string } | null>(null);
 
-    if (user) {
-        if (user.role === 'student') navigate('/dashboard', { replace: true });
-        else if (user.role === 'company_admin') navigate('/company-portal', { replace: true });
-        else if (user.role === 'admin') navigate('/faculty-portal', { replace: true });
-        else navigate('/admin', { replace: true }); // super_admin
-        return null;
-    }
+    useEffect(() => {
+        if (user) {
+            if (user.role === 'student') navigate('/dashboard', { replace: true });
+            else if (user.role === 'company_admin') navigate('/company-portal', { replace: true });
+            else if (user.role === 'admin') navigate('/faculty-portal', { replace: true });
+            else navigate('/admin', { replace: true }); // super_admin
+        }
+    }, [user, navigate]);
+
+    if (user) return null;
 
     const switchMode = (next: FormMode) => {
         if (next === mode) return;

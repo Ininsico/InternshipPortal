@@ -187,13 +187,15 @@ const InternshipRequestForm = () => {
                             </div>
 
                             <div className="flex gap-4">
-                                <button
-                                    onClick={() => setIsEditing(true)}
-                                    className="flex-1 h-14 bg-white border-2 border-slate-100 rounded-2xl flex items-center justify-center gap-3 text-xs font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 hover:border-slate-200 transition-all active:scale-[0.98]"
-                                >
-                                    <Edit3 className="w-4 h-4" />
-                                    Edit Form
-                                </button>
+                                {isRejected && (
+                                    <button
+                                        onClick={() => setIsEditing(true)}
+                                        className="flex-1 h-14 bg-white border-2 border-slate-100 rounded-2xl flex items-center justify-center gap-3 text-xs font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 hover:border-slate-200 transition-all active:scale-[0.98]"
+                                    >
+                                        <Edit3 className="w-4 h-4" />
+                                        Edit Form
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => logout()}
                                     className="flex-1 h-14 bg-slate-900 rounded-2xl flex items-center justify-center gap-3 text-xs font-black uppercase tracking-widest text-white hover:bg-slate-800 transition-all active:scale-[0.98]"

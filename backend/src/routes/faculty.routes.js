@@ -22,7 +22,7 @@ router.use(loadAdmin);
  *     tags: [Faculty]
  *     responses:
  *       200:
- *         description: List of students
+ *         description: Success
  */
 router.get('/students', getMyStudents);
 
@@ -32,6 +32,9 @@ router.get('/students', getMyStudents);
  *   get:
  *     summary: Get submissions from supervised students
  *     tags: [Faculty]
+ *     responses:
+ *       200:
+ *         description: Success
  */
 router.get('/submissions', getStudentSubmissions);
 
@@ -41,6 +44,20 @@ router.get('/submissions', getStudentSubmissions);
  *   put:
  *     summary: Grade a student submission
  *     tags: [Faculty]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [submissionId, marks]
+ *             properties:
+ *               submissionId: { type: string }
+ *               marks: { type: number }
+ *               feedback: { type: string }
+ *     responses:
+ *       200:
+ *         description: Success
  */
 router.put('/grade', gradeSubmission);
 
@@ -50,6 +67,20 @@ router.put('/grade', gradeSubmission);
  *   post:
  *     summary: Create an internship report for a student
  *     tags: [Faculty]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [studentId, content, marks]
+ *             properties:
+ *               studentId: { type: string }
+ *               content: { type: string }
+ *               marks: { type: number }
+ *     responses:
+ *       201:
+ *         description: Success
  */
 router.post('/report', createReport);
 
@@ -59,6 +90,9 @@ router.post('/report', createReport);
  *   get:
  *     summary: Get reports created by this faculty
  *     tags: [Faculty]
+ *     responses:
+ *       200:
+ *         description: Success
  */
 router.get('/reports', getMyReports);
 

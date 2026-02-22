@@ -66,9 +66,11 @@ const getAllAdmins = async (req, res) => {
     }
 };
 
+const ALLOWED_DEGREES = ['BSE', 'BCS', 'BBA'];
+
 const getAllStudents = async (req, res) => {
     try {
-        const students = await Student.find()
+        const students = await Student.find({ degree: { $in: ALLOWED_DEGREES } })
             .populate('supervisorId', 'name email')
             .select('-passwordHash');
         res.json({ success: true, students });
@@ -102,7 +104,7 @@ const assignStudentToSupervisor = async (req, res) => {
 
 const getDashboardStats = async (req, res) => {
     try {
-        const totalStudents = await Student.countDocuments();
+        const totalStudents = await Student.countDocuments({ degree: { $in: ALLOWED_DEGREES } });
 
         // Count unique students by roll number to ensure total accuracy
         const activeAggregation = await Application.aggregate([
@@ -138,8 +140,11 @@ const getDashboardStats = async (req, res) => {
         const activeCount = activeAggregation[0]?.count || 0;
         const completedCount = completedAggregation[0]?.count || 0;
 
-        // Get count of pending agreements
-        const pendingAgreementsCount = await Student.countDocuments({ internshipStatus: 'agreement_submitted' });
+        // Get count of pending agreements - specifically for allowed degrees
+        const pendingAgreementsCount = await Student.countDocuments({
+            internshipStatus: 'agreement_submitted',
+            degree: { $in: ALLOWED_DEGREES }
+        });
 
         // Get unique recent activities - Grouped by roll number + Status Prioritization
         const recentActivity = await Application.aggregate([
@@ -226,7 +231,10 @@ const approveInternship = async (req, res) => {
 
 const getPendingAgreements = async (req, res) => {
     try {
-        const studentsWithAgreements = await Student.find({ internshipStatus: 'agreement_submitted' })
+        const studentsWithAgreements = await Student.find({
+            internshipStatus: 'agreement_submitted',
+            degree: { $in: ALLOWED_DEGREES }
+        })
             .select('name rollNumber degree email')
             .lean();
 
@@ -276,10 +284,30 @@ const verifyAgreement = async (req, res) => {
 
 const getVerifiedStudents = async (req, res) => {
     try {
-        const students = await Student.find({ internshipStatus: 'verified' })
+        const students = await Student.find({
+            internshipStatus: 'verified',
+            degree: { $in: ALLOWED_DEGREES }
+        })
             .populate('supervisorId', 'name email')
-            .select('-passwordHash');
-        res.json({ success: true, students });
+            .select('-passwordHash')
+            .lean();
+
+        // Attach latest application for each student to pre-fill assignment details
+        const studentsWithApps = await Promise.all(students.map(async (stu) => {
+            const latestApp = await Application.findOne({ studentId: stu._id, status: 'approved' }).sort({ createdAt: -1 });
+            return { ...stu, latestApplication: latestApp };
+        }));
+
+        res.json({ success: true, students: studentsWithApps });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+const getPartneredCompanies = async (req, res) => {
+    try {
+        const companyAdmins = await Admin.find({ role: 'company_admin' }).select('name email company').lean();
+        res.json({ success: true, companies: companyAdmins });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -448,6 +476,7 @@ module.exports = {
     assignInternship,
     deleteAdmin,
     updateAdmin,
-    changeSupervisor
+    changeSupervisor,
+    getPartneredCompanies
 };
 

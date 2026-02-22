@@ -10,8 +10,10 @@ const {
     submitTask,
     getMySubmissions,
     getMyReport,
+    updateProfilePicture,
 } = require('../controllers/student.controller');
 const { protect, requireRole } = require('../middleware/auth.middleware');
+const upload = require('../middleware/upload.middleware');
 
 router.use(protect);
 router.use(requireRole('student'));
@@ -20,15 +22,37 @@ router.use(requireRole('student'));
  * @openapi
  * /api/student/profile:
  *   get:
- *     summary: Get student profile
+ *     summary: Get student profile details
  *     tags: [Student]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Profile data
+ *         description: Success
  */
 router.get('/profile', getStudentProfile);
+
+/**
+ * @openapi
+ * /api/student/profile-picture:
+ *   post:
+ *     summary: Update profile picture
+ *     tags: [Student]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profilePicture:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.post('/profile-picture', upload.single('profilePicture'), updateProfilePicture);
 
 /**
  * @openapi
@@ -38,7 +62,7 @@ router.get('/profile', getStudentProfile);
  *     tags: [Student]
  *     responses:
  *       200:
- *         description: List of applications
+ *         description: Success
  */
 router.get('/applications', getStudentApplications);
 
@@ -54,6 +78,7 @@ router.get('/applications', getStudentApplications);
  *         application/json:
  *           schema:
  *             type: object
+ *             required: [companyName, position]
  *             properties:
  *               companyName:
  *                 type: string
@@ -63,7 +88,7 @@ router.get('/applications', getStudentApplications);
  *                 type: string
  *     responses:
  *       201:
- *         description: Application created
+ *         description: Success
  */
 router.post('/apply', createApplication);
 
@@ -71,11 +96,11 @@ router.post('/apply', createApplication);
  * @openapi
  * /api/student/agreement:
  *   post:
- *     summary: Submit student agreement (Contract)
+ *     summary: Submit student agreement form
  *     tags: [Student]
  *     responses:
  *       200:
- *         description: Agreement saved
+ *         description: Success
  */
 router.post('/agreement', submitAgreement);
 
@@ -83,11 +108,11 @@ router.post('/agreement', submitAgreement);
  * @openapi
  * /api/student/agreement:
  *   get:
- *     summary: Get submitted agreement
+ *     summary: Get submitted agreement data
  *     tags: [Student]
  *     responses:
  *       200:
- *         description: Agreement data
+ *         description: Success
  */
 router.get('/agreement', getAgreement);
 
@@ -99,7 +124,7 @@ router.get('/agreement', getAgreement);
  *     tags: [Student]
  *     responses:
  *       200:
- *         description: List of tasks with submission status
+ *         description: Success
  */
 router.get('/tasks', getMyTasks);
 
@@ -107,35 +132,40 @@ router.get('/tasks', getMyTasks);
  * @openapi
  * /api/student/submit-task:
  *   post:
- *     summary: Submit work for a task
+ *     summary: Submit work for a specific task
  *     tags: [Student]
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
+ *             required: [taskId]
  *             properties:
  *               taskId:
  *                 type: string
  *               content:
  *                 type: string
+ *               files:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
  *     responses:
  *       200:
- *         description: Submission saved
+ *         description: Success
  */
-router.post('/submit', submitTask);
-router.post('/submit-task', submitTask);
+router.post('/submit-task', upload.array('files'), submitTask);
 
 /**
  * @openapi
  * /api/student/submissions:
  *   get:
- *     summary: Get all my submissions
+ *     summary: Get all submissions made by the student
  *     tags: [Student]
  *     responses:
  *       200:
- *         description: List of submissions
+ *         description: Success
  */
 router.get('/submissions', getMySubmissions);
 
@@ -143,11 +173,11 @@ router.get('/submissions', getMySubmissions);
  * @openapi
  * /api/student/report:
  *   get:
- *     summary: Get faculty internship report
+ *     summary: Get final faculty internship report
  *     tags: [Student]
  *     responses:
  *       200:
- *         description: Report data
+ *         description: Success
  */
 router.get('/report', getMyReport);
 

@@ -6,6 +6,7 @@ const ApplicationSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Student',
             required: true,
+            unique: true,
         },
         companyName: {
             type: String,
