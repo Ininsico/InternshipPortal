@@ -45,11 +45,10 @@ const LandingPage = () => {
     const [forgotFeedback, setForgotFeedback] = useState<{ type: 'error' | 'success'; msg: string } | null>(null);
 
     if (user) {
-        if (user.role === 'student') {
-            navigate('/dashboard', { replace: true });
-        } else {
-            navigate('/admin', { replace: true });
-        }
+        if (user.role === 'student') navigate('/dashboard', { replace: true });
+        else if (user.role === 'company_admin') navigate('/company-portal', { replace: true });
+        else if (user.role === 'admin') navigate('/faculty-portal', { replace: true });
+        else navigate('/admin', { replace: true }); // super_admin
         return null;
     }
 
@@ -97,7 +96,10 @@ const LandingPage = () => {
             });
             if (data.token && data.user) {
                 login(data.token, data.user);
-                navigate('/admin');
+                const role = data.user.role;
+                if (role === 'company_admin') navigate('/company-portal');
+                else if (role === 'admin') navigate('/faculty-portal');
+                else navigate('/admin'); // super_admin
             }
             setFeedback({ type: 'success', msg: data.message });
         } catch (err: unknown) {
@@ -199,7 +201,7 @@ const LandingPage = () => {
 
                             <AnimatePresence mode="wait">
                                 {!isAdmin ? (
-                                    <motion.form key="stu" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} onSubmit={handleStudentSubmit} className="space-y-6">
+                                    <motion.form key="stu" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} onSubmit={handleStudentSubmit} className="space-y-6" autoComplete="off">
                                         <div className="space-y-4">
                                             <div className="flex gap-3">
                                                 <select value={session} onChange={e => setSession(e.target.value)} className="h-14 flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-4 text-xs font-black text-slate-900 outline-none focus:border-blue-500 transition-all">
@@ -209,11 +211,11 @@ const LandingPage = () => {
                                                     {DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
                                                 </select>
                                             </div>
-                                            <input type="text" placeholder="Roll Number" value={rollId} onChange={e => setRollId(e.target.value)} required className="h-14 w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 transition-all placeholder:text-slate-400" />
+                                            <input type="text" name="student_roll" placeholder="Roll Number" value={rollId} onChange={e => setRollId(e.target.value)} required className="h-14 w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 transition-all placeholder:text-slate-400" autoComplete="off" />
                                         </div>
 
                                         <div className="relative">
-                                            <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required className="h-14 w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 transition-all placeholder:text-slate-400" placeholder="Password" />
+                                            <input type={showPassword ? 'text' : 'password'} name="student_password_entry" value={password} onChange={e => setPassword(e.target.value)} required className="h-14 w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 transition-all placeholder:text-slate-400" placeholder="Password" autoComplete="new-password" />
                                             <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-900">
                                                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                             </button>
@@ -227,11 +229,11 @@ const LandingPage = () => {
                                         </div>
                                     </motion.form>
                                 ) : (
-                                    <motion.form key="adm" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleAdminSubmit} className="space-y-6">
-                                        <input type="email" placeholder="Faculty Email" value={email} onChange={e => setEmail(e.target.value)} required className="h-14 w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 transition-all placeholder:text-slate-400" />
+                                    <motion.form key="adm" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleAdminSubmit} className="space-y-6" autoComplete="off">
+                                        <input type="email" name="admin_email" placeholder="Faculty Email" value={email} onChange={e => setEmail(e.target.value)} required className="h-14 w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 transition-all placeholder:text-slate-400" autoComplete="off" />
 
                                         <div className="relative">
-                                            <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required className="h-14 w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 transition-all placeholder:text-slate-400" placeholder="Password" />
+                                            <input type={showPassword ? 'text' : 'password'} name="admin_password_entry" value={password} onChange={e => setPassword(e.target.value)} required className="h-14 w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 transition-all placeholder:text-slate-400" placeholder="Password" autoComplete="new-password" />
                                             <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-900">
                                                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                             </button>

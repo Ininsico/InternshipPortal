@@ -14,10 +14,12 @@ import {
     LayoutDashboard,
     Zap,
     ArrowUpRight,
-    Bell
+    Bell,
+    ClipboardList,
+    CheckCircle2
 } from 'lucide-react';
 
-type TabKey = 'overview' | 'applications' | 'documents' | 'profile';
+type TabKey = 'overview' | 'applications' | 'tasks' | 'documents' | 'profile';
 
 const API_BASE = 'http://localhost:5000/api/student';
 
@@ -27,6 +29,12 @@ const StudentDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [profile, setProfile] = useState<any>(null);
     const [applications, setApplications] = useState<any[]>([]);
+    const [tasks, setTasks] = useState<any[]>([]);
+    const [submissions, setSubmissions] = useState<any[]>([]);
+    const [myReport, setMyReport] = useState<any>(null);
+    const [submitTarget, setSubmitTarget] = useState<any | null>(null);
+    const [submitContent, setSubmitContent] = useState('');
+    const [submitLoading, setSubmitLoading] = useState(false);
     const [showApplyModal, setShowApplyModal] = useState(false);
     const [newApp, setNewApp] = useState({ companyName: '', position: '', description: '' });
 
@@ -36,12 +44,18 @@ const StudentDashboard = () => {
             setLoading(true);
             try {
                 const config = { headers: { Authorization: `Bearer ${token}` } };
-                const [profileRes, appsRes] = await Promise.all([
+                const [profileRes, appsRes, tasksRes, subsRes, reportRes] = await Promise.all([
                     axios.get(`${API_BASE}/profile`, config),
-                    axios.get(`${API_BASE}/applications`, config)
+                    axios.get(`${API_BASE}/applications`, config),
+                    axios.get(`${API_BASE}/tasks`, config),
+                    axios.get(`${API_BASE}/submissions`, config),
+                    axios.get(`${API_BASE}/report`, config),
                 ]);
                 if (profileRes.data.success) setProfile(profileRes.data.student);
                 if (appsRes.data.success) setApplications(appsRes.data.applications);
+                if (tasksRes.data.success) setTasks(tasksRes.data.tasks);
+                if (subsRes.data.success) setSubmissions(subsRes.data.submissions);
+                if (reportRes.data.success) setMyReport(reportRes.data.report);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -67,9 +81,29 @@ const StudentDashboard = () => {
         }
     };
 
+    const handleSubmitTask = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!submitTarget) return;
+        setSubmitLoading(true);
+        try {
+            const config = { headers: { Authorization: `Bearer ${token}` } };
+            const { data } = await axios.post(`${API_BASE}/submit-task`, { taskId: submitTarget._id, content: submitContent }, config);
+            if (data.success) {
+                setSubmissions(prev => [...prev, data.submission]);
+                setSubmitTarget(null);
+                setSubmitContent('');
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setSubmitLoading(false);
+        }
+    };
+
     const menuItems = [
         { key: 'overview', label: 'Overview', icon: LayoutDashboard },
         { key: 'applications', label: 'Applications', icon: Briefcase },
+        { key: 'tasks', label: 'My Tasks', icon: ClipboardList },
         { key: 'documents', label: 'Documents', icon: FileText },
         { key: 'profile', label: 'My Profile', icon: User },
     ];
@@ -161,7 +195,7 @@ const StudentDashboard = () => {
                                                                 </div>
                                                             </div>
                                                             <div className="flex items-center gap-6">
-                                                                <StatusBadge status={app.status} />
+                                                                <StatusBadge status={app.status || 'pending'} />
                                                                 <button className="text-slate-200 hover:text-slate-400"><ArrowUpRight className="h-4 w-4" /></button>
                                                             </div>
                                                         </div>
@@ -216,9 +250,11 @@ const StudentDashboard = () => {
                                                             </div>
                                                         </td>
                                                         <td className="px-8 py-5">
-                                                            <StatusBadge status={app.status} />
+                                                            <StatusBadge status={app.status || 'pending'} />
                                                         </td>
-                                                        <td className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(app.appliedDate).toLocaleDateString()}</td>
+                                                        <td className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                            {app.appliedDate ? new Date(app.appliedDate).toLocaleDateString() : 'N/A'}
+                                                        </td>
                                                         <td className="px-8 py-5 text-right">
                                                             <button className="text-slate-200 hover:text-blue-600"><ArrowUpRight className="h-4 w-4" /></button>
                                                         </td>
@@ -226,6 +262,84 @@ const StudentDashboard = () => {
                                                 ))}
                                             </tbody>
                                         </table>
+                                    </div>
+                                )}
+
+                                {activeTab === 'tasks' && (
+                                    <div className="space-y-8">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Assigned Tasks ({tasks.length})</h3>
+                                        </div>
+                                        {tasks.length === 0 ? (
+                                            <div className="rounded-2xl border border-slate-100 bg-white py-20 text-center shadow-sm">
+                                                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No tasks assigned yet.</p>
+                                                <p className="text-xs text-slate-300 font-bold mt-1">Your company supervisor will assign tasks here.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="grid gap-5">
+                                                {tasks.map((task: any) => {
+                                                    const sub = submissions.find((s: any) => s.task?._id === task._id || s.task === task._id);
+                                                    return (
+                                                        <div key={task._id} className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100 transition-all">
+                                                            <div className="flex items-start justify-between gap-4">
+                                                                <div>
+                                                                    <div className="flex items-center gap-2 mb-1">
+                                                                        <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">{task.company}</span>
+                                                                        {task.deadline && <span className="text-[10px] font-black text-amber-600">Due {new Date(task.deadline).toLocaleDateString()}</span>}
+                                                                    </div>
+                                                                    <h4 className="text-base font-black text-slate-900">{task.title}</h4>
+                                                                    <p className="text-sm text-slate-500 mt-1 font-medium">{task.description}</p>
+                                                                    {task.maxMarks && <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Max: {task.maxMarks} marks</p>}
+                                                                </div>
+                                                                <div className="shrink-0 text-right">
+                                                                    {sub ? (
+                                                                        <div>
+                                                                            <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-600">
+                                                                                <CheckCircle2 className="h-3.5 w-3.5" /> Submitted
+                                                                            </span>
+                                                                            {sub.companyGrade?.marks !== null && sub.companyGrade?.marks !== undefined && (
+                                                                                <p className="mt-2 text-base font-black text-indigo-600">{sub.companyGrade.marks}/{task.maxMarks}</p>
+                                                                            )}
+                                                                            {sub.companyGrade?.feedback && <p className="mt-1 text-xs text-slate-400 font-bold">{sub.companyGrade.feedback}</p>}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <button
+                                                                            onClick={() => { setSubmitTarget(task); setSubmitContent(''); }}
+                                                                            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-700 transition-all active:scale-95"
+                                                                        >
+                                                                            <Plus className="h-3.5 w-3.5" /> Submit
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+
+                                        {myReport && (
+                                            <div className="rounded-2xl border border-teal-100 bg-teal-50/20 p-8 shadow-sm">
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-teal-600 mb-4">Faculty Internship Report</p>
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <p className="text-sm font-medium text-slate-700">{myReport.summary}</p>
+                                                    <div className={`text-2xl font-black shrink-0 ${myReport.overallRating >= 75 ? 'text-emerald-600' : myReport.overallRating >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
+                                                        {myReport.overallRating}/100
+                                                    </div>
+                                                </div>
+                                                <p className="mt-3 text-[10px] font-black uppercase tracking-widest text-slate-400">{myReport.recommendation?.replace('_', ' ')} · {myReport.completionStatus}</p>
+                                                {myReport.scores && (
+                                                    <div className="mt-4 grid grid-cols-4 gap-3">
+                                                        {Object.entries(myReport.scores).map(([k, v]: [string, any]) => (
+                                                            <div key={k} className="text-center bg-white rounded-xl p-3 border border-teal-100">
+                                                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{k}</p>
+                                                                <p className="text-lg font-black text-teal-600">{v}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -271,6 +385,40 @@ const StudentDashboard = () => {
                                 <textarea rows={4} value={newApp.description} onChange={e => setNewApp({ ...newApp, description: e.target.value })} className="w-full rounded-2xl bg-slate-50 border-none p-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300" placeholder="Brief details about the internship..." />
                             </div>
                             <button type="submit" className="w-full h-16 rounded-2xl bg-blue-600 text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-blue-500/30 hover:bg-blue-700 transition-all active:scale-95 mt-6">Submit Application</button>
+                        </form>
+                    </motion.div>
+                </div>
+            )}
+
+            {/* TASK SUBMISSION MODAL */}
+            {submitTarget && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-xl p-6" onClick={() => setSubmitTarget(null)}>
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-lg rounded-[2.5rem] border border-slate-100 bg-white p-12 shadow-2xl shadow-blue-600/5 relative" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => setSubmitTarget(null)} className="absolute top-10 right-10 text-slate-300 hover:text-slate-900 transition-colors"><X className="h-6 w-6" /></button>
+                        <div className="mb-8">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-1">{submitTarget.company}</p>
+                            <h2 className="text-xl font-black text-slate-900">{submitTarget.title}</h2>
+                            <p className="text-sm text-slate-500 mt-1">{submitTarget.description}</p>
+                        </div>
+                        <form onSubmit={handleSubmitTask} className="space-y-6">
+                            <div>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Submission Content *</label>
+                                <textarea
+                                    required
+                                    rows={6}
+                                    value={submitContent}
+                                    onChange={e => setSubmitContent(e.target.value)}
+                                    className="w-full rounded-2xl bg-slate-50 border-none p-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300 resize-none"
+                                    placeholder="Describe your work, attach details or share a link..."
+                                />
+                            </div>
+                            <div className="flex gap-4">
+                                <button type="button" onClick={() => setSubmitTarget(null)} className="flex-1 h-14 rounded-2xl border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
+                                <button type="submit" disabled={submitLoading} className="flex-1 h-14 rounded-2xl bg-indigo-600 text-white text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-500/30 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2">
+                                    {submitLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardList className="h-4 w-4" />}
+                                    {submitLoading ? 'Submitting...' : 'Submit Task'}
+                                </button>
+                            </div>
                         </form>
                     </motion.div>
                 </div>

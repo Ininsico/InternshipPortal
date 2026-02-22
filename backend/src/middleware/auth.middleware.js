@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const Admin = require('../models/Admin.model');
 
 const protect = (req, res, next) => {
     const authHeader = req.headers.authorization;
@@ -25,4 +26,17 @@ const requireRole = (...roles) => (req, res, next) => {
     next();
 };
 
-module.exports = { protect, requireRole };
+// Loads full Admin document into req.admin (for company/faculty portals that need fields beyond JWT)
+const loadAdmin = async (req, res, next) => {
+    try {
+        const admin = await Admin.findById(req.user.id || req.user._id).select('-passwordHash');
+        if (!admin) return res.status(401).json({ success: false, message: 'Admin account not found.' });
+        req.admin = admin;
+        next();
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+module.exports = { protect, requireRole, loadAdmin };
+

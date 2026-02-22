@@ -55,6 +55,17 @@ const StudentSchema = new mongoose.Schema(
             ref: 'Admin',
             default: null,
         },
+        internshipStatus: {
+            type: String,
+            enum: ['none', 'submitted', 'approved', 'rejected', 'agreement_submitted', 'verified', 'internship_assigned'],
+            default: 'none',
+        },
+        // Filled by admin during Step 6: Internship Assignment
+        assignedCompany: { type: String, trim: true, default: null },
+        assignedPosition: { type: String, trim: true, default: null },
+        siteSupervisorName: { type: String, trim: true, default: null },
+        siteSupervisorEmail: { type: String, trim: true, default: null },
+        siteSupervisorPhone: { type: String, trim: true, default: null },
     },
     { timestamps: true }
 );

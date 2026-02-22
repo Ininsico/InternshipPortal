@@ -5,6 +5,8 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth.routes');
 const adminRoutes = require('./routes/admin.routes');
 const studentRoutes = require('./routes/student.routes');
+const companyRoutes = require('./routes/company.routes');
+const facultyRoutes = require('./routes/faculty.routes');
 
 const app = express();
 
@@ -24,6 +26,9 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/student', studentRoutes);
+app.use('/api/company', companyRoutes);
+app.use('/api/faculty', facultyRoutes);
+
 
 app.use((req, res) => {
     res.status(404).json({ success: false, message: `Route ${req.method} ${req.originalUrl} not found.` });

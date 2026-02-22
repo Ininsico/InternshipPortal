@@ -17,6 +17,16 @@ const ApplicationSchema = new mongoose.Schema(
             required: true,
             trim: true,
         },
+        internshipType: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+        duration: {
+            type: String,
+            required: true,
+            trim: true,
+        },
         description: {
             type: String,
             trim: true,

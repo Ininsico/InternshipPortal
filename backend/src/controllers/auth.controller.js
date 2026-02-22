@@ -42,6 +42,7 @@ const loginStudent = async (req, res) => {
                 rollNumber: student.rollNumber,
                 email: student.email,
                 role: 'student',
+                internshipStatus: student.internshipStatus,
             },
         });
     } catch (err) {
@@ -80,6 +81,7 @@ const loginAdmin = async (req, res) => {
                 name: admin.name,
                 email: admin.email,
                 role: admin.role,
+                company: admin.company || null,
             },
         });
     } catch (err) {
@@ -119,6 +121,7 @@ const getMe = async (req, res) => {
                     session: student.session,
                     degree: student.degree,
                     role: 'student',
+                    internshipStatus: student.internshipStatus,
                 },
             });
         }
@@ -134,6 +137,7 @@ const getMe = async (req, res) => {
                 name: admin.name,
                 email: admin.email,
                 role: admin.role,
+                company: admin.company || null,
             },
         });
     } catch (err) {

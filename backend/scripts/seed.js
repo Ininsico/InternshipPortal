@@ -10,7 +10,7 @@ const SALT = 10;
 const admins = [
     {
         name: 'Super Admin',
-        email: 'superadmin@gmail.com',
+        email: 'admin@gmail.com',
         passwordHash: '12345',
         role: 'super_admin',
     },
@@ -80,7 +80,7 @@ async function seed() {
         }
 
         console.log('\nSeed complete!');
-        console.log('Super Admin: superadmin@gmail.com / 12345');
+        console.log('Super Admin: admin@gmail.com / 12345');
         console.log('Faculty:     ahmad@comsats.edu.pk / 12345');
         console.log('Student:     FA21-BCS-001 / 12345');
 

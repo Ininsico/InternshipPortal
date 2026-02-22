@@ -11,6 +11,7 @@ interface User {
     email?: string;
     session?: string;
     degree?: string;
+    internshipStatus?: 'none' | 'submitted' | 'approved' | 'rejected' | 'agreement_submitted' | 'verified';
 }
 
 interface AuthContextType {

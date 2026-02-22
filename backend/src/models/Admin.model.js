@@ -21,8 +21,13 @@ const AdminSchema = new mongoose.Schema(
         },
         role: {
             type: String,
-            enum: ['admin', 'super_admin'],
+            enum: ['admin', 'company_admin', 'super_admin'],
             default: 'admin',
+        },
+        company: {
+            type: String,   // Only set for company_admin role
+            trim: true,
+            default: null,
         },
         isActive: {
             type: Boolean,
