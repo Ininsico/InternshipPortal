@@ -1,15 +1,15 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const connectDB = require('./config/db');
-const authRoutes = require('./routes/auth.routes');
-const adminRoutes = require('./routes/admin.routes');
-const studentRoutes = require('./routes/student.routes');
-const companyRoutes = require('./routes/company.routes');
-const facultyRoutes = require('./routes/faculty.routes');
+const connectDB = require('./src/config/db');
+const authRoutes = require('./src/routes/auth.routes');
+const adminRoutes = require('./src/routes/admin.routes');
+const studentRoutes = require('./src/routes/student.routes');
+const companyRoutes = require('./src/routes/company.routes');
+const facultyRoutes = require('./src/routes/faculty.routes');
 
 const swaggerUi = require('swagger-ui-express');
-const swaggerSpec = require('./config/swagger');
+const swaggerSpec = require('./src/config/swagger');
 
 const app = express();
 
@@ -18,8 +18,9 @@ connectDB();
 // Swagger Documentation Route
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+// CORS Configuration - Accept from anywhere
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: '*',
     credentials: true,
 }));
 app.use(express.json());
