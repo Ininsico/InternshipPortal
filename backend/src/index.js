@@ -8,9 +8,15 @@ const studentRoutes = require('./routes/student.routes');
 const companyRoutes = require('./routes/company.routes');
 const facultyRoutes = require('./routes/faculty.routes');
 
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
+
 const app = express();
 
 connectDB();
+
+// Swagger Documentation Route
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use(cors({
     origin: ['http://localhost:5173', 'http://localhost:3000'],

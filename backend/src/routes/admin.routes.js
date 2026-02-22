@@ -20,8 +20,60 @@ const Report = require('../models/Report.model');
 
 router.use(protect);
 
+/**
+ * @openapi
+ * /api/admin/stats:
+ *   get:
+ *     summary: Get dashboard statistics
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved stats
+ */
 router.get('/stats', requireRole('admin', 'super_admin'), getDashboardStats);
+
+/**
+ * @openapi
+ * /api/admin/students:
+ *   get:
+ *     summary: View all students
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of students
+ */
 router.get('/students', requireRole('admin', 'super_admin'), getAllStudents);
+
+/**
+ * @openapi
+ * /api/admin/application/{studentId}:
+ *   get:
+ *     summary: View a specific student's latest application
+ *     tags: [Admin]
+ *     parameters:
+ *       - in: path
+ *         name: studentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Application data
+ */
+router.get('/application/:studentId', requireRole('super_admin'), async (req, res) => {
+    try {
+        const Application = require('../models/Application.model');
+        const application = await Application.findOne({ studentId: req.params.studentId }).sort({ createdAt: -1 });
+        if (!application) return res.status(404).json({ success: false, message: 'No application found.' });
+        res.json({ success: true, application });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
 router.post('/create-admin', requireRole('super_admin'), createAdmin);
 router.get('/faculty', requireRole('super_admin'), getAllAdmins);

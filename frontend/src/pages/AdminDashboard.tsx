@@ -23,7 +23,9 @@ import {
     ClipboardList,
     Pencil,
     Trash2,
-    UserCheck
+    UserCheck,
+    ArrowUpRight,
+    X
 } from 'lucide-react';
 
 type AdminTab = 'overview' | 'students' | 'faculty' | 'companies' | 'reports' | 'settings' | 'approvals' | 'agreements' | 'assignments';
@@ -77,6 +79,8 @@ const AdminDashboard = () => {
     const [changeSupervisorError, setChangeSupervisorError] = useState('');
     const [companyAdmins, setCompanyAdmins] = useState<any[]>([]);
     const [reports, setReports] = useState<any[]>([]);
+    const [viewApp, setViewApp] = useState<any | null>(null);
+    const [viewAppLoading, setViewAppLoading] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -266,6 +270,21 @@ const AdminDashboard = () => {
             setChangeSupervisorError(err?.response?.data?.message || 'Failed to change supervisor.');
         } finally {
             setChangeSupervisorLoading(false);
+        }
+    };
+
+    const handleViewApp = async (studentId: string) => {
+        setViewAppLoading(true);
+        try {
+            const config = { headers: { Authorization: `Bearer ${token}` } };
+            const { data } = await axios.get(`${API_BASE}/application/${studentId}`, config);
+            if (data.success) {
+                setViewApp(data.application);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setViewAppLoading(false);
         }
     };
 
@@ -630,20 +649,12 @@ const AdminDashboard = () => {
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-8 py-4">
-                                                                    <div className="space-y-1">
-                                                                        {recentActivity.find((a: any) => a.studentId?._id === stu._id) ? (
-                                                                            <>
-                                                                                <p className="text-xs font-bold text-slate-700">
-                                                                                    {recentActivity.find((a: any) => a.studentId?._id === stu._id)?.companyName}
-                                                                                </p>
-                                                                                <p className="text-[10px] text-slate-500">
-                                                                                    {recentActivity.find((a: any) => a.studentId?._id === stu._id)?.position} • {recentActivity.find((a: any) => a.studentId?._id === stu._id)?.internshipType}
-                                                                                </p>
-                                                                            </>
-                                                                        ) : (
-                                                                            <p className="text-[10px] text-slate-400 italic">Details not loaded</p>
-                                                                        )}
-                                                                    </div>
+                                                                    <button
+                                                                        onClick={() => handleViewApp(stu._id)}
+                                                                        className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-blue-600 hover:bg-blue-50 transition-all"
+                                                                    >
+                                                                        {viewAppLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowUpRight className="h-3 w-3" />} View Details
+                                                                    </button>
                                                                 </td>
                                                                 <td className="px-8 py-4">
                                                                     <StatusPill status="pending" />
@@ -795,6 +806,59 @@ const AdminDashboard = () => {
                                                     )}
                                                 </tbody>
                                             </table>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'settings' && (
+                                    <div className="space-y-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm">
+                                                <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-6">Profile Settings</h3>
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Full Name</label>
+                                                        <div className="flex h-12 items-center rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-400">
+                                                            {user?.name}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Email Address</label>
+                                                        <div className="flex h-12 items-center rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-400">
+                                                            {user?.email}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Role</label>
+                                                        <div className="inline-flex px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest mt-1">
+                                                            {user?.role?.replace('_', ' ')}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm">
+                                                <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-6">System Configuration</h3>
+                                                <div className="space-y-6">
+                                                    <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                                                        <div>
+                                                            <p className="text-sm font-bold text-slate-900">Email Notifications</p>
+                                                            <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">Alerts for new applications</p>
+                                                        </div>
+                                                        <div className="h-6 w-11 rounded-full bg-blue-600 relative p-1 cursor-pointer">
+                                                            <div className="h-4 w-4 rounded-full bg-white ml-auto" />
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                                                        <div>
+                                                            <p className="text-sm font-bold text-slate-900">System Lock</p>
+                                                            <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">Maintenance mode</p>
+                                                        </div>
+                                                        <div className="h-6 w-11 rounded-full bg-slate-200 relative p-1 cursor-pointer">
+                                                            <div className="h-4 w-4 rounded-full bg-white mr-auto" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -971,6 +1035,71 @@ const AdminDashboard = () => {
                     </motion.div>
                 </div>
             )}
+
+            {/* VIEW APPLICATION MODAL */}
+            <AnimatePresence>
+                {viewApp && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setViewApp(null)}>
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-lg rounded-3xl border border-slate-100 bg-white shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                            <div className="border-b border-slate-100 px-8 py-6 bg-slate-50/50 flex justify-between items-center">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">Internship Application Details</p>
+                                    <h2 className="text-xl font-black text-slate-900">{viewApp.companyName}</h2>
+                                </div>
+                                <button onClick={() => setViewApp(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                                    <X className="h-5 w-5 text-slate-400" />
+                                </button>
+                            </div>
+                            <div className="p-8 space-y-6">
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Position</p>
+                                        <p className="text-sm font-bold text-slate-900">{viewApp.position}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Type</p>
+                                        <p className="text-sm font-bold text-slate-900 uppercase tracking-wider">{viewApp.internshipType || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Duration</p>
+                                        <p className="text-sm font-bold text-slate-900">{viewApp.duration || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Submitted On</p>
+                                        <p className="text-sm font-bold text-slate-900">{new Date(viewApp.createdAt).toLocaleDateString()}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Description / Project Outline</p>
+                                    <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100 max-h-40 overflow-y-auto">
+                                        <p className="text-xs font-semibold text-slate-600 leading-relaxed whitespace-pre-wrap">{viewApp.description}</p>
+                                    </div>
+                                </div>
+                                <div className="flex gap-4 pt-2">
+                                    <button
+                                        onClick={() => {
+                                            handleApprove(viewApp.studentId, 'approved');
+                                            setViewApp(null);
+                                        }}
+                                        className="flex-1 h-12 rounded-2xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                    >
+                                        Approve Request
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            handleApprove(viewApp.studentId, 'rejected');
+                                            setViewApp(null);
+                                        }}
+                                        className="flex-1 h-12 rounded-2xl border border-red-100 bg-red-50 text-red-600 text-xs font-black uppercase tracking-widest hover:bg-red-100 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                    >
+                                        Reject
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {showAddAdminModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-xl p-6">
