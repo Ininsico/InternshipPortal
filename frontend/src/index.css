@@ -23,3 +23,33 @@ body {
 * {
   border-color: #f1f5f9;
 }
+
+@media print {
+
+  aside,
+  header,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  body {
+    background: white;
+  }
+
+  .rounded-2xl,
+  .rounded-[2.5rem] {
+    border-radius: 0 !important;
+    border: 1px solid #eee !important;
+    box-shadow: none !important;
+  }
+}

@@ -19,7 +19,9 @@ import {
     Clock
 } from 'lucide-react';
 
-const API_BASE = 'http://localhost:5000/api/student';
+import API from '../config/api';
+
+const API_BASE = API.STUDENT;
 
 const StudentAgreementPage = () => {
     const { user, token, logout } = useAuth();
@@ -200,8 +202,8 @@ const StudentAgreementPage = () => {
                                             type="button"
                                             onClick={() => setFormData({ ...formData, sourcingType: type })}
                                             className={`h-20 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${formData.sourcingType === type
-                                                    ? 'border-blue-600 bg-blue-50/50 text-blue-600'
-                                                    : 'border-slate-50 bg-slate-50/50 text-slate-400 hover:border-slate-100 hover:bg-slate-50'
+                                                ? 'border-blue-600 bg-blue-50/50 text-blue-600'
+                                                : 'border-slate-50 bg-slate-50/50 text-slate-400 hover:border-slate-100 hover:bg-slate-50'
                                                 }`}
                                         >
                                             <span className="text-[10px] font-black uppercase tracking-widest">{type}</span>

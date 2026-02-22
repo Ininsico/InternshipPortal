@@ -22,7 +22,9 @@ import AdminDashboardModals from '../components/admin/AdminDashboardModals';
 
 type AdminTab = 'overview' | 'students' | 'faculty' | 'companies' | 'reports' | 'settings' | 'approvals' | 'agreements' | 'assignments' | 'submissions';
 
-const API_BASE = 'http://localhost:5000/api/admin';
+import API from '../config/api';
+
+const API_BASE = API.ADMIN;
 
 const AdminDashboard = () => {
     const { user, token, logout } = useAuth();
@@ -86,7 +88,7 @@ const AdminDashboard = () => {
     const [editReportError, setEditReportError] = useState('');
 
     const [editSubmission, setEditSubmission] = useState<any | null>(null);
-    const [editSubmissionForm, setEditSubmissionForm] = useState({ facultyGrade: { marks: 0 }, companyGrade: { marks: 0 }, status: '' });
+    const [editSubmissionForm, setEditSubmissionForm] = useState({ facultyGrade: { marks: 0, feedback: '' }, companyGrade: { marks: 0, feedback: '' }, status: '' });
     const [editSubmissionLoading, setEditSubmissionLoading] = useState(false);
     const [editSubmissionError, setEditSubmissionError] = useState('');
 
@@ -127,6 +129,15 @@ const AdminDashboard = () => {
                     if (reportsRes.data.success) setReports(reportsRes.data.reports);
                     if (partneredRes.data.success) setPartneredCompanies(partneredRes.data.companies);
                     if (submissionsRes.data.success) setSubmissions(submissionsRes.data.submissions);
+                } else if (user?.role === 'admin') {
+                    // Regular admin (Faculty Supervisor)
+                    const FACULTY_API = API.FACULTY;
+                    const [subRes, repRes] = await Promise.all([
+                        axios.get(`${FACULTY_API}/submissions`, config),
+                        axios.get(`${FACULTY_API}/reports`, config),
+                    ]);
+                    if (subRes.data.success) setSubmissions(subRes.data.submissions);
+                    if (repRes.data.success) setReports(repRes.data.reports);
                 }
             } catch (err) {
                 console.error(err);
@@ -276,51 +287,65 @@ const AdminDashboard = () => {
         setEditSubmissionLoading(true);
         setEditSubmissionError('');
         try {
-            const { data } = await axios.put(`${API_BASE}/submissions/${editSubmission._id}/grade`, editSubmissionForm, config);
-            if (data.success) {
-                setSubmissions(prev => prev.map(s => s._id === editSubmission._id ? data.submission : s));
-                setEditSubmission(null);
+            if (user?.role === 'super_admin') {
+                const { data } = await axios.put(`${API_BASE}/submissions/${editSubmission._id}/grade`, editSubmissionForm, config);
+                if (data.success) {
+                    setSubmissions(prev => prev.map(s => s._id === editSubmission._id ? data.submission : s));
+                    setEditSubmission(null);
+                }
+            } else {
+                // Regular admin (Faculty)
+                const { data } = await axios.put(`${API.FACULTY}/submissions/${editSubmission._id}/grade`, {
+                    marks: editSubmissionForm.facultyGrade.marks,
+                    feedback: editSubmissionForm.facultyGrade.feedback
+                }, config);
+                if (data.success) {
+                    setSubmissions(prev => prev.map(s => s._id === editSubmission._id ? data.submission : s));
+                    setEditSubmission(null);
+                }
             }
         } catch (err: any) {
             setEditSubmissionError(err.response?.data?.message || 'Update failed');
-        } finally { setEditSubmissionLoading(false); }
+        } finally {
+            setEditSubmissionLoading(false);
+        }
     };
 
     const isSuperAdmin = user?.role === 'super_admin';
 
     return (
-        <div className="flex h-screen bg-slate-900 overflow-hidden">
+        <div className="flex h-screen bg-blue-50/40 overflow-hidden">
             <AdminSidebar activeTab={activeTab} setActiveTab={(tab) => setActiveTab(tab as AdminTab)} isSuperAdmin={isSuperAdmin} user={user} logout={logout} />
 
-            <main className="flex-1 bg-white rounded-l-[3rem] my-4 overflow-y-auto custom-scrollbar shadow-2xl relative z-10">
-                <header className="sticky top-0 z-30 flex h-20 items-center justify-between bg-white/80 px-10 backdrop-blur-xl border-b border-slate-50">
-                    <div className="flex items-center gap-4">
-                        <div className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
-                        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
-                            Environment / {activeTab}
+            <main className="flex-1 overflow-y-auto">
+                <header className="sticky top-0 z-30 flex h-14 items-center justify-between bg-white/90 px-8 backdrop-blur-xl border-b border-blue-50 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+                        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400">
+                            Admin / {activeTab}
                         </h2>
                     </div>
-                    <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100">
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 bg-blue-50 px-4 py-2 rounded-xl border border-blue-100">
                             <div className="text-right">
                                 <p className="text-xs font-black text-slate-900 leading-none">{user?.name}</p>
-                                <p className="text-[8px] font-black uppercase tracking-widest text-blue-600 mt-1">{user?.role?.replace('_', ' ')}</p>
+                                <p className="text-[8px] font-black uppercase tracking-widest text-blue-500 mt-1">{user?.role?.replace('_', ' ')}</p>
                             </div>
-                            <div className="h-8 w-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-xs uppercase italic shadow-lg shadow-blue-500/20">
+                            <div className="h-8 w-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-black text-xs uppercase shadow-lg shadow-blue-500/20">
                                 {user?.name?.[0]}
                             </div>
                         </div>
                     </div>
                 </header>
 
-                <div className="p-10 pb-20">
+                <div className="p-8 pb-20">
                     <AnimatePresence mode="wait">
                         {loading ? (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-[60vh] items-center justify-center">
                                 <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
                             </motion.div>
                         ) : (
-                            <motion.div key={activeTab} initial={{ opacity: 0, scale: 0.98, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.4 }}>
+                            <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
                                 {activeTab === 'overview' && <OverviewTab stats={stats} recentActivity={recentActivity} setShowAddAdminModal={setShowAddAdminModal} />}
                                 {activeTab === 'students' && <StudentsTab students={students} isSuperAdmin={isSuperAdmin} setSelectedStudent={setSelectedStudent} setChangeSupervisorTarget={setChangeSupervisorTarget} setChangeSupervisorId={setChangeSupervisorId} />}
                                 {activeTab === 'reports' && <ReportsTab reports={reports} handleDeleteReport={handleDeleteReport} setSelectedReport={setSelectedReport} setEditReport={(r) => { setEditReport(r); setEditReportForm({ summary: r.summary, overallRating: r.overallRating, recommendation: r.recommendation, completionStatus: r.completionStatus, scores: r.scores || {} }); }} />}
@@ -328,12 +353,12 @@ const AdminDashboard = () => {
                                 {activeTab === 'approvals' && isSuperAdmin && <ApprovalsTab students={students} handleViewApp={handleViewApp} viewAppLoading={viewAppLoading} handleApprove={handleApprove} />}
                                 {activeTab === 'agreements' && isSuperAdmin && <AgreementsTab agreements={agreements} handleVerifyAgreement={handleVerifyAgreement} />}
                                 {activeTab === 'assignments' && isSuperAdmin && <AssignmentsTab verifiedStudents={verifiedStudents} setAssignTarget={setAssignTarget} setAssignForm={setAssignForm} setAssignError={setAssignError} />}
-                                {activeTab === 'submissions' && isSuperAdmin && <SubmissionsTab submissions={submissions} setEditSubmission={(s) => { setEditSubmission(s); setEditSubmissionForm({ facultyGrade: s.facultyGrade || { marks: 0 }, companyGrade: s.companyGrade || { marks: 0 }, status: s.status }); }} />}
+                                {activeTab === 'submissions' && <SubmissionsTab submissions={submissions} setEditSubmission={(s) => { setEditSubmission(s); setEditSubmissionForm({ facultyGrade: s.facultyGrade || { marks: 0, feedback: '' }, companyGrade: s.companyGrade || { marks: 0, feedback: '' }, status: s.status }); }} />}
                                 {activeTab === 'settings' && (
-                                    <div className="h-[60vh] rounded-[3rem] border-2 border-dashed border-slate-100 flex items-center justify-center text-center">
+                                    <div className="h-[60vh] rounded-2xl border-2 border-dashed border-blue-100 bg-white flex items-center justify-center text-center">
                                         <div>
-                                            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-300">Section Modules</p>
-                                            <h3 className="text-xl font-black text-slate-900 mt-4 italic tracking-tight uppercase">System Settings</h3>
+                                            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-300">Configuration</p>
+                                            <h3 className="text-xl font-black text-slate-900 mt-4 tracking-tight uppercase">System Settings</h3>
                                             <p className="text-xs font-bold text-slate-400 mt-2 max-w-xs mx-auto">Access system configurations and security protocols here.</p>
                                         </div>
                                     </div>
@@ -368,6 +393,7 @@ const AdminDashboard = () => {
                 handleUpdateSubmission={handleUpdateSubmission}
                 editSubmissionLoading={editSubmissionLoading}
                 editSubmissionError={editSubmissionError}
+                isSuperAdmin={isSuperAdmin}
             />
             <AdminDashboardModals
                 {...{

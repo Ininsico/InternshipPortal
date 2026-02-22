@@ -12,7 +12,6 @@ import {
     Loader2,
     X,
     LayoutDashboard,
-    Zap,
     ArrowUpRight,
     Bell,
     ClipboardList,
@@ -20,12 +19,46 @@ import {
     Paperclip,
     Upload,
     File,
-    Camera
+    Camera,
+    Clock,
+    CheckCheck,
+    AlertCircle,
+    Send,
+    Shield,
 } from 'lucide-react';
 
 type TabKey = 'overview' | 'applications' | 'tasks' | 'profile';
 
-const API_BASE = 'http://localhost:5000/api/student';
+import API from '../config/api';
+
+const API_BASE = API.STUDENT;
+
+// Internship status pipeline — ordered progression
+const STATUS_PIPELINE = [
+    { key: 'submitted', label: 'Application Submitted', icon: Send, desc: 'Your internship application has been received and is under review.' },
+    { key: 'approved', label: 'Application Approved', icon: CheckCheck, desc: 'Congratulations! Your application has been approved. Please submit your agreement form.' },
+    { key: 'agreement_submitted', label: 'Agreement Submitted', icon: FileText, desc: 'Your internship agreement is submitted and awaiting admin verification.' },
+    { key: 'verified', label: 'Documents Verified', icon: Shield, desc: 'All your documents have been verified. Awaiting final internship assignment by admin.' },
+    { key: 'internship_assigned', label: 'Internship Assigned', icon: CheckCircle2, desc: 'You have been assigned to your company. Tasks and work will appear here.' },
+];
+
+const StatusBadge = ({ status }: { status: string }) => {
+    const map: Record<string, { label: string; cls: string }> = {
+        pending: { label: 'Pending', cls: 'bg-amber-50 text-amber-600 border-amber-100' },
+        approved: { label: 'Approved', cls: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+        rejected: { label: 'Rejected', cls: 'bg-red-50 text-red-600 border-red-100' },
+        in_progress: { label: 'In Progress', cls: 'bg-blue-50 text-blue-600 border-blue-100' },
+        completed: { label: 'Completed', cls: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
+        verified: { label: 'Verified', cls: 'bg-teal-50 text-teal-600 border-teal-100' },
+        internship_assigned: { label: 'Assigned', cls: 'bg-purple-50 text-purple-600 border-purple-100' },
+    };
+    const cfg = map[status] || { label: status, cls: 'bg-slate-50 text-slate-400 border-slate-100' };
+    return (
+        <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border transition-colors ${cfg.cls}`}>
+            {cfg.label}
+        </span>
+    );
+};
 
 const StudentDashboard = () => {
     const { user, token, logout } = useAuth();
@@ -44,24 +77,36 @@ const StudentDashboard = () => {
     const [newApp, setNewApp] = useState({ companyName: '', position: '', description: '' });
     const [profileImageLoading, setProfileImageLoading] = useState(false);
 
+    const internshipStatus = user?.internshipStatus || 'none';
+    const isAssigned = internshipStatus === 'internship_assigned';
+    // Can only apply if they haven't submitted anything yet
+    const canApply = internshipStatus === 'none' || internshipStatus === 'rejected';
+
     useEffect(() => {
         const fetchData = async () => {
             if (!token) return;
             setLoading(true);
             try {
                 const config = { headers: { Authorization: `Bearer ${token}` } };
-                const [profileRes, appsRes, tasksRes, subsRes, reportRes] = await Promise.all([
+                // Always fetch profile and applications
+                const [profileRes, appsRes] = await Promise.all([
                     axios.get(`${API_BASE}/profile`, config),
                     axios.get(`${API_BASE}/applications`, config),
-                    axios.get(`${API_BASE}/tasks`, config),
-                    axios.get(`${API_BASE}/submissions`, config),
-                    axios.get(`${API_BASE}/report`, config),
                 ]);
                 if (profileRes.data.success) setProfile(profileRes.data.student);
                 if (appsRes.data.success) setApplications(appsRes.data.applications);
-                if (tasksRes.data.success) setTasks(tasksRes.data.tasks);
-                if (subsRes.data.success) setSubmissions(subsRes.data.submissions);
-                if (reportRes.data.success) setMyReport(reportRes.data.report);
+
+                // Only fetch tasks/submissions/report for assigned students
+                if (isAssigned) {
+                    const [tasksRes, subsRes, reportRes] = await Promise.all([
+                        axios.get(`${API_BASE}/tasks`, config),
+                        axios.get(`${API_BASE}/submissions`, config),
+                        axios.get(`${API_BASE}/report`, config),
+                    ]);
+                    if (tasksRes.data.success) setTasks(tasksRes.data.tasks);
+                    if (subsRes.data.success) setSubmissions(subsRes.data.submissions);
+                    if (reportRes.data.success) setMyReport(reportRes.data.report);
+                }
             } catch (err) {
                 console.error(err);
             } finally {
@@ -69,7 +114,7 @@ const StudentDashboard = () => {
             }
         };
         fetchData();
-    }, [token]);
+    }, [token, isAssigned]);
 
     const handleApply = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -95,20 +140,12 @@ const StudentDashboard = () => {
             const formData = new FormData();
             formData.append('taskId', submitTarget._id);
             formData.append('content', submitContent || 'Assignment Submission');
-
-            submitFiles.forEach(file => {
-                formData.append('files', file);
-            });
-
+            submitFiles.forEach(file => formData.append('files', file));
             const config = {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'multipart/form-data'
-                }
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
             };
             const { data } = await axios.post(`${API_BASE}/submit-task`, formData, config);
             if (data.success) {
-                // Update local task submission status
                 setSubmissions(prev => {
                     const existingIdx = prev.findIndex(s => (s.task?._id || s.task) === submitTarget._id);
                     if (existingIdx > -1) {
@@ -132,24 +169,19 @@ const StudentDashboard = () => {
     const menuItems = [
         { key: 'overview', label: 'Overview', icon: LayoutDashboard },
         { key: 'applications', label: 'Applications', icon: Briefcase },
-        { key: 'tasks', label: 'My Tasks', icon: ClipboardList },
+        ...(isAssigned ? [{ key: 'tasks', label: 'My Tasks', icon: ClipboardList }] : []),
         { key: 'profile', label: 'My Profile', icon: User },
     ];
 
     const handleProfilePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || !e.target.files[0]) return;
-
         const file = e.target.files[0];
         const formData = new FormData();
         formData.append('profilePicture', file);
-
         setProfileImageLoading(true);
         try {
             const config = {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'multipart/form-data'
-                }
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
             };
             const { data } = await axios.post(`${API_BASE}/profile-picture`, formData, config);
             if (data.success) {
@@ -160,6 +192,119 @@ const StudentDashboard = () => {
         } finally {
             setProfileImageLoading(false);
         }
+    };
+
+    // ─── Render the status pipeline tracker for non-assigned students ────
+    const renderStatusTracker = () => {
+        const currentIdx = STATUS_PIPELINE.findIndex(s => s.key === internshipStatus);
+        const currentStep = STATUS_PIPELINE[currentIdx] ?? null;
+
+        if (internshipStatus === 'none') {
+            return (
+                <div className="rounded-2xl border-2 border-dashed border-blue-100 bg-blue-50/30 p-10 text-center">
+                    <div className="mx-auto w-16 h-16 rounded-2xl bg-white border border-blue-100 flex items-center justify-center mb-4 text-blue-600 shadow-sm">
+                        <Briefcase className="w-8 h-8" />
+                    </div>
+                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">No Application Yet</h3>
+                    <p className="mt-2 text-sm font-medium text-slate-500 max-w-sm mx-auto">
+                        Start your internship journey by submitting a new application.
+                    </p>
+                    <button
+                        onClick={() => setShowApplyModal(true)}
+                        className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-xs font-black uppercase tracking-widest text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+                    >
+                        <Plus className="h-3.5 w-3.5" /> Submit Application
+                    </button>
+                </div>
+            );
+        }
+
+        if (internshipStatus === 'rejected') {
+            return (
+                <div className="rounded-2xl border-2 border-red-100 bg-red-50/30 p-10 text-center">
+                    <div className="mx-auto w-16 h-16 rounded-2xl bg-white border border-red-100 flex items-center justify-center mb-4 text-red-500 shadow-sm">
+                        <AlertCircle className="w-8 h-8" />
+                    </div>
+                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Application Rejected</h3>
+                    <p className="mt-2 text-sm font-medium text-slate-500 max-w-sm mx-auto">
+                        Your application was not approved. You may resubmit with corrected information.
+                    </p>
+                    <button
+                        onClick={() => setShowApplyModal(true)}
+                        className="mt-6 inline-flex items-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-xs font-black uppercase tracking-widest text-white hover:bg-red-700 transition-all shadow-lg shadow-red-500/20 active:scale-95"
+                    >
+                        <Plus className="h-3.5 w-3.5" /> Resubmit Application
+                    </button>
+                </div>
+            );
+        }
+
+        return (
+            <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+                <div className="border-b border-slate-100 px-8 py-5 bg-slate-50/50">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-900">Application Progress</h3>
+                    <p className="mt-1 text-xs text-slate-400 font-medium">Track your internship approval pipeline</p>
+                </div>
+                <div className="px-8 py-6 space-y-0">
+                    {STATUS_PIPELINE.map((step, idx) => {
+                        const isCompleted = idx < currentIdx;
+                        const isCurrent = idx === currentIdx;
+                        const isPending = idx > currentIdx;
+                        const StepIcon = step.icon;
+
+                        return (
+                            <div key={step.key} className="flex gap-5">
+                                {/* Connector + icon */}
+                                <div className="flex flex-col items-center">
+                                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all
+                                        ${isCompleted ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                                            : isCurrent ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 ring-4 ring-blue-50'
+                                                : 'bg-slate-100 text-slate-300'}`}
+                                    >
+                                        {isCompleted
+                                            ? <CheckCheck className="h-4 w-4" />
+                                            : <StepIcon className={`h-4 w-4 ${isCurrent ? 'animate-pulse' : ''}`} />
+                                        }
+                                    </div>
+                                    {idx < STATUS_PIPELINE.length - 1 && (
+                                        <div className={`mt-1 w-px flex-1 min-h-[28px] ${isCompleted ? 'bg-emerald-200' : 'bg-slate-100'}`} />
+                                    )}
+                                </div>
+
+                                {/* Text */}
+                                <div className="pb-6">
+                                    <p className={`text-xs font-black uppercase tracking-widest leading-none
+                                        ${isCompleted ? 'text-emerald-600'
+                                            : isCurrent ? 'text-blue-600'
+                                                : 'text-slate-300'}`}
+                                    >
+                                        {isCompleted ? '✓ ' : ''}{step.label}
+                                    </p>
+                                    {isCurrent && (
+                                        <p className="mt-1.5 text-xs font-medium text-slate-500 max-w-sm">
+                                            {step.desc}
+                                        </p>
+                                    )}
+                                    {isPending && (
+                                        <p className="mt-1 text-[10px] font-bold text-slate-300 uppercase tracking-widest">Upcoming</p>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Current status highlight footer */}
+                {currentStep && (
+                    <div className="border-t border-blue-50 bg-blue-50/40 px-8 py-4 flex items-center gap-3">
+                        <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">
+                            Current Status: {currentStep.label}
+                        </p>
+                    </div>
+                )}
+            </div>
+        );
     };
 
     return (
@@ -215,68 +360,98 @@ const StudentDashboard = () => {
 
                 <div className="p-8">
                     <AnimatePresence mode="wait">
-                        {loading && activeTab === 'overview' ? (
+                        {loading ? (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-[60vh] items-center justify-center">
                                 <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                             </motion.div>
                         ) : (
                             <motion.div key={activeTab} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2 }}>
+
+                                {/* ─── OVERVIEW ─── */}
                                 {activeTab === 'overview' && (
                                     <div className="space-y-8">
-                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                            <MetricCard label="Total Applications" value={applications.length} sub="Overall" />
-                                            <MetricCard label="Approved Status" value={applications.filter(a => a.status === 'approved').length} sub="Verified" />
-                                            <MetricCard label="Pending Review" value={applications.filter(a => a.status === 'pending').length} sub="In Progress" />
-                                            <MetricCard label="Assigned Faculty" value={profile?.supervisorId?.name?.split(' ')[0] || 'Pending'} sub="Supervisor" />
+                                        {/* Single current status card */}
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                            <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+                                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Internship Status</p>
+                                                <p className="mt-3 text-xl font-black tracking-tight text-slate-900 leading-none capitalize">
+                                                    {internshipStatus === 'none' ? 'Not Started'
+                                                        : internshipStatus === 'submitted' ? 'Under Review'
+                                                            : internshipStatus === 'approved' ? 'Approved'
+                                                                : internshipStatus === 'agreement_submitted' ? 'Agreement Pending'
+                                                                    : internshipStatus === 'verified' ? 'Verified'
+                                                                        : internshipStatus === 'internship_assigned' ? 'Active'
+                                                                            : internshipStatus === 'rejected' ? 'Rejected'
+                                                                                : internshipStatus}
+                                                </p>
+                                                <p className="mt-2 text-[9px] font-black uppercase tracking-widest text-blue-600 opacity-60">Current</p>
+                                            </div>
+
+                                            {applications.length > 0 && (
+                                                <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+                                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Application</p>
+                                                    <p className="mt-3 text-xl font-black tracking-tight text-slate-900 leading-none">{applications[0]?.position}</p>
+                                                    <p className="mt-2 text-[9px] font-black uppercase tracking-widest text-slate-400">{applications[0]?.companyName}</p>
+                                                </div>
+                                            )}
+
+                                            {isAssigned && (
+                                                <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+                                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Tasks Progress</p>
+                                                    <p className="mt-3 text-3xl font-black tracking-tighter text-slate-900 leading-none">
+                                                        {submissions.length}<span className="text-slate-300 text-lg"> / {tasks.length}</span>
+                                                    </p>
+                                                    <p className="mt-2 text-[9px] font-black uppercase tracking-widest text-blue-600 opacity-60">Submitted</p>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                            <div className="lg:col-span-2 rounded-2xl border border-slate-100 bg-white overflow-hidden shadow-sm">
-                                                <div className="flex items-center justify-between border-b border-slate-100 px-8 py-6">
-                                                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900">Recent Applications</h3>
-                                                    <button
-                                                        onClick={() => setShowApplyModal(true)}
-                                                        disabled={applications.length > 0}
-                                                        className={`flex items-center gap-2 rounded-lg px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition-all shadow-lg ${applications.length > 0
-                                                                ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-                                                                : 'bg-blue-600 shadow-blue-500/20 hover:bg-blue-700 active:scale-95'
-                                                            }`}
-                                                    >
-                                                        <Plus className="h-3.5 w-3.5" /> {applications.length > 0 ? 'Application Submitted' : 'New Application'}
-                                                    </button>
-                                                </div>
-                                                <div className="divide-y divide-slate-50">
-                                                    {applications.slice(0, 4).map((app: any) => (
-                                                        <div key={app._id} className="flex items-center justify-between px-8 py-5 hover:bg-slate-50 transition-colors">
-                                                            <div className="flex items-center gap-5">
-                                                                <div className="h-10 w-10 shrink-0 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100"><Zap className="h-4 w-4 text-blue-600" /></div>
-                                                                <div>
-                                                                    <p className="text-sm font-black text-slate-900 leading-none">{app.position}</p>
-                                                                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1.5">{app.companyName}</p>
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex items-center gap-6">
-                                                                <StatusBadge status={app.status || 'pending'} />
-                                                                <button className="text-slate-200 hover:text-slate-400"><ArrowUpRight className="h-4 w-4" /></button>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                    {applications.length === 0 && <div className="p-20 text-center text-[10px] font-black uppercase tracking-widest text-slate-300">No applications found</div>}
-                                                </div>
+                                            <div className="lg:col-span-2 space-y-6">
+                                                {/* Status tracker for non-assigned, application tracker for assigned */}
+                                                {!isAssigned && internshipStatus !== 'none' && internshipStatus !== 'rejected'
+                                                    ? renderStatusTracker()
+                                                    : renderStatusTracker()
+                                                }
                                             </div>
 
                                             <div className="space-y-6">
-                                                <div className="rounded-2xl border border-blue-600 bg-blue-600 p-8 shadow-2xl shadow-blue-600/20 text-white">
-                                                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60">Faculty Supervisor</h4>
-                                                    <p className="mt-4 text-xl font-black">{profile?.supervisorId?.name || 'Awaiting Assignment'}</p>
-                                                    <p className="mt-1 text-[10px] font-black uppercase tracking-widest opacity-60">CUI Staff Member</p>
-                                                    <div className="mt-8 pt-6 border-t border-white/10">
-                                                        <button className="flex w-full items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                                                            Contact Supervisor <ArrowUpRight className="h-4 w-4" />
-                                                        </button>
+                                                {isAssigned && (
+                                                    <div className="rounded-2xl border border-blue-600 bg-blue-600 p-8 shadow-2xl shadow-blue-600/20 text-white">
+                                                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60">Faculty Supervisor</h4>
+                                                        <p className="mt-4 text-xl font-black">{profile?.supervisorId?.name || 'Awaiting Assignment'}</p>
+                                                        <p className="mt-1 text-[10px] font-black uppercase tracking-widest opacity-60">CUI Staff Member</p>
+                                                        <div className="mt-8 pt-6 border-t border-white/10">
+                                                            {profile?.supervisorId?.email ? (
+                                                                <a
+                                                                    href={`mailto:${profile.supervisorId.email}`}
+                                                                    className="flex w-full items-center justify-between text-[10px] font-black uppercase tracking-widest hover:translate-x-1 transition-transform"
+                                                                >
+                                                                    Contact Supervisor <ArrowUpRight className="h-4 w-4" />
+                                                                </a>
+                                                            ) : (
+                                                                <button className="flex w-full items-center justify-between text-[10px] font-black uppercase tracking-widest opacity-40 cursor-not-allowed">
+                                                                    Contact Supervisor <ArrowUpRight className="h-4 w-4" />
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <button className="flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm hover:bg-slate-50 transition-all font-black uppercase text-[10px] tracking-widest text-slate-600">
+                                                )}
+
+                                                {isAssigned && profile?.assignedCompany && (
+                                                    <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+                                                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Assigned Company</p>
+                                                        <p className="text-sm font-black text-slate-900">{profile.assignedCompany}</p>
+                                                        {profile.assignedPosition && (
+                                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{profile.assignedPosition}</p>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                <button
+                                                    onClick={() => window.print()}
+                                                    className="flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm hover:bg-slate-50 transition-all font-black uppercase text-[10px] tracking-widest text-slate-600 active:scale-95"
+                                                >
                                                     <FileText className="h-4 w-4" /> Download Records
                                                 </button>
                                             </div>
@@ -284,56 +459,62 @@ const StudentDashboard = () => {
                                     </div>
                                 )}
 
+                                {/* ─── APPLICATIONS ─── */}
                                 {activeTab === 'applications' && (
                                     <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
                                         <div className="border-b border-slate-100 px-8 py-6 flex justify-between items-center bg-slate-50/50">
                                             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900">All Applications ({applications.length})</h3>
                                             <button
                                                 onClick={() => setShowApplyModal(true)}
-                                                disabled={applications.length > 0}
-                                                className={`flex items-center gap-2 rounded-lg px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition-all shadow-lg ${applications.length > 0
-                                                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-                                                        : 'bg-blue-600 shadow-blue-600/10 hover:bg-blue-700'
+                                                disabled={!canApply}
+                                                className={`flex items-center gap-2 rounded-lg px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition-all shadow-lg ${!canApply
+                                                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                                                    : 'bg-blue-600 shadow-blue-600/10 hover:bg-blue-700'
                                                     }`}
                                             >
-                                                <Plus className="h-3.5 w-3.5" /> {applications.length > 0 ? 'Already Applied' : 'New Application'}
+                                                <Plus className="h-3.5 w-3.5" /> {!canApply ? 'Already Applied' : 'New Application'}
                                             </button>
                                         </div>
-                                        <table className="w-full text-left border-collapse">
-                                            <thead>
-                                                <tr className="border-b border-slate-100 text-[9px] font-black uppercase tracking-[0.25em] text-slate-400 bg-slate-50/30">
-                                                    <th className="px-8 py-4">Company Name</th>
-                                                    <th className="px-8 py-4">Status</th>
-                                                    <th className="px-8 py-4">Applied Date</th>
-                                                    <th className="px-8 py-4 text-right">Progress</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                {applications.map((app: any) => (
-                                                    <tr key={app._id} className="hover:bg-slate-50 group transition-colors">
-                                                        <td className="px-8 py-5 text-sm font-black text-slate-900">
-                                                            <div>
-                                                                <p>{app.companyName}</p>
-                                                                <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">{app.position}</p>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-8 py-5">
-                                                            <StatusBadge status={app.status || 'pending'} />
-                                                        </td>
-                                                        <td className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                                            {app.appliedDate ? new Date(app.appliedDate).toLocaleDateString() : 'N/A'}
-                                                        </td>
-                                                        <td className="px-8 py-5 text-right">
-                                                            <button className="text-slate-200 hover:text-blue-600"><ArrowUpRight className="h-4 w-4" /></button>
-                                                        </td>
+                                        {applications.length === 0 ? (
+                                            <div className="p-20 text-center text-[10px] font-black uppercase tracking-widest text-slate-300">No applications found</div>
+                                        ) : (
+                                            <table className="w-full text-left border-collapse">
+                                                <thead>
+                                                    <tr className="border-b border-slate-100 text-[9px] font-black uppercase tracking-[0.25em] text-slate-400 bg-slate-50/30">
+                                                        <th className="px-8 py-4">Company / Position</th>
+                                                        <th className="px-8 py-4">Status</th>
+                                                        <th className="px-8 py-4">Applied Date</th>
+                                                        <th className="px-8 py-4 text-right">Details</th>
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {applications.map((app: any) => (
+                                                        <tr key={app._id} className="hover:bg-slate-50 group transition-colors">
+                                                            <td className="px-8 py-5 text-sm font-black text-slate-900">
+                                                                <div>
+                                                                    <p>{app.companyName}</p>
+                                                                    <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">{app.position}</p>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-8 py-5">
+                                                                <StatusBadge status={app.status || 'pending'} />
+                                                            </td>
+                                                            <td className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                                {app.appliedDate ? new Date(app.appliedDate).toLocaleDateString() : 'N/A'}
+                                                            </td>
+                                                            <td className="px-8 py-5 text-right">
+                                                                <button className="text-slate-200 hover:text-blue-600"><ArrowUpRight className="h-4 w-4" /></button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        )}
                                     </div>
                                 )}
 
-                                {activeTab === 'tasks' && (
+                                {/* ─── TASKS (only for internship_assigned students) ─── */}
+                                {activeTab === 'tasks' && isAssigned && (
                                     <div className="space-y-8">
                                         <div className="flex items-center justify-between">
                                             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Assigned Tasks ({tasks.length})</h3>
@@ -346,18 +527,28 @@ const StudentDashboard = () => {
                                         ) : (
                                             <div className="grid gap-5">
                                                 {tasks.map((task: any) => {
-                                                    const sub = submissions.find((s: any) => s.task?._id === task._id || s.task === task._id);
+                                                    const sub = submissions.find((s: any) => (s.task?._id || s.task) === task._id);
+                                                    const isNew = new Date(task.createdAt).getTime() > Date.now() - 3 * 24 * 60 * 60 * 1000;
                                                     return (
-                                                        <div key={task._id} className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm hover:border-blue-100 transition-all">
+                                                        <div key={task._id} className={`rounded-2xl border bg-white p-6 shadow-sm transition-all relative overflow-hidden ${!sub ? 'border-blue-200 shadow-blue-500/5 ring-1 ring-blue-50' : 'border-slate-100'}`}>
+                                                            {isNew && !sub && (
+                                                                <div className="absolute top-0 right-0">
+                                                                    <div className="bg-blue-600 text-white text-[8px] font-black px-3 py-1 uppercase tracking-widest rounded-bl-xl shadow-lg animate-pulse">New Task</div>
+                                                                </div>
+                                                            )}
                                                             <div className="flex items-start justify-between gap-4">
                                                                 <div>
                                                                     <div className="flex items-center gap-2 mb-1">
                                                                         <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">{task.company}</span>
-                                                                        {task.deadline && <span className="text-[10px] font-black text-amber-600">Due {new Date(task.deadline).toLocaleDateString()}</span>}
+                                                                        {task.deadline && (
+                                                                            <span className={`text-[10px] font-black ${new Date(task.deadline).getTime() < Date.now() + 2 * 24 * 60 * 60 * 1000 ? 'text-red-500' : 'text-amber-600'}`}>
+                                                                                Due {new Date(task.deadline).toLocaleDateString()}
+                                                                            </span>
+                                                                        )}
                                                                     </div>
                                                                     <h4 className="text-base font-black text-slate-900">{task.title}</h4>
                                                                     <p className="text-sm text-slate-500 mt-1 font-medium">{task.description}</p>
-                                                                    {task.maxMarks && <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Max: {task.maxMarks} marks</p>}
+                                                                    {task.maxMarks && <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">{task.maxMarks} Marks Available</p>}
 
                                                                     {sub && sub.attachments && sub.attachments.length > 0 && (
                                                                         <div className="mt-4 flex flex-wrap gap-2">
@@ -374,9 +565,6 @@ const StudentDashboard = () => {
                                                                             ))}
                                                                         </div>
                                                                     )}
-                                                                    {sub && sub.content && sub.content !== 'Assignment Submission' && (
-                                                                        <p className="mt-3 text-xs text-slate-400 italic">"{sub.content}"</p>
-                                                                    )}
                                                                 </div>
                                                                 <div className="shrink-0 text-right">
                                                                     {sub ? (
@@ -385,16 +573,15 @@ const StudentDashboard = () => {
                                                                                 <CheckCircle2 className="h-3.5 w-3.5" /> Submitted
                                                                             </span>
                                                                             {sub.companyGrade?.marks !== null && sub.companyGrade?.marks !== undefined && (
-                                                                                <p className="mt-2 text-base font-black text-indigo-600">{sub.companyGrade.marks}/{task.maxMarks}</p>
+                                                                                <p className="mt-3 text-2xl font-black text-slate-900">{sub.companyGrade.marks}<span className="text-xs text-slate-400 font-bold ml-1">/ {task.maxMarks}</span></p>
                                                                             )}
-                                                                            {sub.companyGrade?.feedback && <p className="mt-1 text-xs text-slate-400 font-bold">{sub.companyGrade.feedback}</p>}
                                                                         </div>
                                                                     ) : (
                                                                         <button
                                                                             onClick={() => { setSubmitTarget(task); setSubmitContent(''); setSubmitFiles([]); }}
-                                                                            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-700 transition-all active:scale-95"
+                                                                            className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95 group"
                                                                         >
-                                                                            <Plus className="h-3.5 w-3.5" /> Submit Work
+                                                                            <Plus className="h-3.5 w-3.5 group-hover:rotate-90 transition-transform" /> Submit Now
                                                                         </button>
                                                                     )}
                                                                 </div>
@@ -430,6 +617,16 @@ const StudentDashboard = () => {
                                     </div>
                                 )}
 
+                                {/* Guard: tasks tab shown but not assigned (shouldn't happen but fallback) */}
+                                {activeTab === 'tasks' && !isAssigned && (
+                                    <div className="rounded-2xl border-2 border-dashed border-slate-100 bg-slate-50/30 p-20 text-center">
+                                        <Clock className="h-10 w-10 text-slate-300 mx-auto mb-4" />
+                                        <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Tasks Not Available</p>
+                                        <p className="text-xs font-medium text-slate-300 mt-2">Tasks will be visible once your internship has been fully assigned by admin.</p>
+                                    </div>
+                                )}
+
+                                {/* ─── PROFILE ─── */}
                                 {activeTab === 'profile' && (
                                     <div className="max-w-xl mx-auto space-y-8 py-12 text-center">
                                         <div className="relative inline-block group mb-8">
@@ -439,14 +636,12 @@ const StudentDashboard = () => {
                                                 ) : (
                                                     profile?.name?.[0]
                                                 )}
-
                                                 {profileImageLoading && (
                                                     <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
                                                         <Loader2 className="h-6 w-6 animate-spin text-white" />
                                                     </div>
                                                 )}
                                             </div>
-
                                             <label className="absolute -bottom-1 -right-1 h-10 w-10 bg-white border border-slate-100 rounded-xl shadow-lg flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-all text-slate-400 hover:text-indigo-600 group-hover:scale-110">
                                                 <Camera className="h-4 w-4" />
                                                 <input
@@ -471,6 +666,16 @@ const StudentDashboard = () => {
                                                 <ProfileField label="Degree Program" value={profile?.degree} />
                                             </div>
                                             <ProfileField label="Faculty Supervisor" value={profile?.supervisorId?.name || 'Not Yet Assigned'} isLink />
+                                            <ProfileField label="Internship Status" value={
+                                                internshipStatus === 'none' ? 'Not Started'
+                                                    : internshipStatus === 'submitted' ? 'Under Review'
+                                                        : internshipStatus === 'approved' ? 'Application Approved'
+                                                            : internshipStatus === 'agreement_submitted' ? 'Agreement Pending Verification'
+                                                                : internshipStatus === 'verified' ? 'Documents Verified'
+                                                                    : internshipStatus === 'internship_assigned' ? 'Internship Active'
+                                                                        : internshipStatus === 'rejected' ? 'Application Rejected'
+                                                                            : internshipStatus
+                                            } />
                                         </div>
                                     </div>
                                 )}
@@ -480,6 +685,7 @@ const StudentDashboard = () => {
                 </div>
             </main>
 
+            {/* ─── APPLY MODAL ─── */}
             {showApplyModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-xl p-6">
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-lg rounded-[2.5rem] border border-slate-100 bg-white p-12 shadow-2xl shadow-blue-600/5 relative">
@@ -501,7 +707,7 @@ const StudentDashboard = () => {
                 </div>
             )}
 
-            {/* TASK SUBMISSION MODAL */}
+            {/* ─── TASK SUBMISSION MODAL ─── */}
             {submitTarget && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-xl p-6" onClick={() => setSubmitTarget(null)}>
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-lg rounded-[2.5rem] border border-slate-100 bg-white p-12 shadow-2xl shadow-blue-600/5 relative" onClick={e => e.stopPropagation()}>
@@ -590,20 +796,6 @@ const StudentDashboard = () => {
     );
 };
 
-interface MetricCardProps {
-    label: string;
-    value: string | number;
-    sub: string;
-}
-
-const MetricCard = ({ label, value, sub }: MetricCardProps) => (
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 group hover:border-blue-200 shadow-sm transition-all">
-        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">{label}</p>
-        <p className="mt-3 text-3xl font-black tracking-tighter text-slate-900 leading-none">{value}</p>
-        <p className="mt-2 text-[9px] font-black uppercase tracking-widest text-blue-600 opacity-60 group-hover:opacity-100">{sub}</p>
-    </div>
-);
-
 interface ProfileFieldProps {
     label: string;
     value: string;
@@ -627,15 +819,5 @@ const InputField = ({ label, ...props }: InputFieldProps) => (
         <input {...props} required className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300" />
     </div>
 );
-
-const StatusBadge = ({ status }: { status: string }) => {
-    const isSuccess = status === 'approved' || status === 'completed' || status === 'verified';
-    return (
-        <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${isSuccess ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-slate-50 text-slate-400 border-slate-100'
-            }`}>
-            {status}
-        </span>
-    );
-};
 
 export default StudentDashboard;

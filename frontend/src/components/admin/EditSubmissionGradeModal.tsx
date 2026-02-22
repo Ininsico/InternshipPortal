@@ -9,6 +9,7 @@ interface EditSubmissionProps {
     handleUpdateSubmission: (e: any) => void;
     editSubmissionLoading: boolean;
     editSubmissionError: string;
+    isSuperAdmin: boolean;
 }
 
 const EditSubmissionGradeModal = ({
@@ -18,7 +19,8 @@ const EditSubmissionGradeModal = ({
     setEditSubmissionForm,
     handleUpdateSubmission,
     editSubmissionLoading,
-    editSubmissionError
+    editSubmissionError,
+    isSuperAdmin
 }: EditSubmissionProps) => {
     return (
         <AnimatePresence>
@@ -64,17 +66,18 @@ const EditSubmissionGradeModal = ({
                                     />
                                 </div>
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Company Grade</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Company Grade {!isSuperAdmin && '(S.Admin Only)'}</label>
                                     <input
                                         type="number"
                                         min="0"
                                         max="100"
+                                        disabled={!isSuperAdmin}
                                         value={editSubmissionForm.companyGrade?.marks || 0}
                                         onChange={e => setEditSubmissionForm({
                                             ...editSubmissionForm,
                                             companyGrade: { ...editSubmissionForm.companyGrade, marks: Number(e.target.value) }
                                         })}
-                                        className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-xl font-black text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all font-sans"
+                                        className={`w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-xl font-black text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all font-sans ${!isSuperAdmin ? 'opacity-50' : ''}`}
                                     />
                                 </div>
                             </div>
@@ -82,9 +85,10 @@ const EditSubmissionGradeModal = ({
                             <div className="space-y-3">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Submission Status</label>
                                 <select
+                                    disabled={!isSuperAdmin}
                                     value={editSubmissionForm.status}
                                     onChange={e => setEditSubmissionForm({ ...editSubmissionForm, status: e.target.value })}
-                                    className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all font-sans"
+                                    className={`w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all font-sans ${!isSuperAdmin ? 'opacity-50' : ''}`}
                                 >
                                     <option value="submitted">Submitted</option>
                                     <option value="graded_by_company">Graded by Company</option>

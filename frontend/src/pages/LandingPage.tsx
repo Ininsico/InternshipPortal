@@ -22,7 +22,9 @@ interface ApiResponse {
 
 const SESSIONS = ['FA20', 'SP20', 'FA21', 'SP21', 'FA22', 'SP22', 'FA23', 'SP23', 'FA24', 'SP24'];
 const DEGREES = ['BSE', 'BCS', 'BBA'];
-const API_BASE = 'http://localhost:5000/api/auth';
+import API from '../config/api';
+
+const API_BASE = API.AUTH;
 
 const LandingPage = () => {
     const navigate = useNavigate();

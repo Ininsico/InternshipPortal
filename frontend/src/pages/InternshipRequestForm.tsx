@@ -15,7 +15,9 @@ import {
     Edit3
 } from 'lucide-react';
 
-const API_BASE = 'http://localhost:5000/api/student';
+import API from '../config/api';
+
+const API_BASE = API.STUDENT;
 
 const InternshipRequestForm = () => {
     const { user, logout } = useAuth();

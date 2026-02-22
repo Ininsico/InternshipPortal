@@ -130,7 +130,8 @@ const Report = require('../models/Report.model');
 const getMyTasks = async (req, res) => {
     try {
         const student = await Student.findById(req.user.id);
-        if (!student || !student.assignedCompany) {
+        // Only students with internship fully assigned can see tasks
+        if (!student || student.internshipStatus !== 'internship_assigned' || !student.assignedCompany) {
             return res.json({ success: true, tasks: [] });
         }
 
@@ -209,6 +210,10 @@ const submitTask = async (req, res) => {
 // GET /api/student/submissions — student's own submissions
 const getMySubmissions = async (req, res) => {
     try {
+        const student = await Student.findById(req.user.id);
+        if (!student || student.internshipStatus !== 'internship_assigned') {
+            return res.json({ success: true, submissions: [] });
+        }
         const submissions = await Submission.find({ student: req.user.id })
             .populate('task', 'title company maxMarks deadline')
             .sort({ submittedAt: -1 });
@@ -221,6 +226,10 @@ const getMySubmissions = async (req, res) => {
 // GET /api/student/report — student's own internship report
 const getMyReport = async (req, res) => {
     try {
+        const student = await Student.findById(req.user.id);
+        if (!student || student.internshipStatus !== 'internship_assigned') {
+            return res.json({ success: true, report: null });
+        }
         const report = await Report.findOne({ student: req.user.id })
             .populate('createdBy', 'name email');
         res.json({ success: true, report: report || null });

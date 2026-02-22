@@ -1,7 +1,9 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:5000/api/auth';
+import API from '../config/api';
+
+const API_BASE = API.AUTH;
 
 interface User {
     id: string;
@@ -11,7 +13,7 @@ interface User {
     email?: string;
     session?: string;
     degree?: string;
-    internshipStatus?: 'none' | 'submitted' | 'approved' | 'rejected' | 'agreement_submitted' | 'verified';
+    internshipStatus?: 'none' | 'submitted' | 'approved' | 'rejected' | 'agreement_submitted' | 'verified' | 'internship_assigned';
 }
 
 interface AuthContextType {

@@ -4,10 +4,12 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import {
     LayoutDashboard, Users, FileText, ClipboardList,
-    LogOut, Plus, Loader2, Star, BookOpen, Award, CheckCircle2
+    LogOut, Plus, Loader2, Star, BookOpen, Award, CheckCircle2, Pencil
 } from 'lucide-react';
 
-const API_BASE = 'http://localhost:5000/api/faculty';
+import API from '../config/api';
+
+const API_BASE = API.FACULTY;
 
 type Tab = 'overview' | 'students' | 'submissions' | 'reports';
 
@@ -331,7 +333,16 @@ const FacultyDashboard = () => {
                                                     <div className="flex flex-col items-end gap-2 shrink-0">
                                                         <StatusBadge status={sub.status} />
                                                         {sub.facultyGrade?.marks != null ? (
-                                                            <span className="text-sm font-black text-emerald-600">Your grade: {sub.facultyGrade.marks}/{sub.task?.maxMarks}</span>
+                                                            <div className="flex items-center gap-3">
+                                                                <span className="text-sm font-black text-emerald-600">Your grade: {sub.facultyGrade.marks}/{sub.task?.maxMarks}</span>
+                                                                <button
+                                                                    onClick={() => { setGradeTarget(sub); setGradeForm({ marks: String(sub.facultyGrade.marks), feedback: sub.facultyGrade.feedback || '' }); setGradeError(''); }}
+                                                                    className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-teal-600 transition-all"
+                                                                    title="Edit Grade"
+                                                                >
+                                                                    <Pencil className="h-3.5 w-3.5" />
+                                                                </button>
+                                                            </div>
                                                         ) : (
                                                             <button
                                                                 onClick={() => { setGradeTarget(sub); setGradeForm({ marks: '', feedback: '' }); setGradeError(''); }}

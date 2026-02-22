@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, AlertCircle, CheckCircle2, GraduationCap, Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
+import API from '../config/api';
 
 const ResetPassword = () => {
     const { token } = useParams();
@@ -24,7 +25,7 @@ const ResetPassword = () => {
         setFeedback(null);
 
         try {
-            const { data } = await axios.post('http://localhost:5000/api/auth/reset-password', {
+            const { data } = await axios.post(`${API.AUTH}/reset-password`, {
                 token,
                 password
             });
