@@ -72,8 +72,28 @@ const getAllStudents = async (req, res) => {
     try {
         const students = await Student.find({ degree: { $in: ALLOWED_DEGREES } })
             .populate('supervisorId', 'name email')
-            .select('-passwordHash');
-        res.json({ success: true, students });
+            .select('-passwordHash')
+            .lean();
+
+        // Enhance each student with their current status in the pipeline
+        const enhancedStudents = await Promise.all(students.map(async (stu) => {
+            const [application, agreement] = await Promise.all([
+                Application.findOne({ studentId: stu._id }).sort({ createdAt: -1 }),
+                Agreement.findOne({ studentId: stu._id }).sort({ createdAt: -1 })
+            ]);
+
+            return {
+                ...stu,
+                pipeline: {
+                    hasApplication: !!application,
+                    applicationStatus: application?.status || 'none',
+                    hasAgreement: !!agreement,
+                    agreementStatus: agreement?.status || 'none'
+                }
+            };
+        }));
+
+        res.json({ success: true, students: enhancedStudents });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }

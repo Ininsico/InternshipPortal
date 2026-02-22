@@ -240,16 +240,84 @@ router.get('/reports', requireRole('super_admin'), async (req, res) => {
 
 /**
  * @openapi
- * /api/admin/company-admins:
- *   get:
- *     summary: Get all company administrators
+ * /api/admin/reports/{reportId}:
+ *   delete:
+ *     summary: Delete a report (Super Admin)
  *     tags: [Admin]
  */
-router.get('/company-admins', requireRole('super_admin'), async (req, res) => {
+router.delete('/reports/:reportId', requireRole('super_admin'), async (req, res) => {
     try {
-        const Admin = require('../models/Admin.model');
-        const admins = await Admin.find({ role: 'company_admin' }).select('-passwordHash');
-        res.json({ success: true, admins });
+        const report = await Report.findByIdAndDelete(req.params.reportId);
+        if (!report) return res.status(404).json({ success: false, message: 'Report not found.' });
+        res.json({ success: true, message: 'Report deleted.' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+/**
+ * @openapi
+ * /api/admin/reports/{reportId}:
+ *   put:
+ *     summary: Update a report (Super Admin)
+ *     tags: [Admin]
+ */
+router.put('/reports/:reportId', requireRole('super_admin'), async (req, res) => {
+    try {
+        const { summary, overallRating, recommendation, completionStatus, scores } = req.body;
+        const report = await Report.findByIdAndUpdate(
+            req.params.reportId,
+            { summary, overallRating, recommendation, completionStatus, scores },
+            { new: true }
+        ).populate('student', 'name rollNumber degree assignedCompany')
+            .populate('createdBy', 'name email');
+
+        if (!report) return res.status(404).json({ success: false, message: 'Report not found.' });
+        res.json({ success: true, report });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+/**
+ * @openapi
+ * /api/admin/submissions:
+ *   get:
+ *     summary: View all student submissions (Super Admin)
+ *     tags: [Admin]
+ */
+router.get('/submissions', requireRole('super_admin'), async (req, res) => {
+    try {
+        const Submission = require('../models/Submission.model');
+        const submissions = await Submission.find()
+            .populate('student', 'name rollNumber degree')
+            .populate('task', 'title')
+            .sort({ createdAt: -1 });
+        res.json({ success: true, submissions });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+/**
+ * @openapi
+ * /api/admin/submissions/{submissionId}/grade:
+ *   put:
+ *     summary: Override a submission grade (Super Admin)
+ *     tags: [Admin]
+ */
+router.put('/submissions/:submissionId/grade', requireRole('super_admin'), async (req, res) => {
+    try {
+        const Submission = require('../models/Submission.model');
+        const { facultyGrade, companyGrade, status } = req.body;
+        const submission = await Submission.findByIdAndUpdate(
+            req.params.submissionId,
+            { facultyGrade, companyGrade, status },
+            { new: true }
+        ).populate('student', 'name rollNumber').populate('task', 'title');
+
+        if (!submission) return res.status(404).json({ success: false, message: 'Submission not found.' });
+        res.json({ success: true, submission });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
