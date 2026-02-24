@@ -9,10 +9,24 @@ const {
 } = require('../controllers/faculty.controller');
 const { createCompany } = require('../controllers/admin.controller');
 const { protect, requireRole, loadAdmin } = require('../middleware/auth.middleware');
+const AdminController = require('../controllers/admin.controller');
 const Report = require('../models/Report.model');
 
 // All faculty routes require valid JWT, restricted to admins and super admins
 router.use(protect);
+
+/**
+ * @openapi
+ * /api/faculty:
+ *   get:
+ *     summary: Get all faculty members with pagination (Super Admin)
+ *     tags: [Faculty]
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.get('/', requireRole('super_admin'), AdminController.getAllAdmins);
+
 router.use(requireRole('admin', 'super_admin'));
 router.use(loadAdmin);
 

@@ -69,6 +69,11 @@ const StudentSchema = new mongoose.Schema(
         },
         // Filled by admin during Step 6: Internship Assignment
         assignedCompany: { type: String, trim: true, default: null },
+        assignedCompanyId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Company',
+            default: null,
+        },
         assignedPosition: { type: String, trim: true, default: null },
         siteSupervisorName: { type: String, trim: true, default: null },
         siteSupervisorEmail: { type: String, trim: true, default: null },

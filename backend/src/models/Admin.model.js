@@ -25,8 +25,13 @@ const AdminSchema = new mongoose.Schema(
             default: 'admin',
         },
         company: {
-            type: String,   // Only set for company_admin role
+            type: String,   // Legacy/Display name
             trim: true,
+            default: null,
+        },
+        companyId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Company',
             default: null,
         },
         isActive: {

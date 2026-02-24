@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { protect, requireRole } = require('../middleware/auth.middleware');
 const AdminController = require('../controllers/admin.controller');
+const Report = require('../models/Report.model');
+const Student = require('../models/Student.model');
+const Application = require('../models/Application.model');
+const Agreement = require('../models/Agreement.model');
+const Submission = require('../models/Submission.model');
 
 router.use(protect);
 
@@ -55,7 +60,6 @@ router.get('/students', requireRole('admin', 'super_admin'), AdminController.get
  */
 router.get('/application/:studentId', requireRole('super_admin'), async (req, res) => {
     try {
-        const Application = require('../models/Application.model');
         const application = await Application.findOne({ studentId: req.params.studentId }).sort({ createdAt: -1 });
         if (!application) return res.status(404).json({ success: false, message: 'No application found.' });
         res.json({ success: true, application });
@@ -99,6 +103,7 @@ router.post('/create-admin', requireRole('super_admin'), AdminController.createA
  *         description: Success
  */
 router.get('/faculty', requireRole('super_admin'), AdminController.getAllAdmins);
+router.get('/faculty/:adminId/students', requireRole('super_admin'), AdminController.getStudentsBySupervisor);
 router.get('/company-admins', requireRole('super_admin'), AdminController.getCompanyAdmins);
 
 /**
@@ -296,7 +301,6 @@ router.put('/reports/:reportId', requireRole('super_admin'), async (req, res) =>
  */
 router.get('/submissions', requireRole('super_admin'), async (req, res) => {
     try {
-        const Submission = require('../models/Submission.model');
         const submissions = await Submission.find()
             .populate('student', 'name rollNumber degree')
             .populate('task', 'title')
@@ -316,7 +320,6 @@ router.get('/submissions', requireRole('super_admin'), async (req, res) => {
  */
 router.put('/submissions/:submissionId/grade', requireRole('super_admin'), async (req, res) => {
     try {
-        const Submission = require('../models/Submission.model');
         const { facultyGrade, companyGrade, status } = req.body;
         const submission = await Submission.findByIdAndUpdate(
             req.params.submissionId,

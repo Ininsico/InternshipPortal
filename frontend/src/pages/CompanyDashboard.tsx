@@ -5,14 +5,15 @@ import { useAuth } from '../context/AuthContext';
 import {
     LayoutDashboard, Users, ClipboardList, BarChart2,
     LogOut, Plus, Loader2,
-    Send, Briefcase, File, Pencil, Trash2, RefreshCw, Menu
+    Send, Briefcase, File, Pencil, Trash2, RefreshCw, Menu, Star
 } from 'lucide-react';
 
 import API from '../config/api';
+import { useCompanyStore, type CompanyTab } from '../store/companyStore';
 
 const API_BASE = API.COMPANY;
 
-type Tab = 'overview' | 'students' | 'tasks' | 'submissions';
+
 
 const StatusBadge = ({ status }: { status: string }) => {
     const map: Record<string, { label: string; cls: string }> = {
@@ -33,10 +34,12 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 const CompanyDashboard = () => {
     const { user, token, logout } = useAuth();
-    const [activeTab, setActiveTab] = useState<Tab>('overview');
-    const [students, setStudents] = useState<any[]>([]);
-    const [tasks, setTasks] = useState<any[]>([]);
-    const [submissions, setSubmissions] = useState<any[]>([]);
+    const {
+        activeTab, setActiveTab,
+        students, setStudents,
+        tasks, setTasks,
+        submissions, setSubmissions
+    } = useCompanyStore();
     const [loading, setLoading] = useState(true);
 
     const [showTaskModal, setShowTaskModal] = useState(false);
@@ -48,6 +51,11 @@ const CompanyDashboard = () => {
     const [editTaskForm, setEditTaskForm] = useState({ title: '', description: '', deadline: '', maxMarks: 100, assignedTo: '' });
     const [editTaskLoading, setEditTaskLoading] = useState(false);
     const [editTaskError, setEditTaskError] = useState('');
+
+    const [gradeTarget, setGradeTarget] = useState<any | null>(null);
+    const [gradeForm, setGradeForm] = useState({ marks: '', feedback: '' });
+    const [gradeLoading, setGradeLoading] = useState(false);
+    const [gradeError, setGradeError] = useState('');
 
     const [showMobileSidebar, setShowMobileSidebar] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
@@ -88,7 +96,7 @@ const CompanyDashboard = () => {
                 assignedTo: taskForm.assignedTo || undefined,
             }, config);
             if (data.success) {
-                setTasks(prev => [data.task, ...prev]);
+                setTasks((prev: any[]) => [data.task, ...prev]);
                 setShowTaskModal(false);
                 setTaskForm({ title: '', description: '', deadline: '', maxMarks: 100, assignedTo: '' });
                 fetchAll(true);
@@ -113,7 +121,7 @@ const CompanyDashboard = () => {
                 assignedTo: editTaskForm.assignedTo || null
             }, config);
             if (data.success) {
-                setTasks(prev => prev.map(t => t._id === editTaskTarget._id ? data.task : t));
+                setTasks((prev: any[]) => prev.map(t => t._id === editTaskTarget._id ? data.task : t));
                 setEditTaskTarget(null);
                 fetchAll(true);
             }
@@ -129,7 +137,7 @@ const CompanyDashboard = () => {
         try {
             const { data } = await axios.delete(`${API_BASE}/tasks/${taskId}`, config);
             if (data.success) {
-                setTasks(prev => prev.filter(t => t._id !== taskId));
+                setTasks((prev: any[]) => prev.filter(t => t._id !== taskId));
                 fetchAll(true);
             }
         } catch (err: any) {
@@ -137,9 +145,31 @@ const CompanyDashboard = () => {
         }
     };
 
+    const handleGrade = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!gradeTarget) return;
+        setGradeLoading(true);
+        setGradeError('');
+        try {
+            const { data } = await axios.put(`${API_BASE}/submissions/${gradeTarget._id}/grade`, {
+                marks: Number(gradeForm.marks),
+                feedback: gradeForm.feedback,
+            }, config);
+            if (data.success) {
+                setSubmissions((prev: any[]) => prev.map(s => s._id === gradeTarget._id ? data.submission : s));
+                setGradeTarget(null);
+                fetchAll(true);
+            }
+        } catch (err: any) {
+            setGradeError(err?.response?.data?.message || 'Failed to grade.');
+        } finally {
+            setGradeLoading(false);
+        }
+    };
+
     const ungradedCount = submissions.filter(s => !s.companyGrade?.marks).length;
 
-    const navItems: { id: Tab; label: string; icon: any }[] = [
+    const navItems: { id: CompanyTab; label: string; icon: any }[] = [
         { id: 'overview', label: 'Overview', icon: LayoutDashboard },
         { id: 'students', label: 'My Students', icon: Users },
         { id: 'tasks', label: 'Tasks', icon: ClipboardList },
@@ -385,7 +415,7 @@ const CompanyDashboard = () => {
                                                             <div className="flex items-center gap-3">
                                                                 <span className="text-sm font-black text-emerald-600">{sub.companyGrade.marks}/{sub.task?.maxMarks}</span>
                                                                 <button
-                                                                    onClick={() => { /* setGradeTarget(sub); setGradeForm({ marks: String(sub.companyGrade.marks), feedback: sub.companyGrade.feedback || '' }); setGradeError(''); */ }}
+                                                                    onClick={() => { setGradeTarget(sub); setGradeForm({ marks: String(sub.companyGrade.marks), feedback: sub.companyGrade.feedback || '' }); setGradeError(''); }}
                                                                     className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-indigo-600 transition-all"
                                                                     title="Edit Grade"
                                                                 >
@@ -394,10 +424,12 @@ const CompanyDashboard = () => {
                                                             </div>
                                                         ) : (
                                                             <div className="flex items-center gap-3">
-                                                                <div className="text-right">
-                                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Status</p>
-                                                                    <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${sub.status === 'graded' ? 'text-green-500' : 'text-blue-500'}`}>{sub.status}</p>
-                                                                </div>
+                                                                <button
+                                                                    onClick={() => { setGradeTarget(sub); setGradeForm({ marks: '', feedback: '' }); setGradeError(''); }}
+                                                                    className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white hover:bg-indigo-700 transition-all"
+                                                                >
+                                                                    <Star className="h-3.5 w-3.5" /> Grade
+                                                                </button>
                                                             </div>
                                                         )}
                                                     </div>
@@ -496,6 +528,50 @@ const CompanyDashboard = () => {
                                     <button type="submit" disabled={editTaskLoading} className="flex-1 h-12 rounded-2xl bg-indigo-600 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2">
                                         {editTaskLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                                         {editTaskLoading ? 'Saving...' : 'Update Task'}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {gradeTarget && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={() => setGradeTarget(null)}>
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="w-full max-w-md rounded-3xl bg-white border border-slate-100 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                            <div className="border-b border-slate-100 px-8 py-6 bg-slate-50/50">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-1">Grade Submission</p>
+                                <h2 className="text-lg font-black text-slate-900">{gradeTarget.student?.name}</h2>
+                                <p className="text-xs font-bold text-slate-400 mt-0.5">{gradeTarget.task?.title}</p>
+                            </div>
+                            <div className="px-8 py-5 bg-slate-50 border-b border-slate-100">
+                                <p className="text-xs font-bold text-slate-600 mb-3">{gradeTarget.content}</p>
+                                {gradeTarget.attachments && gradeTarget.attachments.length > 0 && (
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {gradeTarget.attachments.map((f: any, i: number) => (
+                                            <a key={i} href={f.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-xl bg-white border border-slate-100 px-4 py-2.5 text-[10px] font-black uppercase text-indigo-600 hover:shadow-md transition-all">
+                                                <span className="flex items-center gap-2 truncate"><File className="h-4 w-4" /> {f.originalname}</span>
+                                            </a>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            <form onSubmit={handleGrade} className="p-6 md:p-8 space-y-5 overflow-y-auto">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Marks (out of {gradeTarget.task?.maxMarks})</label>
+                                    <input required type="number" min={0} max={gradeTarget.task?.maxMarks} value={gradeForm.marks} onChange={e => setGradeForm({ ...gradeForm, marks: e.target.value })} className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Feedback (optional)</label>
+                                    <textarea value={gradeForm.feedback} onChange={e => setGradeForm({ ...gradeForm, feedback: e.target.value })} rows={3} className="w-full rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100 resize-none" />
+                                </div>
+                                {gradeError && <p className="text-xs font-bold text-red-500 bg-red-50 rounded-lg px-4 py-3">{gradeError}</p>}
+                                <div className="flex gap-4">
+                                    <button type="button" onClick={() => setGradeTarget(null)} className="flex-1 h-12 rounded-2xl border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
+                                    <button type="submit" disabled={gradeLoading} className="flex-1 h-12 rounded-2xl bg-indigo-600 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2">
+                                        {gradeLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />}
+                                        {gradeLoading ? 'Saving...' : 'Submit Grade'}
                                     </button>
                                 </div>
                             </form>

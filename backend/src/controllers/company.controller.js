@@ -5,28 +5,35 @@ const Student = require('../models/Student.model');
 // GET /api/company/students — students assigned to this company
 const getMyStudents = async (req, res) => {
     try {
+        const companyId = req.admin.companyId;
         const companyName = req.admin.company;
-        if (!companyName) {
+
+        if (!companyId && !companyName) {
             return res.status(400).json({ success: false, message: 'No company associated with this account.' });
         }
+
         const cleanStr = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '').replace(/\s+/g, '');
         const targetClean = cleanStr(companyName);
 
-        // Fetch all students who might belong to this company, then filter them in memory for higher accuracy
-        const potentialStudents = await Student.find({
-            internshipStatus: 'internship_assigned'
-        })
+        // Optimization: Use ID query if possible
+        let query = { internshipStatus: 'internship_assigned' };
+        if (companyId) {
+            query.assignedCompanyId = companyId;
+        }
+
+        const potentialStudents = await Student.find(query)
             .populate('supervisorId', 'name email')
             .select('-passwordHash');
 
-        const students = potentialStudents.filter(s => {
-            if (!s.assignedCompany) return false;
-            const stuClean = cleanStr(s.assignedCompany);
-
-            // Match if one contains the other (e.g. "Systems Ltd" and "Systems") 
-            // or if they match after normalization
-            return stuClean.includes(targetClean) || targetClean.includes(stuClean);
-        });
+        // If we matched by ID, we're done. If not (legacy or first-time sync), we use the cleanStr filter.
+        let students = potentialStudents;
+        if (!companyId) {
+            students = potentialStudents.filter(s => {
+                if (!s.assignedCompany) return false;
+                const stuClean = cleanStr(s.assignedCompany);
+                return stuClean.includes(targetClean) || targetClean.includes(stuClean);
+            });
+        }
         res.json({ success: true, students });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -34,7 +41,7 @@ const getMyStudents = async (req, res) => {
 };
 
 // POST /api/company/tasks — create a task for students
-const createTask = async (req, res) => {
+const createTask = async (req, res) => {1
     try {
         const { title, description, deadline, maxMarks, assignedTo } = req.body;
         const companyName = req.admin.company;

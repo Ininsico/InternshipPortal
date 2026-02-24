@@ -27,11 +27,13 @@ const createAdmin = async (req, res) => {
         const invitationHash = crypto.createHash('sha256').update(invitationToken).digest('hex');
         const invitationExpire = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
 
+        let companyId = null;
         if (role === 'company_admin' && company) {
-            const companyExists = await Company.findOne({ name: new RegExp(`^${company}$`, 'i') });
+            let companyExists = await Company.findOne({ name: new RegExp(`^${company.trim()}$`, 'i') });
             if (!companyExists) {
-                await Company.create({ name: company, email: email, isPartnered: true });
+                companyExists = await Company.create({ name: company.trim(), email: email, isPartnered: true });
             }
+            companyId = companyExists._id;
         }
 
         const admin = await Admin.create({
@@ -40,6 +42,7 @@ const createAdmin = async (req, res) => {
             passwordHash: crypto.randomBytes(16).toString('hex'),
             role: role || 'admin',
             company: role === 'company_admin' ? company : null,
+            companyId: companyId,
             isActive: false, // Inactive until onboarding completed
             invitationToken: invitationHash,
             invitationExpire
@@ -103,8 +106,53 @@ const resendAdminInvitation = async (req, res) => {
 
 const getAllAdmins = async (req, res) => {
     try {
-        const admins = await Admin.find({ role: { $in: ['admin', 'super_admin'] } }).select('-passwordHash');
-        res.json({ success: true, admins });
+        const {
+            page = 1,
+            limit = 25,
+            search = '',
+            sort = 'name',
+            order = 'asc',
+            type
+        } = req.query;
+
+        const query = {};
+
+        if (type === 'faculty') {
+            query.role = { $in: ['admin', 'super_admin'] };
+        } else if (type === 'staff') {
+            query.role = 'company_admin';
+        } else {
+            query.role = { $in: ['admin', 'company_admin', 'super_admin'] };
+        }
+
+        if (search) {
+            query.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } },
+                { company: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const sortOptions = {};
+        sortOptions[sort] = order === 'desc' ? -1 : 1;
+
+        const [admins, total] = await Promise.all([
+            Admin.find(query)
+                .select('-passwordHash')
+                .sort(sortOptions)
+                .skip(skip)
+                .limit(parseInt(limit)),
+            Admin.countDocuments(query)
+        ]);
+
+        res.json({
+            success: true,
+            data: admins,
+            admins: admins, // Backward compatibility
+            total,
+            pages: Math.ceil(total / parseInt(limit))
+        });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -450,6 +498,7 @@ const assignInternship = async (req, res) => {
             studentId,
             facultySupervisorId,
             assignedCompany,
+            assignedCompanyId,
             assignedPosition,
             siteSupervisorName,
             siteSupervisorEmail,
@@ -473,8 +522,17 @@ const assignInternship = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Faculty supervisor not found.' });
         }
 
+        let companyIdToLink = assignedCompanyId || null;
+        if (!companyIdToLink && assignedCompany) {
+            const companyDoc = await Company.findOne({ name: new RegExp(`^${assignedCompany.trim()}$`, 'i') });
+            if (companyDoc) {
+                companyIdToLink = companyDoc._id;
+            }
+        }
+
         student.supervisorId = facultySupervisorId;
         student.assignedCompany = assignedCompany;
+        student.assignedCompanyId = companyIdToLink;
         student.assignedPosition = assignedPosition;
         student.siteSupervisorName = siteSupervisorName || null;
         student.siteSupervisorEmail = siteSupervisorEmail || null;
@@ -497,6 +555,34 @@ const assignInternship = async (req, res) => {
 
 
 // Delete a faculty admin — complete wipeout of their records and assignments
+const getStudentsBySupervisor = async (req, res) => {
+    try {
+        const { adminId } = req.params;
+        const admin = await Admin.findById(adminId);
+        if (!admin) return res.status(404).json({ success: false, message: 'Admin not found.' });
+
+        let query = {};
+        if (admin.role === 'company_admin') {
+            if (admin.companyId) {
+                // Strong linkage via ID
+                query.assignedCompanyId = admin.companyId;
+            } else if (admin.company) {
+                // Fallback for legacy records
+                query.assignedCompany = { $regex: new RegExp(`^${admin.company.trim()}$`, 'i') };
+            } else {
+                return res.json({ success: true, students: [] });
+            }
+        } else {
+            query.supervisorId = adminId;
+        }
+
+        const students = await Student.find(query).select('-passwordHash');
+        res.json({ success: true, students });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 const deleteAdmin = async (req, res) => {
     try {
         const { adminId } = req.params;
@@ -690,12 +776,22 @@ const deleteCompany = async (req, res) => {
 const updateStudentInternship = async (req, res) => {
     try {
         const { studentId } = req.params;
-        const { assignedCompany, assignedPosition, siteSupervisorName, siteSupervisorEmail, siteSupervisorPhone, internshipStatus } = req.body;
+        const { assignedCompany, assignedCompanyId, assignedPosition, siteSupervisorName, siteSupervisorEmail, siteSupervisorPhone, internshipStatus } = req.body;
 
         const student = await Student.findById(studentId);
         if (!student) return res.status(404).json({ success: false, message: 'Student not found.' });
 
-        student.assignedCompany = assignedCompany !== undefined ? assignedCompany : student.assignedCompany;
+        if (assignedCompany !== undefined) {
+            student.assignedCompany = assignedCompany;
+            if (assignedCompanyId) {
+                student.assignedCompanyId = assignedCompanyId;
+            } else if (assignedCompany) {
+                const companyDoc = await Company.findOne({ name: new RegExp(`^${assignedCompany.trim()}$`, 'i') });
+                student.assignedCompanyId = companyDoc ? companyDoc._id : null;
+            } else {
+                student.assignedCompanyId = null;
+            }
+        }
         student.assignedPosition = assignedPosition !== undefined ? assignedPosition : student.assignedPosition;
         student.siteSupervisorName = siteSupervisorName !== undefined ? siteSupervisorName : student.siteSupervisorName;
         student.siteSupervisorEmail = siteSupervisorEmail !== undefined ? siteSupervisorEmail : student.siteSupervisorEmail;
@@ -792,6 +888,7 @@ module.exports = {
     verifyAgreement,
     getVerifiedStudents,
     assignInternship,
+    getStudentsBySupervisor,
     deleteAdmin,
     deleteStudent,
     updateAdmin,

@@ -1,20 +1,45 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, Briefcase, GraduationCap, Mail, Phone, Calendar, AlertCircle } from 'lucide-react';
+import { X, User, Briefcase, GraduationCap, Mail, Phone, Calendar, AlertCircle, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
+import API from '../../config/api';
 
 interface AdminStudentsModalProps {
     isOpen: boolean;
     onClose: () => void;
     admin: any;
-    students: any[];
+    token: string;
 }
 
-const AdminStudentsModal = ({ isOpen, onClose, admin, students }: AdminStudentsModalProps) => {
+import { request, gql } from 'graphql-request';
+
+const GET_ADMIN_STUDENTS = gql`
+    query GetStudentsByAdmin($adminId: ID!) {
+        students: getStudentsByAdmin(adminId: $adminId) {
+            _id
+            name
+            rollNumber
+            email
+            assignedCompany
+            internshipStatus
+        }
+    }
+`;
+
+const AdminStudentsModal = ({ isOpen, onClose, admin, token }: AdminStudentsModalProps) => {
+    const { data: studentsData, isLoading, error } = useQuery({
+        queryKey: ['admin-students', admin?._id],
+        queryFn: async () => {
+            const endpoint = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/graphql` : 'http://localhost:5000/graphql';
+            const { students } = await request(endpoint, GET_ADMIN_STUDENTS, { adminId: admin._id });
+            return students || [];
+        },
+        enabled: !!admin && isOpen,
+    });
+
     if (!admin) return null;
 
-    // Filter students based on role
-    const assignedStudents = admin.role === 'company_admin'
-        ? students.filter(s => s.assignedCompany?.toLowerCase() === admin.company?.toLowerCase())
-        : students.filter(s => s.supervisorId?._id === admin._id || s.supervisorId === admin._id);
+    const assignedStudents = studentsData || [];
 
     return (
         <AnimatePresence>
@@ -58,7 +83,18 @@ const AdminStudentsModal = ({ isOpen, onClose, admin, students }: AdminStudentsM
 
                         {/* Content */}
                         <div className="flex-1 overflow-y-auto p-8">
-                            {assignedStudents.length === 0 ? (
+                            {isLoading ? (
+                                <div className="h-64 flex flex-col items-center justify-center gap-4">
+                                    <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Synchronizing Intern Data...</p>
+                                </div>
+                            ) : error ? (
+                                <div className="h-64 flex flex-col items-center justify-center text-center p-8 bg-red-50 rounded-[2rem] border border-red-100">
+                                    <AlertCircle className="h-10 w-10 text-red-500 mb-4" />
+                                    <h4 className="text-sm font-black text-red-900 uppercase tracking-tight">Sync Failure</h4>
+                                    <p className="text-[10px] font-bold text-red-600 mt-1 uppercase tracking-widest leading-relaxed italic">Failed to retrieve assigned students. Please verify your connection.</p>
+                                </div>
+                            ) : assignedStudents.length === 0 ? (
                                 <div className="h-64 flex flex-col items-center justify-center text-center">
                                     <div className="h-16 w-16 rounded-3xl bg-slate-50 flex items-center justify-center text-slate-300 mb-4">
                                         <AlertCircle className="h-8 w-8" />
@@ -67,7 +103,7 @@ const AdminStudentsModal = ({ isOpen, onClose, admin, students }: AdminStudentsM
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {assignedStudents.map((s) => (
+                                    {assignedStudents.map((s: any) => (
                                         <div key={s._id} className="group p-6 rounded-[2rem] border border-slate-100 bg-white hover:border-blue-100 hover:shadow-xl hover:shadow-blue-500/5 transition-all">
                                             <div className="flex items-center gap-4 mb-4">
                                                 <div className="h-12 w-12 rounded-2xl bg-slate-50 text-slate-400 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center transition-all duration-500">
@@ -91,7 +127,7 @@ const AdminStudentsModal = ({ isOpen, onClose, admin, students }: AdminStudentsM
                                                 {s.internshipStatus === 'internship_assigned' && (
                                                     <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
                                                         <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">Active Intern</span>
-                                                        <span className="text-slate-300 text-[9px] font-bold italic">Status: {s.internshipStatus}</span>
+                                                        <span className="text-slate-300 text-[9px] font-bold italic">Status: active</span>
                                                     </div>
                                                 )}
                                             </div>

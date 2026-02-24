@@ -62,6 +62,7 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
         siteSupervisorName: '',
         siteSupervisorEmail: '',
         siteSupervisorPhone: '',
+        assignedCompanyId: '',
     });
 
     const [activeSource, setActiveSource] = useState<'none' | 'application' | 'partnered'>('none');
@@ -81,6 +82,7 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
                     siteSupervisorName: student.siteSupervisorName || '',
                     siteSupervisorEmail: student.siteSupervisorEmail || '',
                     siteSupervisorPhone: student.siteSupervisorPhone || '',
+                    assignedCompanyId: student.assignedCompanyId || '',
                 });
 
                 const { data: ctxData } = await axios.get(`${API.ADMIN}/students/${student._id}/placement-context`, config);
@@ -151,6 +153,7 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
                 siteSupervisorEmail: supervisor ? supervisor.email : (matchedPartner.email && matchedPartner.email !== '—' ? matchedPartner.email : (context.agreement?.supervisorEmail || 'N/A')),
                 // Priority: Official Company Phone > Agreement Info
                 siteSupervisorPhone: (matchedPartner.phone && matchedPartner.phone !== '—') ? matchedPartner.phone : (context.agreement?.supervisorPhone || 'N/A'),
+                assignedCompanyId: matchedPartner._id,
             });
             setActiveSource('partnered');
             setSelectedPartneredCompany(matchedPartner._id);
@@ -164,6 +167,7 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
                 siteSupervisorName: context.agreement?.supervisorName || 'N/A',
                 siteSupervisorEmail: context.agreement?.supervisorEmail || 'N/A',
                 siteSupervisorPhone: context.agreement?.supervisorPhone || 'N/A',
+                assignedCompanyId: '',
             });
             setActiveSource('application');
             setSelectedPartneredCompany('');
@@ -180,6 +184,7 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
         setForm({
             ...form,
             assignedCompany: company.name || 'N/A',
+            assignedCompanyId: company._id || '',
             siteSupervisorName: supervisor ? supervisor.name : 'N/A',
             siteSupervisorEmail: supervisor ? supervisor.email : (company.email && company.email !== '—' ? company.email : 'N/A'),
             siteSupervisorPhone: company.phone && company.phone !== '—' ? company.phone : 'N/A',

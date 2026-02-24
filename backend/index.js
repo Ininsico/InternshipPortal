@@ -8,6 +8,10 @@ const studentRoutes = require('./src/routes/student.routes');
 const companyRoutes = require('./src/routes/company.routes');
 const facultyRoutes = require('./src/routes/faculty.routes');
 
+const { ApolloServer } = require('apollo-server-express');
+const typeDefs = require('./src/graphql/schema');
+const resolvers = require('./src/graphql/resolvers');
+
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./src/config/swagger');
 
@@ -33,16 +37,14 @@ app.use(cors({
 }));
 app.options('*', cors());
 
-connectDB();
-
-// Swagger Documentation Route
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const path = require('path');
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+// Swagger Documentation Route
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get('/api/health', (req, res) => {
     res.json({ success: true, message: 'Internship Portal API is running', timestamp: new Date().toISOString() });
@@ -54,19 +56,43 @@ app.use('/api/student', studentRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/faculty', facultyRoutes);
 
+async function startApp() {
+    try {
+        connectDB();
 
-app.use((req, res) => {
-    res.status(404).json({ success: false, message: `Route ${req.method} ${req.originalUrl} not found.` });
-});
+        const server = new ApolloServer({
+            typeDefs,
+            resolvers,
+            context: ({ req }) => {
+                // Minimal context, auth handled by express if needed or within resolvers
+                return { req };
+            }
+        });
+        await server.start();
+        server.applyMiddleware({ app, path: '/graphql' });
+        console.log(`Apollo GraphQL path: ${server.graphqlPath}`);
 
-app.use((err, req, res, next) => {
-    console.error('Unhandled error:', err);
-    res.status(500).json({ success: false, message: 'Internal server error.' });
-});
+        // 404 Handler - MUST BE AFTER ALL ROUTES
+        app.use((req, res) => {
+            res.status(404).json({ success: false, message: `Route ${req.method} ${req.originalUrl} not found.` });
+        });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+        // Error Handler
+        app.use((err, req, res, next) => {
+            console.error('Unhandled error:', err);
+            res.status(500).json({ success: false, message: 'Internal server error.' });
+        });
+
+        const PORT = process.env.PORT || 5000;
+        app.listen(PORT, () => {
+            console.log(`Server running on http://localhost:${PORT}`);
+        });
+    } catch (error) {
+        console.error('Failed to start server:', error);
+    }
+}
+
+startApp();
 
 module.exports = app;
+

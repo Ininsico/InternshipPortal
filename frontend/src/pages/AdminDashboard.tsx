@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { Loader2, X, RefreshCw, Menu } from 'lucide-react';
@@ -18,8 +20,9 @@ import EditReportModal from '../components/admin/EditReportModal';
 import AdminDashboardModals from '../components/admin/AdminDashboardModals';
 import PlacementSyncTab from '../components/admin/PlacementSyncTab';
 import AdminStudentsModal from '../components/admin/AdminStudentsModal';
+import { useAdminStore, type AdminTab } from '../store/adminStore';
 
-type AdminTab = 'overview' | 'students' | 'reports' | 'faculty' | 'companies' | 'approvals' | 'agreements' | 'settings';
+
 
 import API from '../config/api';
 
@@ -27,7 +30,16 @@ const API_BASE = API.ADMIN;
 
 const AdminDashboard = () => {
     const { user, token, logout } = useAuth();
-    const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+    const {
+        activeTab, setActiveTab,
+        viewAdminStudents, setViewAdminStudents,
+        students, setStudents,
+        faculty, setFaculty,
+        reports, setReports,
+        agreements, setAgreements,
+        partneredCompanies, setPartneredCompanies
+    } = useAdminStore();
+    const isSuperAdmin = user?.role === 'super_admin';
     const [loading, setLoading] = useState(true);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const [stats, setStats] = useState({
@@ -37,13 +49,7 @@ const AdminDashboard = () => {
         pendingAgreements: 0,
         placementRate: 0
     });
-    const [students, setStudents] = useState<any[]>([]);
-    const [faculty, setFaculty] = useState<any[]>([]);
-    const [agreements, setAgreements] = useState<any[]>([]);
     const [recentActivity, setRecentActivity] = useState<any[]>([]);
-    const [companyAdmins, setCompanyAdmins] = useState<any[]>([]);
-    const [partneredCompanies, setPartneredCompanies] = useState<string[]>([]);
-    const [reports, setReports] = useState<any[]>([]);
 
     const [showAddAdminModal, setShowAddAdminModal] = useState(false);
     const [newAdmin, setNewAdmin] = useState({ name: '', email: '', role: 'admin', company: '' });
@@ -63,7 +69,7 @@ const AdminDashboard = () => {
     const [deleteStudentLoading, setDeleteStudentLoading] = useState(false);
 
     const [syncingStudent, setSyncingStudent] = useState<any | null>(null);
-    const [viewAdminStudents, setViewAdminStudents] = useState<any | null>(null);
+    const queryClient = useQueryClient();
 
 
 
@@ -110,19 +116,12 @@ const AdminDashboard = () => {
                         user?.role === 'super_admin' ? axios.get(`${API_BASE}/faculty`, config) : Promise.resolve({ data: { success: true, admins: [] } })
                     ]);
                     if (studentsRes.data.success) setStudents(studentsRes.data.students);
-                    if (facultyRes.data.success) setFaculty(facultyRes.data.admins);
+                    if (facultyRes.data.success) {
+                        setFaculty(facultyRes.data.admins);
+                    }
                     break;
                 case 'faculty':
-                    if (user?.role === 'super_admin') {
-                        const [fRes, cRes, sRes] = await Promise.all([
-                            axios.get(`${API_BASE}/faculty`, config),
-                            axios.get(`${API_BASE}/company-admins`, config),
-                            axios.get(`${API_BASE}/students`, config)
-                        ]);
-                        if (fRes.data.success) setFaculty(fRes.data.admins);
-                        if (cRes.data.success) setCompanyAdmins(cRes.data.admins);
-                        if (sRes.data.success) setStudents(sRes.data.students);
-                    }
+                    // Handled by React Query in FacultyTab component
                     break;
                 case 'agreements':
                     if (user?.role === 'super_admin') {
@@ -167,14 +166,11 @@ const AdminDashboard = () => {
             if (newAdmin.role === 'company_admin') payload.company = newAdmin.company;
             const { data } = await axios.post(`${API_BASE}/create-admin`, payload, config);
             if (data.success) {
-                if (newAdmin.role === 'company_admin') {
-                    setCompanyAdmins(prev => [...prev, data.admin]);
-                } else {
-                    setFaculty(prev => [...prev, data.admin]);
-                }
+                // The FacultyTab component uses React Query, so we invalidate its cache
+                queryClient.invalidateQueries({ queryKey: ['faculty'] });
                 setShowAddAdminModal(false);
                 setNewAdmin({ name: '', email: '', role: 'admin', company: '' });
-                fetchData(true);
+                fetchData(true); // Refresh other relevant data
             }
         } catch (err) { console.error(err); }
     };
@@ -186,7 +182,7 @@ const AdminDashboard = () => {
         try {
             const { data } = await axios.put(`${API_BASE}/faculty/${editFaculty._id}`, editFacultyForm, config);
             if (data.success) {
-                setFaculty(prev => prev.map(f => f._id === editFaculty._id ? data.admin : f));
+                queryClient.invalidateQueries({ queryKey: ['faculty'] }); // Invalidate faculty cache
                 setEditFaculty(null);
                 fetchData(true);
             }
@@ -195,25 +191,36 @@ const AdminDashboard = () => {
         } finally { setEditFacultyLoading(false); }
     };
 
-    const handleDeleteFaculty = async () => {
-        setDeleteFacultyLoading(true);
-        try {
-            const { data } = await axios.delete(`${API_BASE}/faculty/${deleteFaculty._id}`, config);
-            if (data.success) {
-                if (deleteFaculty.role === 'company_admin') {
-                    setCompanyAdmins(prev => prev.filter(f => f._id !== deleteFaculty._id));
-                    try {
-                        const companiesRes = await axios.get(`${API_BASE}/partnered-companies`, config);
-                        if (companiesRes.data.success) setPartneredCompanies(companiesRes.data.companies);
-                    } catch (_) { }
-                } else {
-                    setFaculty(prev => prev.filter(f => f._id !== deleteFaculty._id));
-                }
-                setDeleteFaculty(null);
-                fetchData(true);
-            }
-        } catch (err) { console.error(err); }
-        finally { setDeleteFacultyLoading(false); }
+    const deleteAdminMutation = useMutation({
+        mutationFn: async (id: string) => {
+            await axios.delete(`${API_BASE}/faculty/${id}`, config);
+        },
+        onMutate: async (id) => {
+            await queryClient.cancelQueries({ queryKey: ['faculty'] });
+            const previousData = queryClient.getQueryData(['faculty']);
+            queryClient.setQueryData(['faculty'], (old: any) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    total: old.total - 1,
+                    data: old.data.filter((f: any) => f._id !== id)
+                };
+            });
+            return { previousData };
+        },
+        onError: (_err, _id, context: any) => {
+            queryClient.setQueryData(['faculty'], context.previousData);
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ['faculty'] });
+            setDeleteFaculty(null);
+            fetchData(true);
+        },
+    });
+
+    const handleDeleteFaculty = () => {
+        if (!deleteFaculty) return;
+        deleteAdminMutation.mutate(deleteFaculty._id);
     };
 
     const handleResendInvitation = async (adminId: string) => {
@@ -243,7 +250,7 @@ const AdminDashboard = () => {
         try {
             const { data } = await axios.delete(`${API_BASE}/students/${deleteStudentTarget._id}`, config);
             if (data.success) {
-                setStudents(prev => prev.filter(s => s._id !== deleteStudentTarget._id));
+                setStudents((prev: any[]) => prev.filter(s => s._id !== deleteStudentTarget._id));
                 setDeleteStudentTarget(null);
                 fetchData(true);
             }
@@ -257,7 +264,7 @@ const AdminDashboard = () => {
         try {
             const { data } = await axios.post(`${API_BASE}/approve-internship`, { studentId, status }, config);
             if (data.success) {
-                setStudents(prev => prev.map(s => s._id === studentId ? { ...s, internshipStatus: status, pipeline: { ...s.pipeline, applicationStatus: status } } : s));
+                setStudents((prev: any[]) => prev.map(s => s._id === studentId ? { ...s, internshipStatus: status, pipeline: { ...s.pipeline, applicationStatus: status } } : s));
                 fetchData(true);
             }
         } catch (err) { console.error(err); }
@@ -266,7 +273,7 @@ const AdminDashboard = () => {
     const handleVerifyAgreement = async (agreementId: string, status: string) => {
         try {
             await axios.post(`${API_BASE}/verify-agreement`, { agreementId, status }, config);
-            setAgreements(prev => prev.filter(a => a._id !== agreementId));
+            setAgreements((prev: any[]) => prev.filter(a => a._id !== agreementId));
             fetchData(true);
         } catch (err) { console.error(err); }
     };
@@ -279,7 +286,8 @@ const AdminDashboard = () => {
         try {
             const { data } = await axios.post(`${API_BASE}/change-supervisor`, { studentId: changeSupervisorTarget._id, newSupervisorId: changeSupervisorId }, config);
             if (data.success) {
-                setStudents(prev => prev.map(s => s._id === changeSupervisorTarget._id ? { ...s, supervisorId: faculty.find(f => f._id === changeSupervisorId) } : s));
+                // Update local state and refresh
+                setStudents((prev: any[]) => prev.map(s => s._id === changeSupervisorTarget._id ? { ...s, supervisorId: faculty.find((f: any) => f._id === changeSupervisorId) } : s));
                 setChangeSupervisorTarget(null);
                 fetchData(true);
             }
@@ -304,7 +312,7 @@ const AdminDashboard = () => {
         try {
             const { data } = await axios.post(`${API_BASE}/companies`, newCompany, config);
             if (data.success) {
-                setPartneredCompanies(prev => [...prev, { ...data.company, company: data.company.name, name: 'Manual Entry', isManual: true }]);
+                setPartneredCompanies((prev: any[]) => [...prev, { ...data.company, company: data.company.name, name: 'Manual Entry', isManual: true }]);
                 setShowAddCompanyModal(false);
                 setNewCompany({ name: '', email: '', website: '', phone: '', address: '' });
             }
@@ -320,7 +328,7 @@ const AdminDashboard = () => {
         try {
             const { data } = await axios.delete(`${API_BASE}/companies/${id}`, config);
             if (data.success) {
-                setPartneredCompanies(prev => prev.filter((c: any) => c._id !== id));
+                setPartneredCompanies((prev: any[]) => prev.filter((c: any) => c._id !== id));
                 fetchData(true);
             }
         } catch (err: any) {
@@ -328,7 +336,7 @@ const AdminDashboard = () => {
             const message = err.response?.data?.message || '';
             if (status === 404 && message.includes('not found')) {
                 // Record is already gone — remove from UI and refresh
-                setPartneredCompanies(prev => prev.filter((c: any) => c._id !== id));
+                setPartneredCompanies((prev: any[]) => prev.filter((c: any) => c._id !== id));
                 fetchData(true);
             } else if (message.includes('Representative')) {
                 // This is a company_admin supervisor — tell the user where to delete it
@@ -344,7 +352,7 @@ const AdminDashboard = () => {
         try {
             const { data } = await axios.delete(`${API_BASE}/reports/${reportId}`, config);
             if (data.success) {
-                setReports(prev => prev.filter((r: any) => r._id !== reportId));
+                setReports((prev: any[]) => prev.filter((r: any) => r._id !== reportId));
                 setSelectedReport(null);
                 fetchData(true);
             }
@@ -358,7 +366,7 @@ const AdminDashboard = () => {
         try {
             const { data } = await axios.put(`${API_BASE}/reports/${editReport._id}`, editReportForm, config);
             if (data.success) {
-                setReports(prev => prev.map(r => r._id === editReport._id ? data.report : r));
+                setReports((prev: any[]) => prev.map(r => r._id === editReport._id ? data.report : r));
                 setEditReport(null);
                 setSelectedReport(null);
             }
@@ -368,7 +376,6 @@ const AdminDashboard = () => {
     };
 
 
-    const isSuperAdmin = user?.role === 'super_admin';
 
     return (
         <div className="flex h-screen bg-blue-50/40 overflow-hidden">
@@ -453,7 +460,7 @@ const AdminDashboard = () => {
                                     />
                                 )}
                                 {activeTab === 'reports' && <ReportsTab reports={reports} handleDeleteReport={handleDeleteReport} setSelectedReport={setSelectedReport} setEditReport={(r) => { setEditReport(r); setEditReportForm({ summary: r.summary, overallRating: r.overallRating, recommendation: r.recommendation, completionStatus: r.completionStatus, scores: r.scores || {} }); }} />}
-                                {activeTab === 'faculty' && isSuperAdmin && <FacultyTab faculty={faculty} companyAdmins={companyAdmins} setShowAddAdminModal={setShowAddAdminModal} setEditFaculty={setEditFaculty} setEditFacultyForm={setEditFacultyForm} setDeleteFaculty={setDeleteFaculty} handleResendInvitation={handleResendInvitation} fetchData={fetchData} setViewAdminStudents={setViewAdminStudents} />}
+                                {activeTab === 'faculty' && isSuperAdmin && <FacultyTab setShowAddAdminModal={setShowAddAdminModal} setEditFaculty={setEditFaculty} setEditFacultyForm={setEditFacultyForm} setDeleteFaculty={setDeleteFaculty} handleResendInvitation={handleResendInvitation} token={token || ''} />}
                                 {activeTab === 'companies' && isSuperAdmin && <CompaniesTab companies={partneredCompanies} setShowAddCompanyModal={setShowAddCompanyModal} handleDeleteCompany={handleDeleteCompany} />}
                                 {activeTab === 'approvals' && isSuperAdmin && <ApprovalsTab students={students} handleViewApp={handleViewApp} viewAppLoading={viewAppLoading} handleApprove={handleApprove} />}
                                 {activeTab === 'agreements' && isSuperAdmin && <AgreementsTab agreements={agreements} handleVerifyAgreement={handleVerifyAgreement} />}
@@ -510,7 +517,7 @@ const AdminDashboard = () => {
                 isOpen={!!viewAdminStudents}
                 onClose={() => setViewAdminStudents(null)}
                 admin={viewAdminStudents}
-                students={students}
+                token={token || ''}
             />
 
             <AdminDashboardModals
