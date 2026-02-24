@@ -25,7 +25,8 @@ import {
     Send,
     Shield,
     Sparkles,
-    Building2
+    Building2,
+    Menu
 } from 'lucide-react';
 
 import API from '../config/api';
@@ -56,6 +57,7 @@ const StudentDashboard = () => {
     const [submitFiles, setSubmitFiles] = useState<File[]>([]);
     const [submitLoading, setSubmitLoading] = useState(false);
     const [showApplyModal, setShowApplyModal] = useState(false);
+    const [showMobileSidebar, setShowMobileSidebar] = useState(false);
     const [newApp, setNewApp] = useState({ companyName: '', position: '', description: '' });
     const [profileImageLoading, setProfileImageLoading] = useState(false);
 
@@ -295,8 +297,22 @@ const StudentDashboard = () => {
 
     return (
         <div className="flex min-h-screen bg-slate-50/50">
-            <aside className="fixed left-0 top-0 z-40 h-screen w-14 sm:w-20 flex-col border-r border-slate-100 bg-white md:w-72 shadow-sm flex">
-                <div className="flex h-16 md:h-24 items-center justify-center md:justify-start px-3 md:px-8">
+            {/* Mobile Sidebar Overlay */}
+            <AnimatePresence>
+                {showMobileSidebar && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm lg:hidden"
+                        onClick={() => setShowMobileSidebar(false)}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Sidebar */}
+            <aside className={`fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-white border-r border-slate-100 shadow-sm transition-transform duration-300 lg:relative lg:translate-x-0 ${showMobileSidebar ? 'translate-x-0' : '-translate-x-full lg:w-72 lg:flex'}`}>
+                <div className="flex h-16 md:h-24 items-center px-6 sm:px-8">
                     <div className="flex h-9 w-9 md:h-12 md:w-12 items-center justify-center rounded-2xl bg-blue-600 shadow-xl shadow-blue-500/20 shrink-0">
                         <GraduationCap className="h-5 w-5 md:h-6 md:w-6 text-white" />
                     </div>
@@ -305,34 +321,40 @@ const StudentDashboard = () => {
                         <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Student Access</p>
                     </div>
                 </div>
-                <nav className="flex-1 space-y-1 px-2 md:px-4">
+                <nav className="flex-1 space-y-1 px-4">
                     {menuItems.map((item) => (
                         <button
                             key={item.key}
-                            onClick={() => setActiveTab(item.key as any)}
+                            onClick={() => { setActiveTab(item.key as any); setShowMobileSidebar(false); }}
                             title={item.label}
-                            className={`flex w-full items-center justify-center md:justify-start rounded-[1.25rem] px-2 md:px-5 py-3 md:py-4 transition-all duration-300 ${activeTab === item.key
+                            className={`flex w-full items-center rounded-[1.25rem] px-5 py-4 transition-all duration-300 ${activeTab === item.key
                                 ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/20'
                                 : 'text-slate-400 hover:bg-slate-50 hover:text-slate-900'
                                 }`}
                         >
                             <item.icon className="h-5 w-5 shrink-0" />
-                            <span className="ml-4 hidden text-[11px] font-black uppercase tracking-[0.2em] md:block">{item.label}</span>
+                            <span className="ml-4 text-[11px] font-black uppercase tracking-[0.2em]">{item.label}</span>
                         </button>
                     ))}
                 </nav>
-                <div className="p-2 md:p-4">
-                    <button onClick={logout} title="Logout" className="flex w-full items-center justify-center md:justify-start rounded-[1.25rem] px-2 md:px-5 py-3 md:py-4 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all font-black text-[11px] uppercase tracking-[0.2em]">
+                <div className="p-4">
+                    <button onClick={logout} className="flex w-full items-center rounded-[1.25rem] px-5 py-4 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all font-black text-[11px] uppercase tracking-[0.2em]">
                         <LogOut className="h-5 w-5 shrink-0" />
-                        <span className="ml-4 hidden md:block">Logout</span>
+                        <span className="ml-4">Logout</span>
                     </button>
                 </div>
             </aside>
 
-            <main className="ml-14 sm:ml-20 flex-1 md:ml-72 transition-all min-w-0">
-                <header className="sticky top-0 z-30 flex h-16 md:h-24 items-center justify-between border-b border-slate-100 bg-white/80 px-4 md:px-10 backdrop-blur-xl">
+            <main className="flex-1 transition-all min-w-0">
+                <header className="sticky top-0 z-30 flex h-14 md:h-24 items-center justify-between border-b border-slate-100 bg-white/80 px-4 md:px-10 backdrop-blur-xl">
                     <div className="flex items-center gap-4">
-                        <h2 className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] text-slate-400 hidden sm:block">Portal / {activeTab}</h2>
+                        <button
+                            onClick={() => setShowMobileSidebar(true)}
+                            className="lg:hidden h-9 w-9 flex items-center justify-center rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all"
+                        >
+                            <Menu className="h-4 w-4" />
+                        </button>
+                        <h2 className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] text-slate-400 hidden lg:block">Portal / {activeTab}</h2>
                     </div>
                     <div className="flex items-center gap-3 md:gap-8">
                         <div className="flex items-center gap-3 md:gap-5 md:border-r border-slate-100 md:pr-8">
@@ -368,7 +390,7 @@ const StudentDashboard = () => {
                             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
                                 {activeTab === 'overview' && (
                                     <div className="space-y-6 md:space-y-10">
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-8">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
                                             {[
                                                 { label: 'Internship Status', val: internshipStatus.replace('_', ' '), sub: 'Current Pipeline', color: 'blue' },
                                                 { label: 'Position Sourced', val: applications[0]?.position || 'Not Applied', sub: applications[0]?.companyName || 'N/A', color: 'slate' },

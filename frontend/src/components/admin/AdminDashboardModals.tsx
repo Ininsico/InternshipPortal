@@ -453,36 +453,36 @@ const AdminDashboardModals = (props: ModalsProps) => {
             <AnimatePresence>
                 {props.viewApp && (
                     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={() => props.setViewApp(null)}>
-                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-2xl rounded-3xl bg-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-                            <div className="border-b border-slate-50 px-6 md:px-10 py-6 md:py-8 flex items-center justify-between bg-slate-50/50 shrink-0">
-                                <div>
-                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600 mb-1 italic">Internship Application Dossier</p>
-                                    <h3 className="text-2xl font-black text-slate-900 italic tracking-tight">{props.viewApp.companyName}</h3>
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-2xl rounded-[2rem] sm:rounded-3xl bg-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                            <div className="border-b border-slate-50 px-5 sm:px-10 py-5 sm:py-8 flex items-center justify-between bg-slate-50/50 shrink-0">
+                                <div className="min-w-0">
+                                    <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.3em] text-blue-600 mb-1 italic truncate">Internship Application Dossier</p>
+                                    <h3 className="text-xl sm:text-2xl font-black text-slate-900 italic tracking-tight truncate">{props.viewApp.companyName}</h3>
                                 </div>
-                                <button onClick={() => props.setViewApp(null)} className="h-10 w-10 flex items-center justify-center rounded-full bg-white text-slate-400 shadow-sm hover:text-slate-900 transition-all"><X className="h-5 w-5" /></button>
+                                <button onClick={() => props.setViewApp(null)} className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-full bg-white text-slate-400 shadow-sm hover:text-slate-900 transition-all shrink-0 ml-4"><X className="h-4 w-4 sm:h-5 sm:w-5" /></button>
                             </div>
-                            <div className="p-6 md:p-10 space-y-8 md:space-y-10 overflow-y-auto italic">
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-8">
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Position Title</p>
-                                        <p className="text-sm font-bold text-slate-900">{props.viewApp.position || 'N/A'}</p>
+                            <div className="p-5 sm:p-10 space-y-6 sm:space-y-10 overflow-y-auto italic">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 sm:gap-8">
+                                    <div className="col-span-2 sm:col-span-1">
+                                        <p className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 sm:mb-3">Position Title</p>
+                                        <p className="text-xs sm:text-sm font-bold text-slate-900">{props.viewApp.position || 'N/A'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Work Arrangement</p>
-                                        <p className="text-sm font-bold text-slate-900 capitalize">{props.viewApp.internshipType || 'N/A'}</p>
+                                        <p className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 sm:mb-3">Work Arrangement</p>
+                                        <p className="text-xs sm:text-sm font-bold text-slate-900 capitalize">{props.viewApp.internshipType || 'N/A'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Duration</p>
-                                        <p className="text-sm font-bold text-slate-900">{props.viewApp.duration || 'N/A'}</p>
+                                        <p className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 sm:mb-3">Duration</p>
+                                        <p className="text-xs sm:text-sm font-bold text-slate-900">{props.viewApp.duration || 'N/A'}</p>
                                     </div>
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Internship Description</p>
-                                    <p className="text-sm font-bold text-slate-600 leading-relaxed border-l-4 border-blue-100 pl-6 py-2">{props.viewApp.description || 'No description provided.'}</p>
+                                    <p className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 sm:mb-3">Internship Description</p>
+                                    <p className="text-xs sm:text-sm font-bold text-slate-600 leading-relaxed border-l-4 border-blue-100 pl-4 sm:pl-6 py-2">{props.viewApp.description || 'No description provided.'}</p>
                                 </div>
-                                <div className="grid grid-cols-2 gap-10 pt-10 border-t border-slate-50">
-                                    <div className="col-span-2">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Supporting Attachments</p>
+                                <div className="grid grid-cols-1 gap-6 pt-6 sm:pt-10 border-t border-slate-50">
+                                    <div>
+                                        <p className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Supporting Attachments</p>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             {props.viewApp.documents && props.viewApp.documents.length > 0 ? (
                                                 props.viewApp.documents.map((doc: any, i: number) => (
@@ -491,14 +491,14 @@ const AdminDashboardModals = (props: ModalsProps) => {
                                                         href={doc.url}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-all group"
+                                                        className="flex items-center gap-3 p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-all group"
                                                     >
-                                                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-all">
-                                                            <Paperclip className="w-5 h-5" />
+                                                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-all shrink-0">
+                                                            <Paperclip className="w-4 h-4 sm:w-5 sm:h-5" />
                                                         </div>
                                                         <div className="min-w-0">
-                                                            <p className="text-[10px] font-black text-slate-900 truncate uppercase tracking-widest leading-none mb-1">{doc.name || 'Attachment'}</p>
-                                                            <p className="text-[8px] font-bold text-blue-500 uppercase tracking-widest leading-none">View Document →</p>
+                                                            <p className="text-[9px] sm:text-[10px] font-black text-slate-900 truncate uppercase tracking-widest leading-none mb-1">{doc.name || 'Attachment'}</p>
+                                                            <p className="text-[7px] sm:text-[8px] font-bold text-blue-500 uppercase tracking-widest leading-none">View Document →</p>
                                                         </div>
                                                     </a>
                                                 ))
@@ -510,15 +510,15 @@ const AdminDashboardModals = (props: ModalsProps) => {
                                             )}
                                         </div>
                                     </div>
-                                    <div className="col-span-2 pt-6 border-t border-slate-50">
-                                        <div className="flex items-center justify-between">
+                                    <div className="pt-6 border-t border-slate-50">
+                                        <div className="flex flex-wrap items-center justify-between gap-4">
                                             <div>
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Submission Record</p>
-                                                <p className="text-sm font-bold text-slate-900">{new Date(props.viewApp.createdAt).toLocaleDateString()}</p>
+                                                <p className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Submission Record</p>
+                                                <p className="text-xs sm:text-sm font-bold text-slate-900">{new Date(props.viewApp.createdAt).toLocaleDateString()}</p>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Verification Status</p>
-                                                <p className="text-sm font-black text-blue-600 uppercase tracking-widest">{props.viewApp.status}</p>
+                                            <div className="sm:text-right">
+                                                <p className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Verification Status</p>
+                                                <p className="text-xs sm:text-sm font-black text-blue-600 uppercase tracking-widest">{props.viewApp.status}</p>
                                             </div>
                                         </div>
                                     </div>

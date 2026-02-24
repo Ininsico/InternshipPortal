@@ -6,9 +6,16 @@
   --font-sans: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 :root {
   background-color: #ffffff;
   color: #0f172a;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -18,10 +25,7 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-* {
-  border-color: #f1f5f9;
+  overflow-x: hidden;
 }
 
 @media print {

@@ -47,14 +47,14 @@ const ResetPassword = () => {
     return (
         <div className="relative min-h-screen bg-slate-50/30 flex items-center justify-center p-6">
             <header className="fixed top-0 left-0 right-0 z-50 border-b border-slate-100 bg-white/80 backdrop-blur-2xl">
-                <nav className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 shadow-xl shadow-blue-500/10">
-                            <GraduationCap className="h-5 w-5 text-white" />
+                <nav className="mx-auto flex h-16 sm:h-20 max-w-7xl items-center justify-between px-4 sm:px-6">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-blue-600 shadow-xl shadow-blue-500/10">
+                            <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                         </div>
                         <div className="flex flex-col leading-none">
-                            <span className="text-lg font-black tracking-tight text-slate-900 uppercase">COMSATS</span>
-                            <span className="text-[9px] font-black text-blue-600 uppercase tracking-[0.3em] mt-1">Internship Portal</span>
+                            <span className="text-base sm:text-lg font-black tracking-tight text-slate-900 uppercase">COMSATS</span>
+                            <span className="text-[8px] sm:text-[9px] font-black text-blue-600 uppercase tracking-[0.3em] mt-1">Internship Portal</span>
                         </div>
                     </div>
                 </nav>
@@ -63,11 +63,11 @@ const ResetPassword = () => {
             <motion.div
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="w-full max-w-lg bg-white rounded-[3rem] border border-slate-100 shadow-2xl shadow-blue-500/5 p-10 lg:p-16"
+                className="w-full max-w-lg bg-white rounded-[2rem] sm:rounded-[3rem] border border-slate-100 shadow-2xl shadow-blue-500/5 p-6 sm:p-10 lg:p-16 mt-20"
             >
-                <div className="mb-12 text-center">
-                    <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Reset Password</h1>
-                    <p className="mt-3 text-[10px] font-black uppercase tracking-[0.4em] text-blue-600">Secure Credential Recovery</p>
+                <div className="mb-8 sm:mb-12 text-center">
+                    <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter text-slate-900">Reset Password</h1>
+                    <p className="mt-3 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.4em] text-blue-600">Secure Credential Recovery</p>
                 </div>
 
                 <AnimatePresence>
@@ -127,7 +127,7 @@ const ResetPassword = () => {
                         <button
                             disabled={loading}
                             type="submit"
-                            className="w-full h-16 rounded-2xl bg-blue-600 text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-3"
+                            className="w-full h-14 sm:h-16 rounded-2xl bg-blue-600 text-white text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-3"
                         >
                             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                             Update Password

@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import {
     LayoutDashboard, Users, FileText, ClipboardList,
-    LogOut, Plus, Loader2, Star, BookOpen, Award, CheckCircle2, Pencil, Building2, X, RefreshCw
+    LogOut, Plus, Loader2, Star, BookOpen, Award, CheckCircle2, Pencil, Building2, X, RefreshCw, Menu
 } from 'lucide-react';
 
 import API from '../config/api';
@@ -57,6 +57,7 @@ const FacultyDashboard = () => {
     const [companyLoading, setCompanyLoading] = useState(false);
     const [companyError, setCompanyError] = useState('');
 
+    const [showMobileSidebar, setShowMobileSidebar] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
@@ -181,7 +182,15 @@ const FacultyDashboard = () => {
 
     return (
         <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
-            <aside className="flex w-64 flex-col bg-white border-r border-slate-100 shadow-sm">
+            {/* Mobile sidebar overlay */}
+            {showMobileSidebar && (
+                <div
+                    className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm lg:hidden"
+                    onClick={() => setShowMobileSidebar(false)}
+                />
+            )}
+
+            <aside className={`fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-white border-r border-slate-100 shadow-sm transition-transform duration-300 lg:relative lg:translate-x-0 ${showMobileSidebar ? 'translate-x-0' : '-translate-x-full'}`}>
                 <div className="px-6 py-8 border-b border-slate-100">
                     <div className="flex items-center gap-3">
                         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600 text-white">
@@ -215,18 +224,28 @@ const FacultyDashboard = () => {
                 </div>
             </aside>
 
-            <main className="flex-1 overflow-y-auto p-8">
+            <main className="flex-1 overflow-y-auto flex flex-col">
+                {/* Mobile top bar */}
+                <div className="sticky top-0 z-30 flex h-12 items-center gap-3 bg-white/90 backdrop-blur-xl border-b border-slate-100 px-4 lg:hidden">
+                    <button
+                        onClick={() => setShowMobileSidebar(true)}
+                        className="h-8 w-8 flex items-center justify-center rounded-lg bg-teal-50 text-teal-600 hover:bg-teal-100 transition-all"
+                    >
+                        <Menu className="h-4 w-4" />
+                    </button>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-teal-500">Faculty Portal</span>
+                </div>
                 {loading ? (
                     <div className="flex items-center justify-center h-full">
                         <Loader2 className="h-8 w-8 animate-spin text-teal-400" />
                     </div>
                 ) : (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-6xl mx-auto space-y-8">
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-6xl mx-auto space-y-8 p-4 sm:p-6 md:p-8">
 
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-teal-500 mb-1">Faculty Portal</p>
-                                <h1 className="text-3xl font-black text-slate-900">
+                                <h1 className="text-2xl md:text-3xl font-black text-slate-900">
                                     {activeTab === 'overview' && 'Dashboard'}
                                     {activeTab === 'students' && 'My Students'}
                                     {activeTab === 'submissions' && 'Student Submissions'}
@@ -255,7 +274,7 @@ const FacultyDashboard = () => {
 
                         {activeTab === 'overview' && (
                             <div className="space-y-6">
-                                <div className="grid grid-cols-3 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                     {[
                                         { label: 'Assigned Students', value: students.length, color: 'teal' },
                                         { label: 'Ungraded Submissions', value: ungradedCount, color: 'amber' },
@@ -296,48 +315,50 @@ const FacultyDashboard = () => {
                                 {students.length === 0 ? (
                                     <div className="py-20 text-center text-slate-400 font-bold">No students assigned to you yet.</div>
                                 ) : (
-                                    <table className="w-full text-left">
-                                        <thead>
-                                            <tr className="border-b border-slate-100 bg-slate-50/30 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                                <th className="px-8 py-4">Student</th>
-                                                <th className="px-8 py-4">Company</th>
-                                                <th className="px-8 py-4">Position</th>
-                                                <th className="px-8 py-4">Report</th>
-                                                <th className="px-8 py-4">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-50">
-                                            {students.map(s => {
-                                                const hasReport = reports.find(r => String(r.student?._id) === String(s._id));
-                                                return (
-                                                    <tr key={s._id} className="hover:bg-slate-50 transition-colors">
-                                                        <td className="px-8 py-4">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="h-9 w-9 rounded-xl bg-teal-50 flex items-center justify-center text-xs font-black text-teal-600">{s.name[0]}</div>
-                                                                <div>
-                                                                    <p className="text-sm font-bold text-slate-900">{s.name}</p>
-                                                                    <p className="text-[10px] font-bold text-slate-400 uppercase">{s.rollNumber}</p>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left min-w-[560px]">
+                                            <thead>
+                                                <tr className="border-b border-slate-100 bg-slate-50/30 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                                    <th className="px-8 py-4">Student</th>
+                                                    <th className="px-8 py-4">Company</th>
+                                                    <th className="px-8 py-4">Position</th>
+                                                    <th className="px-8 py-4">Report</th>
+                                                    <th className="px-8 py-4">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-50">
+                                                {students.map(s => {
+                                                    const hasReport = reports.find(r => String(r.student?._id) === String(s._id));
+                                                    return (
+                                                        <tr key={s._id} className="hover:bg-slate-50 transition-colors">
+                                                            <td className="px-8 py-4">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="h-9 w-9 rounded-xl bg-teal-50 flex items-center justify-center text-xs font-black text-teal-600">{s.name[0]}</div>
+                                                                    <div>
+                                                                        <p className="text-sm font-bold text-slate-900">{s.name}</p>
+                                                                        <p className="text-[10px] font-bold text-slate-400 uppercase">{s.rollNumber}</p>
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-8 py-4 text-xs font-bold text-slate-500">{s.assignedCompany || '—'}</td>
-                                                        <td className="px-8 py-4 text-xs font-bold text-slate-500">{s.assignedPosition || '—'}</td>
-                                                        <td className="px-8 py-4">
-                                                            {hasReport
-                                                                ? <span className="flex items-center gap-1.5 text-[10px] font-black text-emerald-600 uppercase tracking-wider"><CheckCircle2 className="h-3.5 w-3.5" /> Issued</span>
-                                                                : <span className="text-[10px] font-black text-amber-500 uppercase tracking-wider">⚠ Pending</span>
-                                                            }
-                                                        </td>
-                                                        <td className="px-8 py-4">
-                                                            <button onClick={() => openReportModal(s)} className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-500 hover:border-teal-200 hover:bg-teal-50 hover:text-teal-600 transition-all">
-                                                                <FileText className="h-3.5 w-3.5" /> {hasReport ? 'Edit Report' : 'Create Report'}
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
+                                                            </td>
+                                                            <td className="px-8 py-4 text-xs font-bold text-slate-500">{s.assignedCompany || '—'}</td>
+                                                            <td className="px-8 py-4 text-xs font-bold text-slate-500">{s.assignedPosition || '—'}</td>
+                                                            <td className="px-8 py-4">
+                                                                {hasReport
+                                                                    ? <span className="flex items-center gap-1.5 text-[10px] font-black text-emerald-600 uppercase tracking-wider"><CheckCircle2 className="h-3.5 w-3.5" /> Issued</span>
+                                                                    : <span className="text-[10px] font-black text-amber-500 uppercase tracking-wider">⚠ Pending</span>
+                                                                }
+                                                            </td>
+                                                            <td className="px-8 py-4">
+                                                                <button onClick={() => openReportModal(s)} className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-500 hover:border-teal-200 hover:bg-teal-50 hover:text-teal-600 transition-all">
+                                                                    <FileText className="h-3.5 w-3.5" /> {hasReport ? 'Edit Report' : 'Create Report'}
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 )}
                             </div>
                         )}
@@ -446,14 +467,14 @@ const FacultyDashboard = () => {
 
             <AnimatePresence>
                 {showReportModal && reportTarget && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6 overflow-y-auto" onClick={() => setShowReportModal(false)}>
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="w-full max-w-xl rounded-3xl bg-white border border-slate-100 shadow-2xl overflow-hidden my-6" onClick={e => e.stopPropagation()}>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 overflow-y-auto" onClick={() => setShowReportModal(false)}>
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="w-full max-w-xl rounded-3xl bg-white border border-slate-100 shadow-2xl overflow-hidden my-4 max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
                             <div className="border-b border-slate-100 px-8 py-6 bg-slate-50/50">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-teal-600 mb-1">Internship Report</p>
                                 <h2 className="text-xl font-black text-slate-900">{reportTarget.name}</h2>
                                 <p className="text-xs font-bold text-slate-400 mt-0.5">{reportTarget.rollNumber} · {reportTarget.assignedCompany || 'No company'}</p>
                             </div>
-                            <form onSubmit={handleReport} className="p-8 space-y-5">
+                            <form onSubmit={handleReport} className="p-6 md:p-8 space-y-5 overflow-y-auto">
                                 <div>
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Summary & Evaluation</label>
                                     <textarea required value={reportForm.summary} onChange={e => setReportForm({ ...reportForm, summary: e.target.value })} rows={4} className="w-full rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-teal-100 resize-none" placeholder="Describe the student's overall performance, strengths, and areas for improvement..." />
@@ -506,8 +527,8 @@ const FacultyDashboard = () => {
 
             <AnimatePresence>
                 {gradeTarget && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setGradeTarget(null)}>
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="w-full max-w-md rounded-3xl bg-white border border-slate-100 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={() => setGradeTarget(null)}>
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="w-full max-w-md rounded-3xl bg-white border border-slate-100 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
                             <div className="border-b border-slate-100 px-8 py-6 bg-slate-50/50">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-teal-600 mb-1">Grade Submission</p>
                                 <h2 className="text-lg font-black text-slate-900">{gradeTarget.student?.name}</h2>
@@ -525,7 +546,7 @@ const FacultyDashboard = () => {
                                     </div>
                                 )}
                             </div>
-                            <form onSubmit={handleGrade} className="p-8 space-y-5">
+                            <form onSubmit={handleGrade} className="p-6 md:p-8 space-y-5 overflow-y-auto">
                                 <div>
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Marks (out of {gradeTarget.task?.maxMarks})</label>
                                     <input required type="number" min={0} max={gradeTarget.task?.maxMarks} value={gradeForm.marks} onChange={e => setGradeForm({ ...gradeForm, marks: e.target.value })} className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-teal-100" />
@@ -550,8 +571,8 @@ const FacultyDashboard = () => {
 
             <AnimatePresence>
                 {showAddCompanyModal && (
-                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setShowAddCompanyModal(false)}>
-                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={() => setShowAddCompanyModal(false)}>
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl bg-white p-6 md:p-8 shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                             <div className="flex items-center justify-between mb-8">
                                 <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest italic">Add Partner</h3>
                                 <button onClick={() => setShowAddCompanyModal(false)} className="h-8 w-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-900 transition-all"><X className="h-4 w-4" /></button>

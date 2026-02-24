@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, GraduationCap, Loader2, AlertCircle, X, CheckCircle2, Mail, RefreshCw } from 'lucide-react';
+import { Eye, EyeOff, GraduationCap, Loader2, AlertCircle, X, CheckCircle2, Mail, RefreshCw, Menu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -33,6 +33,7 @@ const LandingPage = () => {
     const { login, user } = useAuth();
     const [mode, setMode] = useState<FormMode>('student');
     const [studentView, setStudentView] = useState<StudentView>('login');
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     const [session, setSession] = useState('FA21');
     const [degree, setDegree] = useState('BCS');
@@ -189,16 +190,25 @@ const LandingPage = () => {
     return (
         <div className="relative min-h-screen bg-[#FDFBF7] text-slate-900 selection:bg-blue-600 selection:text-white overflow-hidden">
 
-            <header className="fixed top-0 left-0 right-0 z-50 px-12 py-10">
-                <nav className="mx-auto flex max-w-[1400px] items-center justify-between bg-transparent">
-                    <div className="flex items-center gap-6">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-white">
-                            <GraduationCap className="h-6 w-6" />
+            <header className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-12 py-6 sm:py-10">
+                <nav className="mx-auto flex max-w-[1400px] items-center justify-between">
+                    <div className="flex items-center gap-3 sm:gap-6">
+                        <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-slate-900 text-white shadow-xl shadow-slate-900/10">
+                            <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6" />
                         </div>
                         <div className="flex flex-col">
-                            <h1 className="text-xl font-black tracking-[-0.05em] text-slate-900 uppercase leading-none">COMSATS</h1>
+                            <h1 className="text-lg sm:text-xl font-black tracking-[-0.05em] text-slate-900 uppercase leading-none">COMSATS</h1>
                         </div>
                     </div>
+
+                    {/* Mobile Menu Button */}
+                    <button
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        className="md:hidden h-10 w-10 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-900 shadow-sm"
+                    >
+                        {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                    </button>
+
                     <div className="hidden items-center gap-10 md:flex">
                         <button
                             onClick={() => switchMode(isAdmin ? 'student' : 'admin')}
@@ -208,6 +218,25 @@ const LandingPage = () => {
                         </button>
                     </div>
                 </nav>
+
+                {/* Mobile Navigation Menu */}
+                <AnimatePresence>
+                    {mobileMenuOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="absolute top-24 left-4 right-4 bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 md:hidden overflow-hidden"
+                        >
+                            <button
+                                onClick={() => { switchMode(isAdmin ? 'student' : 'admin'); setMobileMenuOpen(false); }}
+                                className="w-full py-4 rounded-2xl bg-slate-50 text-blue-600 text-[10px] font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-2"
+                            >
+                                {isAdmin ? 'Switch to Student Entry' : 'Switch to Faculty Access'}
+                            </button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </header>
 
             <main className="relative flex min-h-screen items-center justify-center px-6 pt-20">
@@ -218,11 +247,11 @@ const LandingPage = () => {
                     transition={{ duration: 0.8, ease: "easeOut" }}
                     className="relative z-10 w-full max-w-[400px]"
                 >
-                    <div className="relative overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.3)]">
-                        <div className="p-8 lg:p-10">
+                    <div className="relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] border border-slate-200 bg-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.15)] sm:shadow-[0_40px_100px_-20px_rgba(0,0,0,0.3)]">
+                        <div className="p-6 sm:p-10">
 
-                            <div className="mb-8 text-center">
-                                <h1 className="text-4xl font-black text-slate-950 uppercase tracking-tighter leading-none mb-2">
+                            <div className="mb-6 sm:mb-8 text-center">
+                                <h1 className="text-3xl sm:text-4xl font-black text-slate-950 uppercase tracking-tighter leading-none mb-2">
                                     {isAdmin ? 'FACULTY' : studentView === 'verify-otp' ? 'VERIFY' : 'STUDENT'}
                                 </h1>
                                 <p className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-600 opacity-80">
@@ -393,13 +422,13 @@ const LandingPage = () => {
 
             <AnimatePresence>
                 {showForgotModal && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-6">
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
-                            className="w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-12 shadow-2xl relative">
-                            <button onClick={() => { setShowForgotModal(false); setForgotFeedback(null); }} className="absolute top-10 right-10 text-slate-300 hover:text-slate-900 transition-colors"><X className="h-6 w-6" /></button>
-                            <div className="mb-10 text-center">
-                                <h2 className="text-3xl font-black text-slate-950 uppercase tracking-tighter">PASSWORD RESET</h2>
-                                <p className="mt-2 text-[10px] font-black uppercase tracking-[0.3em] text-blue-600">Account Recovery Service</p>
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6">
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+                            className="w-full max-w-md rounded-[2.5rem] border border-slate-100 bg-white p-8 sm:p-12 shadow-2xl relative">
+                            <button onClick={() => { setShowForgotModal(false); setForgotFeedback(null); }} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 transition-colors"><X className="h-6 w-6" /></button>
+                            <div className="mb-8 sm:mb-10 text-center">
+                                <h2 className="text-2xl sm:text-3xl font-black text-slate-950 uppercase tracking-tighter">PASSWORD RESET</h2>
+                                <p className="mt-2 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.3em] text-blue-600">Account Recovery Service</p>
                             </div>
                             {forgotFeedback && (
                                 <div className={`mb-8 p-5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${forgotFeedback.type === 'error' ? 'bg-red-50 border-red-100 text-red-600' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>

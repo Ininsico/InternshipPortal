@@ -11,7 +11,7 @@ interface ReportsTabProps {
 const ReportsTab = ({ reports, handleDeleteReport, setSelectedReport, setEditReport }: ReportsTabProps) => {
     return (
         <div className="space-y-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase italic">Internship Reports</h3>
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mt-1">Global faculty evaluations • Total: {reports.length}</p>
@@ -19,12 +19,12 @@ const ReportsTab = ({ reports, handleDeleteReport, setSelectedReport, setEditRep
             </div>
 
             {reports.length === 0 ? (
-                <div className="rounded-[2.5rem] border border-slate-100 bg-white p-20 text-center">
-                    <div className="mx-auto w-20 h-20 rounded-[2rem] bg-slate-50 flex items-center justify-center mb-6">
-                        <FileText className="h-10 w-10 text-slate-200" />
+                <div className="rounded-[2.5rem] border border-slate-100 bg-white p-8 sm:p-20 text-center">
+                    <div className="mx-auto w-16 h-16 sm:w-20 sm:h-20 rounded-[1.5rem] sm:rounded-[2rem] bg-slate-50 flex items-center justify-center mb-6">
+                        <FileText className="h-8 w-8 sm:h-10 sm:h-10 text-slate-200" />
                     </div>
-                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">No reports archived</h3>
-                    <p className="text-xs text-slate-400 font-bold mt-2">Faculty evaluations will appear here once submitted.</p>
+                    <h3 className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-widest">No reports archived</h3>
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-bold mt-2">Faculty evaluations will appear here once submitted.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -33,7 +33,7 @@ const ReportsTab = ({ reports, handleDeleteReport, setSelectedReport, setEditRep
                             key={r._id}
                             layoutId={r._id}
                             whileHover={{ y: -5 }}
-                            className="group relative rounded-[2.5rem] border border-slate-100 bg-white p-8 shadow-sm hover:shadow-2xl hover:shadow-blue-500/10 transition-all overflow-hidden"
+                            className="group relative rounded-[2.5rem] border border-slate-100 bg-white p-6 sm:p-8 shadow-sm hover:shadow-2xl hover:shadow-blue-500/10 transition-all overflow-hidden"
                         >
                             <div className="absolute top-0 right-0 h-32 w-32 bg-slate-50 rounded-full -mr-16 -mt-16 group-hover:bg-blue-50 transition-colors duration-500" />
 

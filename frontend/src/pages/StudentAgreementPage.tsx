@@ -118,7 +118,7 @@ const StudentAgreementPage = () => {
 
     return (
         <div className="min-h-screen bg-[#f8fafc] flex flex-col">
-            <header className="h-20 bg-white/80 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between px-10 sticky top-0 z-20">
+            <header className="h-16 md:h-20 bg-white/80 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between px-4 sm:px-8 md:px-10 sticky top-0 z-20">
                 <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                         <GraduationCap className="w-6 h-6 text-white" />
@@ -134,14 +134,14 @@ const StudentAgreementPage = () => {
                 </button>
             </header>
 
-            <main className="flex-1 p-8 md:p-12">
+            <main className="flex-1 p-4 sm:p-8 md:p-12">
                 <div className="max-w-4xl mx-auto">
                     <div className="mb-12">
                         <div className="flex items-center gap-2 mb-4">
                             <span className="h-[2px] w-8 bg-blue-600" />
                             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-600">Step 4: Internship Agreement</span>
                         </div>
-                        <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tight mb-4 leading-none">
+                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 uppercase tracking-tight mb-4 leading-none">
                             Finalize Your <br /> <span className="text-blue-600">Placement Contract</span>
                         </h1>
                         <p className="text-slate-500 font-medium max-w-lg leading-relaxed">
@@ -156,7 +156,7 @@ const StudentAgreementPage = () => {
                     </div>
 
                     {isLocked ? (
-                        <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-blue-500/5 border border-slate-100 overflow-hidden p-12 text-center">
+                        <div className="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-2xl shadow-blue-500/5 border border-slate-100 overflow-hidden p-6 sm:p-8 md:p-12 text-center">
                             <div className="w-24 h-24 bg-blue-50 rounded-[2rem] flex items-center justify-center mx-auto mb-8 text-blue-600">
                                 <Clock className="w-12 h-12 animate-pulse" />
                             </div>
@@ -215,7 +215,7 @@ const StudentAgreementPage = () => {
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-[2rem] border border-slate-100 p-10 shadow-sm">
+                            <div className="bg-white rounded-[2rem] border border-slate-100 p-6 md:p-10 shadow-sm">
                                 <div className="flex items-center gap-3 mb-8">
                                     <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                                         <UserCircle className="w-4 h-4 text-blue-600" />
@@ -259,7 +259,7 @@ const StudentAgreementPage = () => {
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="bg-white rounded-[2rem] border border-slate-100 p-10 shadow-sm"
+                                    className="bg-white rounded-[2rem] border border-slate-100 p-6 md:p-10 shadow-sm"
                                 >
                                     <div className="flex items-center gap-3 mb-8">
                                         <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">

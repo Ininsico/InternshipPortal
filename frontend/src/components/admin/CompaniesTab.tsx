@@ -10,23 +10,23 @@ interface CompaniesTabProps {
 const CompaniesTab = ({ companies, setShowAddCompanyModal, handleDeleteCompany }: CompaniesTabProps) => {
     return (
         <div className="space-y-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase italic">Partnered Companies</h3>
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mt-1">Official industry partners for student placements</p>
                 </div>
                 <button
                     onClick={() => setShowAddCompanyModal(true)}
-                    className="h-12 px-6 rounded-2xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 flex items-center gap-2"
+                    className="h-10 sm:h-12 px-4 sm:px-6 rounded-2xl bg-blue-600 text-white text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 flex items-center gap-2"
                 >
-                    <Building2 className="h-4 w-4" /> Add Partner
+                    <Building2 className="h-4 w-4" /> <span className="hidden sm:inline">Add Partner</span><span className="inline sm:hidden">Add</span>
                 </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {companies.length > 0 ? (
                     companies.map((company: any) => (
-                        <div key={company._id} className="group rounded-[2rem] border border-slate-100 bg-white p-8 shadow-sm hover:border-blue-100 transition-all hover:shadow-xl hover:shadow-blue-500/5">
+                        <div key={company._id} className="group rounded-[2rem] border border-slate-100 bg-white p-6 sm:p-8 shadow-sm hover:border-blue-100 transition-all hover:shadow-xl hover:shadow-blue-500/5">
                             <div className="flex items-center justify-between mb-6">
                                 <div className="h-14 w-14 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
                                     <Building2 className="h-6 w-6" />
@@ -69,9 +69,9 @@ const CompaniesTab = ({ companies, setShowAddCompanyModal, handleDeleteCompany }
                         </div>
                     ))
                 ) : (
-                    <div className="col-span-full py-20 text-center rounded-[2.5rem] border-2 border-dashed border-slate-100">
-                        <Building2 className="h-12 w-12 text-slate-200 mx-auto mb-4" />
-                        <p className="text-xs font-black uppercase tracking-widest text-slate-400">No partnered companies found</p>
+                    <div className="col-span-full py-16 sm:py-20 text-center rounded-[2.5rem] border-2 border-dashed border-slate-100 bg-white/50">
+                        <Building2 className="h-10 w-10 sm:h-12 sm:h-12 text-slate-200 mx-auto mb-4" />
+                        <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400">No partnered companies found</p>
                     </div>
                 )}
             </div>

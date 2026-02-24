@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import {
     LayoutDashboard, Users, ClipboardList, BarChart2,
     LogOut, Plus, Loader2,
-    Send, Briefcase, File, Pencil, Trash2, RefreshCw
+    Send, Briefcase, File, Pencil, Trash2, RefreshCw, Menu
 } from 'lucide-react';
 
 import API from '../config/api';
@@ -49,6 +49,7 @@ const CompanyDashboard = () => {
     const [editTaskLoading, setEditTaskLoading] = useState(false);
     const [editTaskError, setEditTaskError] = useState('');
 
+    const [showMobileSidebar, setShowMobileSidebar] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
@@ -147,7 +148,15 @@ const CompanyDashboard = () => {
 
     return (
         <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
-            <aside className="flex w-64 flex-col bg-white border-r border-slate-100 shadow-sm">
+            {/* Mobile sidebar overlay */}
+            {showMobileSidebar && (
+                <div
+                    className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm lg:hidden"
+                    onClick={() => setShowMobileSidebar(false)}
+                />
+            )}
+
+            <aside className={`fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-white border-r border-slate-100 shadow-sm transition-transform duration-300 lg:relative lg:translate-x-0 ${showMobileSidebar ? 'translate-x-0' : '-translate-x-full'}`}>
                 <div className="px-6 py-8 border-b border-slate-100">
                     <div className="flex items-center gap-3">
                         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white">
@@ -181,18 +190,28 @@ const CompanyDashboard = () => {
                 </div>
             </aside>
 
-            <main className="flex-1 overflow-y-auto p-8">
+            <main className="flex-1 overflow-y-auto flex flex-col">
+                {/* Mobile top bar */}
+                <div className="sticky top-0 z-30 flex h-12 items-center gap-3 bg-white/90 backdrop-blur-xl border-b border-slate-100 px-4 lg:hidden">
+                    <button
+                        onClick={() => setShowMobileSidebar(true)}
+                        className="h-8 w-8 flex items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all"
+                    >
+                        <Menu className="h-4 w-4" />
+                    </button>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-500">Company Portal</span>
+                </div>
                 {loading ? (
                     <div className="flex items-center justify-center h-full">
                         <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
                     </div>
                 ) : (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-6xl mx-auto space-y-8">
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-6xl mx-auto space-y-8 p-4 sm:p-6 md:p-8">
 
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-1">Company Portal</p>
-                                <h1 className="text-3xl font-black text-slate-900">
+                                <h1 className="text-2xl md:text-3xl font-black text-slate-900">
                                     {activeTab === 'overview' && 'Dashboard'}
                                     {activeTab === 'students' && 'My Interns'}
                                     {activeTab === 'tasks' && 'Task Management'}
@@ -211,7 +230,7 @@ const CompanyDashboard = () => {
 
                         {activeTab === 'overview' && (
                             <div className="space-y-6">
-                                <div className="grid grid-cols-3 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                     {[
                                         { label: 'Active Interns', value: students.length, color: 'indigo' },
                                         { label: 'Total Tasks', value: tasks.length, color: 'blue' },
@@ -247,34 +266,36 @@ const CompanyDashboard = () => {
                                 {students.length === 0 ? (
                                     <div className="py-20 text-center text-slate-400 font-bold">No interns assigned to your company yet.</div>
                                 ) : (
-                                    <table className="w-full text-left">
-                                        <thead>
-                                            <tr className="border-b border-slate-100 bg-slate-50/30 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                                <th className="px-8 py-4">Student</th>
-                                                <th className="px-8 py-4">Degree</th>
-                                                <th className="px-8 py-4">Position</th>
-                                                <th className="px-8 py-4">Faculty Supervisor</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-50">
-                                            {students.map(s => (
-                                                <tr key={s._id} className="hover:bg-slate-50 transition-colors">
-                                                    <td className="px-8 py-4">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="h-9 w-9 rounded-xl bg-indigo-50 flex items-center justify-center text-xs font-black text-indigo-600">{s.name[0]}</div>
-                                                            <div>
-                                                                <p className="text-sm font-bold text-slate-900">{s.name}</p>
-                                                                <p className="text-[10px] font-bold text-slate-400 uppercase">{s.rollNumber}</p>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-8 py-4 text-xs font-bold text-slate-500">{s.degree}</td>
-                                                    <td className="px-8 py-4 text-xs font-bold text-slate-500">{s.assignedPosition || '—'}</td>
-                                                    <td className="px-8 py-4 text-xs font-bold text-slate-500">{s.supervisorId?.name || <span className="text-amber-500">Not Assigned</span>}</td>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left min-w-[500px]">
+                                            <thead>
+                                                <tr className="border-b border-slate-100 bg-slate-50/30 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                                    <th className="px-8 py-4">Student</th>
+                                                    <th className="px-8 py-4">Degree</th>
+                                                    <th className="px-8 py-4">Position</th>
+                                                    <th className="px-8 py-4">Faculty Supervisor</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-50">
+                                                {students.map(s => (
+                                                    <tr key={s._id} className="hover:bg-slate-50 transition-colors">
+                                                        <td className="px-8 py-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="h-9 w-9 rounded-xl bg-indigo-50 flex items-center justify-center text-xs font-black text-indigo-600">{s.name[0]}</div>
+                                                                <div>
+                                                                    <p className="text-sm font-bold text-slate-900">{s.name}</p>
+                                                                    <p className="text-[10px] font-bold text-slate-400 uppercase">{s.rollNumber}</p>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-8 py-4 text-xs font-bold text-slate-500">{s.degree}</td>
+                                                        <td className="px-8 py-4 text-xs font-bold text-slate-500">{s.assignedPosition || '—'}</td>
+                                                        <td className="px-8 py-4 text-xs font-bold text-slate-500">{s.supervisorId?.name || <span className="text-amber-500">Not Assigned</span>}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 )}
                             </div>
                         )}
@@ -396,13 +417,13 @@ const CompanyDashboard = () => {
 
             <AnimatePresence>
                 {showTaskModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setShowTaskModal(false)}>
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="w-full max-w-lg rounded-3xl bg-white border border-slate-100 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={() => setShowTaskModal(false)}>
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="w-full max-w-lg rounded-3xl bg-white border border-slate-100 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
                             <div className="border-b border-slate-100 px-8 py-6 bg-slate-50/50">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-1">New Assignment</p>
                                 <h2 className="text-xl font-black text-slate-900">Create Task</h2>
                             </div>
-                            <form onSubmit={handleCreateTask} className="p-8 space-y-5">
+                            <form onSubmit={handleCreateTask} className="p-6 md:p-8 space-y-5 overflow-y-auto">
                                 <div>
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Task Title</label>
                                     <input required value={taskForm.title} onChange={e => setTaskForm({ ...taskForm, title: e.target.value })} className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100" placeholder="e.g. Weekly Progress Report" />
@@ -444,13 +465,13 @@ const CompanyDashboard = () => {
 
             <AnimatePresence>
                 {editTaskTarget && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setEditTaskTarget(null)}>
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="w-full max-w-lg rounded-3xl bg-white border border-slate-100 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={() => setEditTaskTarget(null)}>
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="w-full max-w-lg rounded-3xl bg-white border border-slate-100 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
                             <div className="border-b border-slate-100 px-8 py-6 bg-slate-50/50">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-1">Modify Task</p>
                                 <h2 className="text-xl font-black text-slate-900">Edit Task</h2>
                             </div>
-                            <form onSubmit={handleUpdateTask} className="p-8 space-y-5">
+                            <form onSubmit={handleUpdateTask} className="p-6 md:p-8 space-y-5 overflow-y-auto">
                                 <div>
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Task Title</label>
                                     <input required value={editTaskForm.title} onChange={e => setEditTaskForm({ ...editTaskForm, title: e.target.value })} className="w-full h-12 rounded-xl bg-slate-50 border border-slate-100 px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-100" />

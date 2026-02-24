@@ -59,14 +59,14 @@ const AdminOnboarding = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="w-full max-w-md"
             >
-                <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.1)] overflow-hidden">
-                    <div className="p-10 lg:p-12">
-                        <div className="text-center mb-10">
-                            <div className="h-16 w-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                                <ShieldCheck className="h-8 w-8" />
+                <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] border border-slate-200 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.1)] overflow-hidden">
+                    <div className="p-6 sm:p-10 lg:p-12">
+                        <div className="text-center mb-8 sm:mb-10">
+                            <div className="h-14 w-14 sm:h-16 sm:w-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                                <ShieldCheck className="h-7 w-7 sm:h-8 sm:w-8" />
                             </div>
-                            <h1 className="text-3xl font-black text-slate-950 uppercase tracking-tighter leading-none mb-2 italic">ACCESS INITIALIZATION</h1>
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600 opacity-80">Staff Onboarding Protocol</p>
+                            <h1 className="text-2xl sm:text-3xl font-black text-slate-950 uppercase tracking-tighter leading-none mb-2 italic">ACCESS INITIALIZATION</h1>
+                            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.3em] text-blue-600 opacity-80">Staff Onboarding Protocol</p>
                         </div>
 
                         {feedback && (
@@ -129,9 +129,9 @@ const AdminOnboarding = () => {
 
                             <button
                                 disabled={loading || feedback?.type === 'success'}
-                                className="w-full h-16 rounded-2xl bg-blue-600 text-white font-black text-[12px] uppercase tracking-[0.4em] transition-all hover:bg-blue-700 hover:shadow-2xl hover:shadow-blue-200 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 italic"
+                                className="w-full h-14 sm:h-16 rounded-2xl bg-blue-600 text-white font-black text-[11px] sm:text-[12px] uppercase tracking-[0.4em] transition-all hover:bg-blue-700 hover:shadow-2xl hover:shadow-blue-200 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 italic"
                             >
-                                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Activate Account Hub'}
+                                {loading ? <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" /> : 'Activate Account Hub'}
                             </button>
 
                             <p className="text-[9px] font-bold text-slate-400 text-center uppercase tracking-widest leading-relaxed">
