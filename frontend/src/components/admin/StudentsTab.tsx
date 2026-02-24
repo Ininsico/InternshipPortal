@@ -1,4 +1,5 @@
 import { Briefcase, Trash2, Building2, User, Mail, ShieldCheck, FileText, Star, Phone } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import StatusPill from '../StatusPill';
 
 interface StudentsTabProps {
@@ -8,7 +9,6 @@ interface StudentsTabProps {
     setChangeSupervisorTarget: (student: any) => void;
     setChangeSupervisorId: (id: string) => void;
     setDeleteStudentTarget: (student: any) => void;
-    setEditStudentTarget: (student: any) => void;
     handleResendStudentEmail: (email: string) => void;
 }
 
@@ -19,9 +19,9 @@ const StudentsTab = ({
     setChangeSupervisorTarget,
     setChangeSupervisorId,
     setDeleteStudentTarget,
-    setEditStudentTarget,
     handleResendStudentEmail
 }: StudentsTabProps) => {
+    const navigate = useNavigate();
     return (
         <div className="space-y-8">
             <div className="flex flex-wrap items-center justify-between gap-4">
@@ -81,7 +81,7 @@ const StudentsTab = ({
                                             </button>
                                         )}
                                         <button
-                                            onClick={() => setEditStudentTarget(stu)}
+                                            onClick={() => navigate(`/admin/placement-sync/${stu._id}`)}
                                             className="h-10 w-10 flex items-center justify-center rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-sm"
                                             title="Edit Records"
                                         >

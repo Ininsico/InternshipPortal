@@ -60,17 +60,7 @@ const AdminDashboard = () => {
     const [deleteStudentTarget, setDeleteStudentTarget] = useState<any | null>(null);
     const [deleteStudentLoading, setDeleteStudentLoading] = useState(false);
 
-    const [editStudentTarget, setEditStudentTarget] = useState<any | null>(null);
-    const [editStudentForm, setEditStudentForm] = useState({
-        assignedCompany: '',
-        assignedPosition: '',
-        siteSupervisorName: '',
-        siteSupervisorEmail: '',
-        siteSupervisorPhone: '',
-        internshipStatus: ''
-    });
-    const [editStudentLoading, setEditStudentLoading] = useState(false);
-    const [editStudentError, setEditStudentError] = useState('');
+
 
     const [viewApp, setViewApp] = useState<any | null>(null);
     const [viewAppLoading, setViewAppLoading] = useState(false);
@@ -250,26 +240,7 @@ const AdminDashboard = () => {
         finally { setDeleteStudentLoading(false); }
     };
 
-    const handleEditStudent = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!editStudentTarget) return;
-        setEditStudentLoading(true);
-        setEditStudentError('');
-        try {
-            const { data } = await axios.put(`${API_BASE}/students/${editStudentTarget._id}/internship`, editStudentForm, config);
-            if (data.success) {
-                setStudents(prev => prev.map(s => s._id === editStudentTarget._id ? { ...s, ...data.student } : s));
-                setEditStudentTarget(null);
-                fetchData(true);
-            } else {
-                setEditStudentError(data.message);
-            }
-        } catch (err: any) {
-            setEditStudentError(err.response?.data?.message || 'Update failed');
-        } finally {
-            setEditStudentLoading(false);
-        }
-    };
+
 
     const handleApprove = async (studentId: string, status: string) => {
         try {
@@ -466,17 +437,6 @@ const AdminDashboard = () => {
                                         setChangeSupervisorTarget={setChangeSupervisorTarget}
                                         setChangeSupervisorId={setChangeSupervisorId}
                                         setDeleteStudentTarget={setDeleteStudentTarget}
-                                        setEditStudentTarget={(stu) => {
-                                            setEditStudentTarget(stu);
-                                            setEditStudentForm({
-                                                assignedCompany: stu.assignedCompany || '',
-                                                assignedPosition: stu.assignedPosition || '',
-                                                siteSupervisorName: stu.siteSupervisorName || '',
-                                                siteSupervisorEmail: stu.siteSupervisorEmail || '',
-                                                siteSupervisorPhone: stu.siteSupervisorPhone || '',
-                                                internshipStatus: stu.internshipStatus || ''
-                                            });
-                                        }}
                                         handleResendStudentEmail={handleResendStudentEmail}
                                     />
                                 )}
@@ -525,7 +485,6 @@ const AdminDashboard = () => {
                     deleteStudent: deleteStudentTarget, setDeleteStudent: setDeleteStudentTarget, handleDeleteStudent, deleteStudentLoading,
                     faculty,
                     changeSupervisorTarget, setChangeSupervisorTarget, changeSupervisorId, setChangeSupervisorId, changeSupervisorLoading, changeSupervisorError, handleChangeSupervisor,
-                    editStudentTarget, setEditStudentTarget, editStudentForm, setEditStudentForm, handleEditStudent, editStudentLoading, editStudentError,
                     apiBase: API_BASE,
                     config,
                     setPartneredCompanies
