@@ -13,21 +13,31 @@ const swaggerSpec = require('./src/config/swagger');
 
 const app = express();
 
+// 1. UNIVERSAL CORS HAMMER
+app.use(cors({
+    origin: (origin, callback) => {
+        const allowed = [
+            'https://internship-portal-sigma.vercel.app',
+            'http://localhost:5173',
+            'http://localhost:3000'
+        ];
+        if (!origin || allowed.includes(origin) || origin.endsWith('.vercel.app')) {
+            callback(null, true);
+        } else {
+            callback(null, true);
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+}));
+app.options('*', cors());
+
 connectDB();
 
 // Swagger Documentation Route
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// CORS Configuration
-app.use(cors({
-    origin: (origin, callback) => {
-        // Allow all origins for now as requesting, but in a way that supports credentials
-        callback(null, true);
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -58,3 +68,5 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
+
+module.exports = app;
