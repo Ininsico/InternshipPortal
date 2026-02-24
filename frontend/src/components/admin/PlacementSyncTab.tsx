@@ -86,8 +86,9 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
                 const { data: ctxData } = await axios.get(`${API.ADMIN}/students/${student._id}/placement-context`, config);
                 if (ctxData.success) {
                     setContext(ctxData);
-                    if (student.assignedCompany) {
-                        const matched = ctxData.companies.find((c: any) => c.name.toLowerCase() === student.assignedCompany.toLowerCase());
+                    const companyToMatch = student.assignedCompany || ctxData.application?.companyName;
+                    if (companyToMatch) {
+                        const matched = ctxData.companies.find((c: any) => c.name.toLowerCase() === companyToMatch.toLowerCase());
                         if (matched) setSelectedPartneredCompany(matched._id);
                     }
                 }
@@ -133,16 +134,40 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
 
     const applyApplicationSource = () => {
         if (!context) return;
-        setForm({
-            ...form,
-            assignedCompany: context.application?.companyName || 'N/A',
-            assignedPosition: context.application?.position || 'N/A',
-            siteSupervisorName: context.agreement?.supervisorName || 'N/A',
-            siteSupervisorEmail: context.agreement?.supervisorEmail || 'N/A',
-            siteSupervisorPhone: context.agreement?.supervisorPhone || 'N/A',
-        });
-        setActiveSource('application');
-        setSelectedPartneredCompany('');
+
+        const appCompany = context.application?.companyName || '';
+        const matchedPartner = context.companies.find(c => c.name.toLowerCase() === appCompany.toLowerCase());
+
+        if (matchedPartner) {
+            // Smart Link: Company detected in official partners. Prioritize verified info.
+            const supervisor = matchedPartner.supervisors && matchedPartner.supervisors.length > 0 ? matchedPartner.supervisors[0] : null;
+
+            setForm({
+                assignedCompany: matchedPartner.name,
+                assignedPosition: context.application?.position || 'N/A',
+                // Priority: Official Supervisor > Agreement Info > N/A
+                siteSupervisorName: supervisor ? supervisor.name : (context.agreement?.supervisorName || 'N/A'),
+                // Priority: Official Supervisor Email > Official Company Email > Agreement Info (Trust DB over Student Input)
+                siteSupervisorEmail: supervisor ? supervisor.email : (matchedPartner.email && matchedPartner.email !== '—' ? matchedPartner.email : (context.agreement?.supervisorEmail || 'N/A')),
+                // Priority: Official Company Phone > Agreement Info
+                siteSupervisorPhone: (matchedPartner.phone && matchedPartner.phone !== '—') ? matchedPartner.phone : (context.agreement?.supervisorPhone || 'N/A'),
+            });
+            setActiveSource('partnered');
+            setSelectedPartneredCompany(matchedPartner._id);
+            setSuccess(`Smart Link: Verified records merged for ${matchedPartner.name}`);
+            setTimeout(() => setSuccess(''), 3000);
+        } else {
+            // Standard App Source: Use details provided by student in the forms.
+            setForm({
+                assignedCompany: context.application?.companyName || 'N/A',
+                assignedPosition: context.application?.position || 'N/A',
+                siteSupervisorName: context.agreement?.supervisorName || 'N/A',
+                siteSupervisorEmail: context.agreement?.supervisorEmail || 'N/A',
+                siteSupervisorPhone: context.agreement?.supervisorPhone || 'N/A',
+            });
+            setActiveSource('application');
+            setSelectedPartneredCompany('');
+        }
     };
 
     const applyPartneredCompany = (id: string) => {
