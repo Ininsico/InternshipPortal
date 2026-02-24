@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShieldCheck, Eye, EyeOff, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -15,6 +15,32 @@ const AdminOnboarding = () => {
     const [showPass, setShowPass] = useState(false);
     const [loading, setLoading] = useState(false);
     const [feedback, setFeedback] = useState<{ type: 'error' | 'success'; msg: string } | null>(null);
+    const [checking, setChecking] = useState(true);
+
+    useEffect(() => {
+        const verifyToken = async () => {
+            if (!token) {
+                setFeedback({ type: 'error', msg: 'Missing invitation token.' });
+                setChecking(false);
+                return;
+            }
+            try {
+                // We'll use a small GET request to check if the token is valid
+                const { data } = await axios.get(`${API.AUTH}/verify-onboarding/${token}`);
+                if (!data.success) {
+                    setFeedback({ type: 'error', msg: data.message || 'Invalid or expired link.' });
+                }
+            } catch (err: any) {
+                setFeedback({
+                    type: 'error',
+                    msg: err.response?.data?.message || 'This invitation link is no longer valid.'
+                });
+            } finally {
+                setChecking(false);
+            }
+        };
+        verifyToken();
+    }, [token]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -80,64 +106,83 @@ const AdminOnboarding = () => {
                             </motion.div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block ml-1">Confirm Full Name</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Dr. John Doe"
-                                        value={name}
-                                        onChange={e => setName(e.target.value)}
-                                        className="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 placeholder:text-slate-300 transition-all font-sans"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block ml-1">Security Credential</label>
-                                    <div className="relative">
+                        {checking ? (
+                            <div className="py-20 flex flex-col items-center justify-center gap-4 text-slate-400">
+                                <Loader2 className="h-8 w-8 animate-spin" />
+                                <p className="text-[10px] font-black uppercase tracking-widest italic animate-pulse">Establishing Secure Connection...</p>
+                            </div>
+                        ) : feedback?.type === 'error' && !loading ? (
+                            <div className="space-y-6">
+                                <p className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-widest leading-relaxed px-4">
+                                    Please contact your system administrator to request a new invitation link if you believe this is an error.
+                                </p>
+                                <button
+                                    onClick={() => navigate('/')}
+                                    className="w-full h-14 rounded-2xl bg-white border border-slate-200 text-slate-900 font-black text-[11px] uppercase tracking-[0.4em] transition-all hover:bg-slate-50 active:scale-95 italic shadow-sm"
+                                >
+                                    Return to Login
+                                </button>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block ml-1">Confirm Full Name</label>
                                         <input
-                                            type={showPass ? 'text' : 'password'}
-                                            placeholder="Set Security Password"
-                                            value={password}
-                                            onChange={e => setPassword(e.target.value)}
+                                            type="text"
+                                            placeholder="Dr. John Doe"
+                                            value={name}
+                                            onChange={e => setName(e.target.value)}
+                                            className="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 placeholder:text-slate-300 transition-all font-sans"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block ml-1">Security Credential</label>
+                                        <div className="relative">
+                                            <input
+                                                type={showPass ? 'text' : 'password'}
+                                                placeholder="Set Security Password"
+                                                value={password}
+                                                onChange={e => setPassword(e.target.value)}
+                                                required
+                                                className="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 placeholder:text-slate-300 transition-all font-sans"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPass(!showPass)}
+                                                className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-900"
+                                            >
+                                                {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block ml-1">Verify Password</label>
+                                        <input
+                                            type="password"
+                                            placeholder="Repeat Security Password"
+                                            value={confirmPassword}
+                                            onChange={e => setConfirmPassword(e.target.value)}
                                             required
                                             className="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 placeholder:text-slate-300 transition-all font-sans"
                                         />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPass(!showPass)}
-                                            className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-900"
-                                        >
-                                            {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                        </button>
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block ml-1">Verify Password</label>
-                                    <input
-                                        type="password"
-                                        placeholder="Repeat Security Password"
-                                        value={confirmPassword}
-                                        onChange={e => setConfirmPassword(e.target.value)}
-                                        required
-                                        className="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 placeholder:text-slate-300 transition-all font-sans"
-                                    />
-                                </div>
-                            </div>
+                                <button
+                                    disabled={loading || feedback?.type === 'success'}
+                                    className="w-full h-14 sm:h-16 rounded-2xl bg-blue-600 text-white font-black text-[11px] sm:text-[12px] uppercase tracking-[0.4em] transition-all hover:bg-blue-700 hover:shadow-2xl hover:shadow-blue-200 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 italic"
+                                >
+                                    {loading ? <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" /> : 'Activate Account Hub'}
+                                </button>
 
-                            <button
-                                disabled={loading || feedback?.type === 'success'}
-                                className="w-full h-14 sm:h-16 rounded-2xl bg-blue-600 text-white font-black text-[11px] sm:text-[12px] uppercase tracking-[0.4em] transition-all hover:bg-blue-700 hover:shadow-2xl hover:shadow-blue-200 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 italic"
-                            >
-                                {loading ? <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" /> : 'Activate Account Hub'}
-                            </button>
-
-                            <p className="text-[9px] font-bold text-slate-400 text-center uppercase tracking-widest leading-relaxed">
-                                Note: This action binds your email to the CU Portal Ecosystem.<br />Keep your credentials confidential.
-                            </p>
-                        </form>
+                                <p className="text-[9px] font-bold text-slate-400 text-center uppercase tracking-widest leading-relaxed">
+                                    Note: This action binds your email to the CU Portal Ecosystem.<br />Keep your credentials confidential.
+                                </p>
+                            </form>
+                        )}
                     </div>
                 </div>
             </motion.div>

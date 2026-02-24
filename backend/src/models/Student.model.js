@@ -79,6 +79,12 @@ const StudentSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+// Performance Optimization Indexes
+StudentSchema.index({ degree: 1 });
+StudentSchema.index({ internshipStatus: 1 });
+StudentSchema.index({ supervisorId: 1 });
+StudentSchema.index({ createdAt: -1 });
+
 StudentSchema.pre('save', async function (next) {
     if (!this.isModified('passwordHash')) return next();
     if (!this.passwordHash.startsWith('$2')) {

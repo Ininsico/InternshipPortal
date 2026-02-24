@@ -56,8 +56,10 @@ const SubmissionSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-// Ensure one submission per student per task
+// Performance Optimization Indexes
 SubmissionSchema.index({ task: 1, student: 1 }, { unique: true });
+SubmissionSchema.index({ status: 1 });
+SubmissionSchema.index({ createdAt: -1 });
 
 const Submission = mongoose.model('Submission', SubmissionSchema);
 module.exports = Submission;

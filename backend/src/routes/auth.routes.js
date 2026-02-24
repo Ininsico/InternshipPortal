@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { signupStudent, verifyOtp, resendOtp, loginStudent, loginAdmin, logout, getMe, forgotPassword, resetPassword, completeOnboarding } = require('../controllers/auth.controller');
+const { signupStudent, verifyOtp, resendOtp, loginStudent, loginAdmin, logout, getMe, forgotPassword, resetPassword, completeOnboarding, verifyOnboarding } = require('../controllers/auth.controller');
 const { protect } = require('../middleware/auth.middleware');
 
 // ── Student Signup (OTP-based email verification) ──────────────────────────
@@ -125,5 +125,6 @@ router.post('/forgot-password', forgotPassword);
  */
 router.post('/reset-password', resetPassword);
 router.post('/complete-onboarding', completeOnboarding);
+router.get('/verify-onboarding/:token', verifyOnboarding);
 
 module.exports = router;

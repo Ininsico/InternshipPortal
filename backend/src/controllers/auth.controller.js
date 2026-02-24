@@ -415,22 +415,27 @@ const completeOnboarding = async (req, res) => {
     }
 
     try {
-        const resetPasswordToken = crypto.createHash('sha256').update(token).digest('hex');
+        const invitationToken = crypto.createHash('sha256').update(token).digest('hex');
 
         const admin = await Admin.findOne({
-            resetPasswordToken,
-            resetPasswordExpire: { $gt: Date.now() }
+            invitationToken,
+            invitationExpire: { $gt: Date.now() }
         });
 
         if (!admin) {
+            // Check if admin exists but is already active
+            const activeAdmin = await Admin.findOne({ invitationToken });
+            if (activeAdmin && activeAdmin.isActive) {
+                return res.status(400).json({ success: false, message: 'This account is already activated. Please log in.' });
+            }
             return res.status(400).json({ success: false, message: 'Invalid or expired invitation token.' });
         }
 
         if (name) admin.name = name;
         admin.passwordHash = password;
         admin.isActive = true;
-        admin.resetPasswordToken = undefined;
-        admin.resetPasswordExpire = undefined;
+        admin.invitationToken = undefined;
+        admin.invitationExpire = undefined;
 
         await admin.save();
 
@@ -438,6 +443,37 @@ const completeOnboarding = async (req, res) => {
     } catch (err) {
         console.error('completeOnboarding:', err);
         return res.status(500).json({ success: false, message: 'Error completing onboarding.' });
+    }
+};
+
+const verifyOnboarding = async (req, res) => {
+    const { token } = req.params;
+
+    if (!token) {
+        return res.status(400).json({ success: false, message: 'Token is required.' });
+    }
+
+    try {
+        const invitationToken = crypto.createHash('sha256').update(token).digest('hex');
+
+        const admin = await Admin.findOne({
+            invitationToken,
+            invitationExpire: { $gt: Date.now() }
+        });
+
+        if (!admin) {
+            // Check if it was already activated
+            const activeAdmin = await Admin.findOne({ invitationToken });
+            if (activeAdmin && activeAdmin.isActive) {
+                return res.status(400).json({ success: false, message: 'This invitation has already been used to activate an account.' });
+            }
+            return res.status(400).json({ success: false, message: 'This invitation link is invalid or has expired.' });
+        }
+
+        return res.json({ success: true, message: 'Token is valid.' });
+    } catch (err) {
+        console.error('verifyOnboarding:', err);
+        return res.status(500).json({ success: false, message: 'Error verifying token.' });
     }
 };
 
@@ -451,5 +487,6 @@ module.exports = {
     getMe,
     forgotPassword,
     resetPassword,
-    completeOnboarding
+    completeOnboarding,
+    verifyOnboarding
 };

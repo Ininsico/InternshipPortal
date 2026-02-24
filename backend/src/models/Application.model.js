@@ -61,5 +61,8 @@ const ApplicationSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+ApplicationSchema.index({ status: 1 });
+ApplicationSchema.index({ createdAt: -1 });
+
 const Application = mongoose.model('Application', ApplicationSchema);
 module.exports = Application;

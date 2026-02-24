@@ -91,61 +91,73 @@ const AdminDashboard = () => {
     const [editReportError, setEditReportError] = useState('');
 
     const [refreshing, setRefreshing] = useState(false);
+    const [fetchedTabs, setFetchedTabs] = useState<Set<string>>(new Set());
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
-    const fetchData = async (silent = false) => {
+    const fetchTabData = async (tab: AdminTab, silent = false) => {
         if (!token) return;
-        if (!silent) setLoading(true);
+        if (!silent && !fetchedTabs.has(tab)) setLoading(true);
         else setRefreshing(true);
 
         try {
-            const [statsRes, studentsRes] = await Promise.all([
-                axios.get(`${API_BASE}/stats`, config),
-                axios.get(`${API_BASE}/students`, config),
-            ]);
-
-            if (statsRes.data.success) {
-                setStats(statsRes.data.stats);
-                setRecentActivity(statsRes.data.recentActivity);
+            switch (tab) {
+                case 'overview':
+                    const statsRes = await axios.get(`${API_BASE}/stats`, config);
+                    if (statsRes.data.success) {
+                        setStats(statsRes.data.stats);
+                        setRecentActivity(statsRes.data.recentActivity);
+                    }
+                    break;
+                case 'students':
+                case 'approvals': // Both use students data mainly
+                    const studentsRes = await axios.get(`${API_BASE}/students`, config);
+                    if (studentsRes.data.success) setStudents(studentsRes.data.students);
+                    break;
+                case 'faculty':
+                    if (user?.role === 'super_admin') {
+                        const [fRes, cRes] = await Promise.all([
+                            axios.get(`${API_BASE}/faculty`, config),
+                            axios.get(`${API_BASE}/company-admins`, config)
+                        ]);
+                        if (fRes.data.success) setFaculty(fRes.data.admins);
+                        if (cRes.data.success) setCompanyAdmins(cRes.data.admins);
+                    }
+                    break;
+                case 'agreements':
+                    if (user?.role === 'super_admin') {
+                        const aRes = await axios.get(`${API_BASE}/agreements`, config);
+                        if (aRes.data.success) setAgreements(aRes.data.agreements);
+                    }
+                    break;
+                case 'reports':
+                    if (user?.role === 'super_admin') {
+                        const rRes = await axios.get(`${API_BASE}/reports`, config);
+                        if (rRes.data.success) setReports(rRes.data.reports);
+                    }
+                    break;
+                case 'companies':
+                    if (user?.role === 'super_admin') {
+                        const pRes = await axios.get(`${API_BASE}/partnered-companies`, config);
+                        if (pRes.data.success) setPartneredCompanies(pRes.data.companies);
+                    }
+                    break;
             }
-            if (studentsRes.data.success) {
-                setStudents(studentsRes.data.students);
-            }
-
-            if (user?.role === 'super_admin') {
-                const results = await Promise.allSettled([
-                    axios.get(`${API_BASE}/faculty`, config),
-                    axios.get(`${API_BASE}/agreements`, config),
-                    axios.get(`${API_BASE}/company-admins`, config),
-                    axios.get(`${API_BASE}/reports`, config),
-                    axios.get(`${API_BASE}/partnered-companies`, config),
-                ]);
-
-                const [facultyRes, agreementsRes, companyAdminRes, reportsRes, partneredRes] = results;
-
-                if (facultyRes.status === 'fulfilled' && facultyRes.value.data.success) {
-                    setFaculty(facultyRes.value.data.admins);
-                }
-                if (agreementsRes.status === 'fulfilled' && agreementsRes.value.data.success) setAgreements(agreementsRes.value.data.agreements);
-                if (companyAdminRes.status === 'fulfilled' && companyAdminRes.value.data.success) {
-                    setCompanyAdmins(companyAdminRes.value.data.admins);
-                }
-                if (reportsRes.status === 'fulfilled' && reportsRes.value.data.success) setReports(reportsRes.value.data.reports);
-                if (partneredRes.status === 'fulfilled' && partneredRes.value.data.success) {
-                    setPartneredCompanies(partneredRes.value.data.companies);
-                }
-            }
+            setFetchedTabs(prev => new Set(prev).add(tab));
         } catch (err) {
-            console.error(err);
+            console.error(`Error fetching ${tab} data:`, err);
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
     };
 
+    const fetchData = (silent = false) => fetchTabData(activeTab, silent);
+
     useEffect(() => {
-        fetchData();
-    }, [token, user?.role]);
+        if (token) {
+            fetchTabData(activeTab);
+        }
+    }, [token, activeTab]);
 
     const handleCreateAdmin = async (e: React.FormEvent) => {
         e.preventDefault();

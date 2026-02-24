@@ -64,5 +64,8 @@ const AgreementSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+AgreementSchema.index({ status: 1 });
+AgreementSchema.index({ createdAt: -1 });
+
 const Agreement = mongoose.model('Agreement', AgreementSchema);
 module.exports = Agreement;

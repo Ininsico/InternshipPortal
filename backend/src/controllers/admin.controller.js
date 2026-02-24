@@ -23,9 +23,9 @@ const createAdmin = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Company name is required for company admin accounts.' });
         }
 
-        const resetToken = crypto.randomBytes(32).toString('hex');
-        const resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-        const resetPasswordExpire = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
+        const invitationToken = crypto.randomBytes(32).toString('hex');
+        const invitationHash = crypto.createHash('sha256').update(invitationToken).digest('hex');
+        const invitationExpire = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
 
         if (role === 'company_admin' && company) {
             const companyExists = await Company.findOne({ name: new RegExp(`^${company}$`, 'i') });
@@ -41,12 +41,12 @@ const createAdmin = async (req, res) => {
             role: role || 'admin',
             company: role === 'company_admin' ? company : null,
             isActive: false, // Inactive until onboarding completed
-            resetPasswordToken,
-            resetPasswordExpire
+            invitationToken: invitationHash,
+            invitationExpire
         });
 
         const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
-        const setupUrl = `${frontendUrl}/complete-onboarding/${resetToken}`;
+        const setupUrl = `${frontendUrl}/complete-onboarding/${invitationToken}`;
         const html = staffInvitationTemplate(admin.role, setupUrl);
 
         await sendEmail(admin.email, 'Staff Onboarding Invitation - CU Portal', html);
@@ -83,13 +83,13 @@ const resendAdminInvitation = async (req, res) => {
             return res.status(400).json({ success: false, message: 'This account is already active.' });
         }
 
-        const resetToken = crypto.randomBytes(32).toString('hex');
-        admin.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-        admin.resetPasswordExpire = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
+        const invitationToken = crypto.randomBytes(32).toString('hex');
+        admin.invitationToken = crypto.createHash('sha256').update(invitationToken).digest('hex');
+        admin.invitationExpire = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
         await admin.save();
 
         const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
-        const setupUrl = `${frontendUrl}/complete-onboarding/${resetToken}`;
+        const setupUrl = `${frontendUrl}/complete-onboarding/${invitationToken}`;
         const html = staffInvitationTemplate(admin.role, setupUrl);
 
         await sendEmail(admin.email, 'Staff Onboarding Invitation (Resent) - CU Portal', html);
@@ -131,6 +131,7 @@ const getAllStudents = async (req, res) => {
     try {
         const students = await Student.aggregate([
             { $match: { degree: { $in: ALLOWED_DEGREES } } },
+            // Join Supervisor (Admin)
             {
                 $lookup: {
                     from: 'admins',
@@ -140,32 +141,27 @@ const getAllStudents = async (req, res) => {
                 }
             },
             { $unwind: { path: '$supervisor', preserveNullAndEmptyArrays: true } },
+            // Join Latest Application (Since studentId is unique, this is safe and much faster than pipeline lookup)
             {
                 $lookup: {
                     from: 'applications',
-                    let: { studentId: '$_id' },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ['$studentId', '$$studentId'] } } },
-                        { $sort: { createdAt: -1 } },
-                        { $limit: 1 }
-                    ],
+                    localField: '_id',
+                    foreignField: 'studentId',
                     as: 'latestApp'
                 }
             },
             { $unwind: { path: '$latestApp', preserveNullAndEmptyArrays: true } },
+            // Join Latest Agreement (Since studentId is unique)
             {
                 $lookup: {
                     from: 'agreements',
-                    let: { studentId: '$_id' },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ['$studentId', '$$studentId'] } } },
-                        { $sort: { createdAt: -1 } },
-                        { $limit: 1 }
-                    ],
+                    localField: '_id',
+                    foreignField: 'studentId',
                     as: 'latestAgreement'
                 }
             },
             { $unwind: { path: '$latestAgreement', preserveNullAndEmptyArrays: true } },
+            // Join Report (Limit to 1 if multiple exist, but keep it simple)
             {
                 $lookup: {
                     from: 'reports',
@@ -175,12 +171,15 @@ const getAllStudents = async (req, res) => {
                 }
             },
             { $unwind: { path: '$report', preserveNullAndEmptyArrays: true } },
+            // Projection to exclude sensitive data
             {
                 $project: {
                     passwordHash: 0,
                     'supervisor.passwordHash': 0,
                     'supervisor.resetPasswordToken': 0,
-                    'supervisor.resetPasswordExpire': 0
+                    'supervisor.resetPasswordExpire': 0,
+                    'supervisor.invitationToken': 0,
+                    'supervisor.invitationExpire': 0
                 }
             }
         ]);
@@ -730,7 +729,6 @@ const getStudentPlacementContext = async (req, res) => {
             Company.find().lean(),
             Admin.find({ role: 'company_admin' }).select('name email company').lean()
         ]);
-
         const companiesMap = new Map();
         manualCompanies.forEach(c => {
             companiesMap.set(c.name.toLowerCase(), {
@@ -739,7 +737,8 @@ const getStudentPlacementContext = async (req, res) => {
                 email: c.email || '—',
                 website: c.website,
                 phone: c.phone,
-                isManual: true
+                isManual: true,
+                supervisors: []
             });
         });
 
@@ -748,13 +747,15 @@ const getStudentPlacementContext = async (req, res) => {
             if (!key) return;
             if (companiesMap.has(key)) {
                 const existing = companiesMap.get(key);
-                companiesMap.set(key, { ...existing, isManual: false });
+                existing.isManual = false;
+                existing.supervisors.push({ name: admin.name, email: admin.email });
             } else {
                 companiesMap.set(key, {
                     _id: admin._id,
                     name: admin.company,
                     email: admin.email,
-                    isManual: false
+                    isManual: false,
+                    supervisors: [{ name: admin.name, email: admin.email }]
                 });
             }
         });

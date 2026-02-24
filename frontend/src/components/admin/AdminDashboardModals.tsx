@@ -70,7 +70,7 @@ interface PlacementContext {
         companyAddress: string;
         sourcingType: string;
     } | null;
-    companies: { _id: string; name: string; email: string; website: string; phone: string }[];
+    companies: { _id: string; name: string; email: string; website: string; phone: string; supervisors: { name: string; email: string }[] }[];
 }
 
 interface EditStudentModalProps {
@@ -127,8 +127,15 @@ const EditStudentModal = ({ target, form, setForm, onSubmit, loading, error, onC
             };
             const { data } = await axios.post(`${apiBase}/companies`, payload, config);
             if (data.success) {
-                const newComp = { _id: data.company._id, name: data.company.name, email: data.company.email || '', website: data.company.website || '', phone: data.company.phone || '' };
-                setContext(prev => prev ? { ...prev, companies: [...prev.companies, newComp].sort((a, b) => a.name.localeCompare(b.name)) } : null);
+                const newComp = {
+                    _id: data.company._id,
+                    name: data.company.name,
+                    email: data.company.email || '',
+                    website: data.company.website || '',
+                    phone: data.company.phone || '',
+                    supervisors: []
+                };
+                setContext((prev: any) => prev ? { ...prev, companies: [...prev.companies, newComp].sort((a: any, b: any) => a.name.localeCompare(b.name)) } : null);
                 setPartneredCompanies((prev: any) => [...prev, { ...data.company, company: data.company.name, isManual: true }]);
                 applyPartneredCompany(newComp._id);
             }
@@ -154,11 +161,14 @@ const EditStudentModal = ({ target, form, setForm, onSubmit, loading, error, onC
         if (!context?.companies) return;
         const company = context.companies.find(c => c._id === id);
         if (!company) return;
+
+        const supervisor = company.supervisors && company.supervisors.length > 0 ? company.supervisors[0] : null;
+
         setForm({
             ...form,
             assignedCompany: company.name || '',
-            siteSupervisorName: '',
-            siteSupervisorEmail: company.email || '',
+            siteSupervisorName: supervisor ? supervisor.name : '',
+            siteSupervisorEmail: supervisor ? supervisor.email : (company.email || ''),
             siteSupervisorPhone: company.phone || '',
         });
         setSelectedPartneredCompany(id);
@@ -171,119 +181,124 @@ const EditStudentModal = ({ target, form, setForm, onSubmit, loading, error, onC
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                className="w-full max-w-sm rounded-3xl bg-white shadow-2xl relative my-2"
+                className="w-full max-w-2xl rounded-[2.5rem] bg-white shadow-2xl relative my-8 overflow-hidden"
                 onClick={e => e.stopPropagation()}
             >
-                <div className="px-5 pt-5 pb-3 border-b border-slate-50">
+                <div className="px-8 pt-8 pb-5 border-b border-slate-50">
                     <div className="flex items-start justify-between">
                         <div>
-                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest italic leading-none">Placement Sync</h3>
-                            <p className="text-[7px] font-black text-slate-400 mt-1 uppercase tracking-widest">{target.name} · {target.rollNumber}</p>
+                            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic leading-none mb-2">Placement Sync</h3>
+                            <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em]">{target.name} · {target.rollNumber}</p>
                         </div>
-                        <button onClick={onClose} className="h-6 w-6 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-900 transition-all shrink-0"><X className="h-3 w-3" /></button>
+                        <button onClick={onClose} className="h-10 w-10 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-400 hover:text-slate-900 transition-all shrink-0"><X className="h-5 w-5" /></button>
                     </div>
                 </div>
 
-                <div className="px-5 py-4 border-b border-slate-50 bg-slate-50/50">
-                    <p className="text-[7px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2.5 flex items-center gap-2"><Sparkles className="h-2.5 w-2.5 text-blue-400" /> Auto-Inference</p>
+                <div className="px-8 py-6 border-b border-slate-50 bg-slate-50/30">
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-4 flex items-center gap-2 lg:gap-3"><Sparkles className="h-3 w-3 text-blue-400" /> Auto-Inference Engine</p>
                     {contextLoading ? (
-                        <div className="flex gap-2">
-                            {[1, 2].map(i => <div key={i} className="flex-1 h-12 rounded-xl bg-slate-100 animate-pulse" />)}
+                        <div className="grid grid-cols-2 gap-4">
+                            {[1, 2].map(i => <div key={i} className="h-20 rounded-3xl bg-slate-100 animate-pulse" />)}
                         </div>
                     ) : (
-                        <div className="flex flex-col gap-3">
-                            <div className="flex gap-2">
+                        <div className="flex flex-col gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <button
                                     type="button"
                                     onClick={applyApplicationSource}
                                     disabled={!context?.application}
-                                    className={`flex-1 rounded-xl border-2 p-2.5 text-left transition-all ${activeSource === 'application' ? 'border-blue-500 bg-blue-50' : 'border-slate-100 bg-white hover:border-blue-200 disabled:opacity-40'}`}
+                                    className={`relative group rounded-3xl border-2 p-5 text-left transition-all ${activeSource === 'application' ? 'border-blue-500 bg-blue-50/50' : 'border-slate-100 bg-white hover:border-blue-200 disabled:opacity-40'}`}
                                 >
-                                    <div className="flex items-center gap-2">
-                                        <div className={`h-7 w-7 rounded-lg flex items-center justify-center shrink-0 ${activeSource === 'application' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}><StickyNote className="h-3 w-3" /></div>
+                                    <div className="flex items-center gap-4">
+                                        <div className={`h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${activeSource === 'application' ? 'bg-blue-600 text-white shadow-blue-200' : 'bg-slate-100 text-slate-400'}`}><StickyNote className="h-5 w-5" /></div>
                                         <div className="min-w-0">
-                                            <p className="text-[7px] font-black uppercase tracking-widest text-slate-900 leading-none mb-0.5">Use App Data</p>
-                                            <p className="text-[7px] font-bold text-slate-400 truncate italic leading-none">{context?.application ? `${context.application.companyName}` : 'Empty'}</p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-900 leading-none mb-1.5">Use App Data</p>
+                                            <p className="text-[11px] font-bold text-slate-400 truncate italic leading-none">{context?.application ? `${context.application.companyName}` : 'No App Found'}</p>
                                         </div>
                                     </div>
+                                    {activeSource === 'application' && <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-blue-600 animate-pulse" />}
                                 </button>
-                                <div className={`flex-1 rounded-xl border-2 p-2.5 transition-all ${activeSource === 'partnered' ? 'border-blue-500 bg-blue-50' : 'border-slate-100 bg-white'}`}>
-                                    <div className="flex items-center gap-2 mb-1.5">
-                                        <div className={`h-7 w-7 rounded-lg flex items-center justify-center shrink-0 ${activeSource === 'partnered' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}><Building2 className="h-3 w-3" /></div>
-                                        <p className="text-[7px] font-black uppercase tracking-widest text-slate-900 leading-none">Partner List</p>
+
+                                <div className={`relative rounded-3xl border-2 p-5 transition-all ${activeSource === 'partnered' ? 'border-blue-500 bg-blue-50/50' : 'border-slate-100 bg-white'}`}>
+                                    <div className="flex items-center gap-4 mb-3">
+                                        <div className={`h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${activeSource === 'partnered' ? 'bg-blue-600 text-white shadow-blue-200' : 'bg-slate-100 text-slate-400'}`}><Building2 className="h-5 w-5" /></div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-900 leading-none">Partner List</p>
                                     </div>
                                     <div className="relative">
                                         <select
                                             value={selectedPartneredCompany}
                                             onChange={e => applyPartneredCompany(e.target.value)}
-                                            className="w-full h-5 rounded bg-white border border-slate-200 px-1 pr-4 text-[7px] font-bold text-slate-700 outline-none appearance-none cursor-pointer"
+                                            className="w-full h-10 rounded-xl bg-white border border-slate-200 px-4 pr-10 text-xs font-bold text-slate-700 outline-none appearance-none cursor-pointer focus:border-blue-400 transition-colors"
                                         >
-                                            <option value="">— Select —</option>
-                                            {context?.companies?.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+                                            <option value="">— Select Official Partner —</option>
+                                            {context?.companies?.map(c => <option key={c._id} value={c._id}>{c.name} {c.supervisors.length > 0 ? `(${c.supervisors.length} reps)` : ''}</option>)}
                                         </select>
-                                        <ChevronDown className="absolute right-0.5 top-1 h-2.5 w-2.5 text-slate-400 pointer-events-none" />
+                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                                     </div>
                                 </div>
                             </div>
 
                             {activeSource === 'application' && context?.application?.companyName && !isCompanyRegistered(context.application.companyName) && (
-                                <div className="flex items-center justify-between p-2 rounded-xl bg-amber-50 border border-amber-100">
-                                    <div className="flex items-center gap-2 overflow-hidden">
-                                        <div className="h-6 w-6 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0"><Building2 className="h-3 w-3" /></div>
+                                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between p-4 rounded-2xl bg-amber-50 border border-amber-100 shadow-sm">
+                                    <div className="flex items-center gap-4 overflow-hidden">
+                                        <div className="h-10 w-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-amber-200"><Building2 className="h-5 w-5" /></div>
                                         <div className="truncate">
-                                            <p className="text-[7px] font-black text-amber-900 uppercase tracking-widest leading-none">Unregistered</p>
-                                            <p className="text-[7px] font-bold text-amber-600 italic truncate leading-none">{context.application.companyName}</p>
+                                            <p className="text-[10px] font-black text-amber-900 uppercase tracking-widest leading-none mb-1">Unregistered Entity Detected</p>
+                                            <p className="text-[11px] font-bold text-amber-600 italic truncate leading-none">Adding "{context.application.companyName}" will create a temporary record</p>
                                         </div>
                                     </div>
-                                    <button type="button" onClick={handleQuickRegister} disabled={registering} className="px-2 py-1 rounded-md bg-white border border-amber-200 text-[7px] font-black text-amber-600 uppercase tracking-widest hover:bg-amber-600 hover:text-white transition-all disabled:opacity-50">
-                                        {registering ? '...' : 'Register'}
+                                    <button type="button" onClick={handleQuickRegister} disabled={registering} className="px-5 h-10 rounded-xl bg-white border border-amber-200 text-[10px] font-black text-amber-600 uppercase tracking-widest hover:bg-amber-600 hover:text-white transition-all disabled:opacity-50 shadow-sm hover:shadow-xl hover:shadow-amber-100 active:scale-95">
+                                        {registering ? 'Processing...' : 'Register as Partner'}
                                     </button>
-                                </div>
+                                </motion.div>
                             )}
                         </div>
                     )}
                 </div>
 
-                <form onSubmit={onSubmit} className="px-5 py-4 space-y-3">
-                    <div className="bg-blue-50/40 p-2.5 rounded-xl border border-blue-100/50 flex items-center justify-between">
-                        <label className="text-[7px] font-black uppercase tracking-widest text-blue-400 leading-none">Status</label>
-                        <select value={form.internshipStatus} onChange={e => setForm({ ...form, internshipStatus: e.target.value })} className="h-7 rounded-lg bg-white border-none px-3 text-[9px] font-black text-blue-600 outline-none uppercase tracking-widest shadow-sm">
-                            <option value="none">None</option>
-                            <option value="submitted">Submitted</option>
-                            <option value="approved">Approved</option>
-                            <option value="rejected">Rejected</option>
-                            <option value="agreement_submitted">Agreement Submitted</option>
-                            <option value="verified">Verified</option>
-                            <option value="internship_assigned">Assigned</option>
-                        </select>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="col-span-2">
-                            <label className="text-[7px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Entity Name</label>
-                            <input value={form.assignedCompany} onChange={e => setForm({ ...form, assignedCompany: e.target.value })} list="edit-cos" placeholder="Type name..." className="w-full h-9 rounded-xl bg-slate-50 border-none px-4 text-[10px] font-bold text-slate-900 outline-none" />
+                <form onSubmit={onSubmit} className="px-8 py-8 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="md:col-span-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block ml-1">Official Entity Name</label>
+                            <input
+                                value={form.assignedCompany}
+                                onChange={e => setForm({ ...form, assignedCompany: e.target.value })}
+                                list="edit-cos"
+                                placeholder="Type or select company name..."
+                                className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 transition-all"
+                            />
                             <datalist id="edit-cos">{context?.companies?.map(c => <option key={c._id} value={c.name} />)}</datalist>
                         </div>
+
                         <ModalInput label="Position" value={form.assignedPosition} onChange={e => setForm({ ...form, assignedPosition: e.target.value })} />
-                        <ModalInput label="Supervisor" value={form.siteSupervisorName} onChange={e => setForm({ ...form, siteSupervisorName: e.target.value })} />
-                        <ModalInput label="Email" type="email" value={form.siteSupervisorEmail} onChange={e => setForm({ ...form, siteSupervisorEmail: e.target.value })} />
-                        <ModalInput label="Phone" type="tel" value={form.siteSupervisorPhone} onChange={e => setForm({ ...form, siteSupervisorPhone: e.target.value })} />
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block ml-1">Industry Supervisor</label>
+                            <input
+                                value={form.siteSupervisorName || ''}
+                                onChange={e => setForm({ ...form, siteSupervisorName: e.target.value })}
+                                list="supervisor-list"
+                                placeholder="Full Name"
+                                className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 transition-all"
+                            />
+                            <datalist id="supervisor-list">
+                                {context?.agreement?.supervisorName && <option value={context.agreement.supervisorName}>Student Submitted: {context.agreement.supervisorName}</option>}
+                                {context?.companies?.find(c => c.name.toLowerCase() === form.assignedCompany.toLowerCase())?.supervisors.map((s, i) => (
+                                    <option key={i} value={s.name}>Official Rep: {s.name}</option>
+                                ))}
+                            </datalist>
+                        </div>
+                        <ModalInput label="Supervisor Email" type="email" value={form.siteSupervisorEmail} onChange={e => setForm({ ...form, siteSupervisorEmail: e.target.value })} />
+                        <ModalInput label="Supervisor Phone" type="tel" value={form.siteSupervisorPhone} onChange={e => setForm({ ...form, siteSupervisorPhone: e.target.value })} />
                     </div>
 
-                    {context?.agreement && activeSource === 'application' && (
-                        <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
-                            <p className="text-[7px] font-black uppercase text-slate-400 mb-1.5">Contextual Reference</p>
-                            <div className="grid grid-cols-2 gap-2 text-[8px] font-bold text-slate-500 italic">
-                                {context.agreement.supervisorDesignation && <p>Title: {context.agreement.supervisorDesignation}</p>}
-                                {context.agreement.companyAddress && <p className="col-span-2 truncate">Address: {context.agreement.companyAddress}</p>}
-                            </div>
-                        </div>
-                    )}
+                    {error && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs font-bold text-red-500 bg-red-50 p-4 rounded-2xl border border-red-100">{error}</motion.p>}
 
-                    {error && <p className="text-[8px] font-bold text-red-500 bg-red-50 p-2 rounded-lg border border-red-100">{error}</p>}
-                    <button type="submit" disabled={loading} className="w-full h-9 rounded-xl bg-blue-600 text-white text-[8px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/10 active:scale-95 disabled:opacity-50">
-                        {loading ? 'Working...' : 'Finalize Assignment'}
-                    </button>
+                    <div className="flex items-center gap-4 pt-2">
+                        <button type="button" onClick={onClose} className="flex-1 h-16 rounded-2xl border border-slate-100 text-[11px] font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
+                        <button type="submit" disabled={loading} className="flex-[2] h-16 rounded-2xl bg-blue-600 text-white text-[11px] font-black uppercase tracking-[0.2em] hover:bg-blue-700 transition-all shadow-2xl shadow-blue-500/20 active:scale-95 disabled:opacity-50 italic">
+                            {loading ? 'Processing Sync...' : 'Finalize Placement Sync'}
+                        </button>
+                    </div>
                 </form>
             </motion.div>
         </div>
@@ -295,11 +310,11 @@ interface ModalInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     label: string;
 }
 const ModalInput = ({ label, ...props }: ModalInputProps) => (
-    <div>
-        <label className="text-[7px] font-black uppercase tracking-widest text-slate-400 mb-1 block">{label}</label>
+    <div className="w-full">
+        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block ml-1">{label}</label>
         <input
             {...props}
-            className="w-full h-8 rounded-xl bg-slate-50 border-none px-3 text-[10px] font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-200"
+            className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 transition-all placeholder:text-slate-200"
         />
     </div>
 );
