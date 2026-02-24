@@ -7,6 +7,7 @@ const {
     submitAgreement,
     getAgreement,
     getMyTasks,
+    getDashboardState,
     submitTask,
     getMySubmissions,
     getMyReport,
@@ -17,6 +18,8 @@ const upload = require('../middleware/upload.middleware');
 
 router.use(protect);
 router.use(requireRole('student'));
+
+router.get('/dashboard-state', getDashboardState);
 
 /**
  * @openapi

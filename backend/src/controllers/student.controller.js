@@ -143,6 +143,63 @@ const Task = require('../models/Task.model');
 const Submission = require('../models/Submission.model');
 const Report = require('../models/Report.model');
 
+// GET /api/student/dashboard-state — Fetch EVERYTHING for the dashboard in ONE call
+const getDashboardState = async (req, res) => {
+    try {
+        const student = await Student.findById(req.user.id)
+            .populate('supervisorId', 'name email')
+            .select('-passwordHash');
+
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+
+        const stats = {
+            internshipStatus: student.internshipStatus,
+            assignedCompany: student.assignedCompany,
+            assignedPosition: student.assignedPosition,
+        };
+
+        // Fetch applications, tasks, submissions and report in parallel
+        const [applications, tasks, allSubmissions, report] = await Promise.all([
+            Application.find({ studentId: req.user.id }).sort({ createdAt: -1 }),
+            student.internshipStatus === 'internship_assigned' && student.assignedCompany
+                ? Task.find({
+                    company: { $regex: new RegExp(`^${student.assignedCompany.trim()}$`, 'i') },
+                    status: 'active',
+                    $or: [{ assignedTo: req.user.id }, { assignedTo: null }]
+                }).populate('createdBy', 'name company').sort({ deadline: 1 })
+                : Promise.resolve([]),
+            student.internshipStatus === 'internship_assigned'
+                ? Submission.find({ student: req.user.id }).select('task status companyGrade facultyGrade submittedAt content attachments')
+                : Promise.resolve([]),
+            student.internshipStatus === 'internship_assigned'
+                ? Report.findOne({ student: req.user.id }).populate('createdBy', 'name email')
+                : Promise.resolve(null)
+        ]);
+
+        const submissionMap = {};
+        allSubmissions.forEach(s => { submissionMap[String(s.task)] = s; });
+
+        const tasksWithStatus = tasks.map(t => ({
+            ...t.toObject(),
+            mySubmission: submissionMap[String(t._id)] || null,
+        }));
+
+        res.json({
+            success: true,
+            student,
+            applications,
+            tasks: tasksWithStatus,
+            submissions: allSubmissions,
+            report
+        });
+    } catch (err) {
+        console.error('Dashboard State Error:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 // GET /api/student/tasks — tasks for this student's company
 const getMyTasks = async (req, res) => {
     try {
@@ -193,8 +250,14 @@ const submitTask = async (req, res) => {
         const task = await Task.findById(taskId);
         if (!task) return res.status(404).json({ success: false, message: 'Task not found.' });
         if (task.status === 'closed') return res.status(400).json({ success: false, message: 'This task is closed.' });
-        if (task.company !== student.assignedCompany) {
-            return res.status(403).json({ success: false, message: 'Task is not assigned to your company.' });
+        const studentCompany = (student.assignedCompany || "").toLowerCase().trim();
+        const taskCompany = (task.company || "").toLowerCase().trim();
+
+        if (taskCompany !== studentCompany) {
+            return res.status(403).json({
+                success: false,
+                message: `Task is not assigned to your company. (Task: "${task.company}", You: "${student.assignedCompany || 'Unassigned'}")`
+            });
         }
 
         // Process uploaded files
@@ -284,6 +347,7 @@ module.exports = {
     submitAgreement,
     getAgreement,
     getMyTasks,
+    getDashboardState,
     submitTask,
     getMySubmissions,
     getMyReport,

@@ -71,35 +71,17 @@ const StudentDashboard = () => {
             setLoading(true);
             try {
                 const config = { headers: { Authorization: `Bearer ${token}` } };
-                const [profileRes, appsRes] = await Promise.all([
-                    axios.get(`${API_BASE}/profile`, config),
-                    axios.get(`${API_BASE}/applications`, config),
-                ]);
+                const { data } = await axios.get(`${API_BASE}/dashboard-state`, config);
 
-                let loadedProfile: any = null;
-                if (profileRes.data.success) {
-                    loadedProfile = profileRes.data.student;
-                    setProfile(loadedProfile);
-                }
-                if (appsRes.data.success) setApplications(appsRes.data.applications);
-
-                // Use the profile data from THIS request (not stale state)
-                const profileAssigned =
-                    loadedProfile?.internshipStatus === 'internship_assigned' &&
-                    !!loadedProfile?.assignedCompany;
-
-                if (profileAssigned) {
-                    const [tasksRes, subsRes, reportRes] = await Promise.all([
-                        axios.get(`${API_BASE}/tasks`, config),
-                        axios.get(`${API_BASE}/submissions`, config),
-                        axios.get(`${API_BASE}/report`, config),
-                    ]);
-                    if (tasksRes.data.success) setTasks(tasksRes.data.tasks);
-                    if (subsRes.data.success) setSubmissions(subsRes.data.submissions);
-                    if (reportRes.data.success) setMyReport(reportRes.data.report);
+                if (data.success) {
+                    setProfile(data.student);
+                    setApplications(data.applications);
+                    setTasks(data.tasks);
+                    setSubmissions(data.submissions);
+                    setMyReport(data.report);
                 }
             } catch (err) {
-                console.error(err);
+                console.error('Failed to fetch dashboard state:', err);
             } finally {
                 setLoading(false);
             }
