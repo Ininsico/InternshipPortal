@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -63,7 +62,7 @@ const AdminDashboard = () => {
     const [editFacultyError, setEditFacultyError] = useState('');
 
     const [deleteFaculty, setDeleteFaculty] = useState<any | null>(null);
-    const [deleteFacultyLoading, setDeleteFacultyLoading] = useState(false);
+    const [deleteFacultyLoading] = useState(false);
 
     const [deleteStudentTarget, setDeleteStudentTarget] = useState<any | null>(null);
     const [deleteStudentLoading, setDeleteStudentLoading] = useState(false);

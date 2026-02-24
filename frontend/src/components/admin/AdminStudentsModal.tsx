@@ -1,8 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, Briefcase, GraduationCap, Mail, Phone, Calendar, AlertCircle, Loader2 } from 'lucide-react';
+import { X, User, Briefcase, GraduationCap, Mail, AlertCircle, Loader2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
-import API from '../../config/api';
 
 interface AdminStudentsModalProps {
     isOpen: boolean;
@@ -26,7 +24,7 @@ const GET_ADMIN_STUDENTS = gql`
     }
 `;
 
-const AdminStudentsModal = ({ isOpen, onClose, admin, token }: AdminStudentsModalProps) => {
+const AdminStudentsModal = ({ isOpen, onClose, admin }: AdminStudentsModalProps) => {
     const { data: studentsData, isLoading, error } = useQuery({
         queryKey: ['admin-students', admin?._id],
         queryFn: async () => {
