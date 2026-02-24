@@ -37,7 +37,7 @@ const createApplication = async (req, res) => {
         if (req.files && req.files.length > 0) {
             documents = req.files.map(file => ({
                 name: file.originalname,
-                url: `${req.protocol}://${req.get('host')}/uploads/submissions/${file.filename}`,
+                url: file.path, // Cloudinary URL
                 type: file.mimetype,
                 uploadedAt: new Date()
             }));
@@ -267,10 +267,10 @@ const submitTask = async (req, res) => {
             attachments = req.files.map(file => ({
                 filename: file.filename,
                 originalname: file.originalname,
-                path: file.path.replace(/\\/g, '/'), // Windows fix
+                path: file.path,
                 mimetype: file.mimetype,
                 size: file.size,
-                url: `/uploads/submissions/${file.filename}`
+                url: file.path // Cloudinary URL
             }));
         }
 
@@ -331,7 +331,7 @@ const updateProfilePicture = async (req, res) => {
         const student = await Student.findById(req.user.id);
         if (!student) return res.status(404).json({ success: false, message: 'Student not found.' });
 
-        const url = `/uploads/profile/${req.file.filename}`;
+        const url = req.file.path; // Cloudinary URL
         student.profilePicture = url;
         await student.save();
 

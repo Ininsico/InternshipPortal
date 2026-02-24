@@ -335,7 +335,7 @@ const FacultyDashboard = () => {
                                                                 <div className="flex items-center gap-3">
                                                                     <div className="h-9 w-9 rounded-xl bg-teal-50 flex items-center justify-center text-xs font-black text-teal-600 overflow-hidden">
                                                                         {s.profilePicture ? (
-                                                                            <img src={s.profilePicture.startsWith('http') ? s.profilePicture : `${API.BASE}${s.profilePicture}`} alt="" className="h-full w-full object-cover" />
+                                                                            <img src={s.profilePicture.startsWith('http') ? s.profilePicture : `${API.BASE}/${s.profilePicture.replace(/^\//, '')}`} alt="" className="h-full w-full object-cover" />
                                                                         ) : (
                                                                             s.name[0]
                                                                         )}
@@ -381,22 +381,31 @@ const FacultyDashboard = () => {
                                         {submissions.map(sub => (
                                             <div key={sub._id} className="px-8 py-5 hover:bg-slate-50 transition-colors">
                                                 <div className="flex items-start justify-between gap-4">
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-black text-slate-900">{sub.student?.name} <span className="text-slate-400 font-bold">— {sub.task?.title}</span></p>
-                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">{sub.student?.rollNumber} · {sub.student?.assignedCompany} · {new Date(sub.submittedAt).toLocaleDateString()}</p>
-                                                        <p className="text-sm text-slate-600 mt-2 line-clamp-2">{sub.content}</p>
-                                                        {sub.attachments && sub.attachments.length > 0 && (
-                                                            <div className="mt-3 flex flex-wrap gap-2">
-                                                                {sub.attachments.map((f: any, i: number) => (
-                                                                    <a key={i} href={f.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-slate-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-tight text-slate-500 hover:text-teal-600 hover:border-teal-100 transition-all shadow-sm">
-                                                                        <FileText className="h-3 w-3" /> {f.originalname}
-                                                                    </a>
-                                                                ))}
-                                                            </div>
-                                                        )}
-                                                        {sub.companyGrade?.marks != null && (
-                                                            <p className="mt-1.5 text-xs font-bold text-purple-600">Company grade: {sub.companyGrade.marks}/{sub.task?.maxMarks} — {sub.companyGrade.feedback || 'No feedback'}</p>
-                                                        )}
+                                                    <div className="flex items-start gap-4">
+                                                        <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center shrink-0 overflow-hidden border border-teal-100 mt-1">
+                                                            {sub.student?.profilePicture ? (
+                                                                <img src={sub.student.profilePicture.startsWith('http') ? sub.student.profilePicture : `${API.BASE}/${sub.student.profilePicture.replace(/^\//, '')}`} alt="" className="h-full w-full object-cover" />
+                                                            ) : (
+                                                                <span className="text-xs font-black text-teal-600">{sub.student?.name?.[0]}</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-black text-slate-900 leading-tight">{sub.student?.name} <span className="text-slate-400 font-bold">— {sub.task?.title}</span></p>
+                                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{sub.student?.rollNumber} · {sub.student?.assignedCompany} · {new Date(sub.submittedAt).toLocaleDateString()}</p>
+                                                            <p className="text-sm text-slate-600 mt-2 line-clamp-2">{sub.content}</p>
+                                                            {sub.attachments && sub.attachments.length > 0 && (
+                                                                <div className="mt-3 flex flex-wrap gap-2">
+                                                                    {sub.attachments.map((f: any, i: number) => (
+                                                                        <a key={i} href={f.url?.startsWith('http') ? f.url : `${API.BASE}/${f.url?.replace(/^\//, '')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-slate-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-tight text-slate-500 hover:text-teal-600 hover:border-teal-100 transition-all shadow-sm">
+                                                                            <FileText className="h-3 w-3" /> {f.originalname}
+                                                                        </a>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                            {sub.companyGrade?.marks != null && (
+                                                                <p className="mt-1.5 text-xs font-bold text-purple-600">Company grade: {sub.companyGrade.marks}/{sub.task?.maxMarks} — {sub.companyGrade.feedback || 'No feedback'}</p>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     <div className="flex flex-col items-end gap-2 shrink-0">
                                                         <StatusBadge status={sub.status} />
@@ -440,7 +449,7 @@ const FacultyDashboard = () => {
                                                     <div className="flex items-center gap-3 mb-1">
                                                         <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center text-sm font-black text-teal-600 overflow-hidden">
                                                             {r.student?.profilePicture ? (
-                                                                <img src={r.student.profilePicture.startsWith('http') ? r.student.profilePicture : `${API.BASE}${r.student.profilePicture}`} alt="" className="h-full w-full object-cover" />
+                                                                <img src={r.student.profilePicture.startsWith('http') ? r.student.profilePicture : `${API.BASE}/${r.student.profilePicture.replace(/^\//, '')}`} alt="" className="h-full w-full object-cover" />
                                                             ) : (
                                                                 r.student?.name?.[0]
                                                             )}
@@ -551,7 +560,7 @@ const FacultyDashboard = () => {
                                 {gradeTarget.attachments && gradeTarget.attachments.length > 0 && (
                                     <div className="grid grid-cols-1 gap-2">
                                         {gradeTarget.attachments.map((f: any, i: number) => (
-                                            <a key={i} href={f.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-xl bg-white border border-slate-100 px-4 py-2.5 text-[10px] font-black uppercase text-teal-600 hover:shadow-md transition-all">
+                                            <a key={i} href={f.url?.startsWith('http') ? f.url : `${API.BASE}${f.url}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-xl bg-white border border-slate-100 px-4 py-2.5 text-[10px] font-black uppercase text-teal-600 hover:shadow-md transition-all">
                                                 <span className="flex items-center gap-2 truncate"><FileText className="h-4 w-4" /> {f.originalname}</span>
                                             </a>
                                         ))}

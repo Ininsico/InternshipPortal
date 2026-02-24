@@ -311,7 +311,13 @@ const CompanyDashboard = () => {
                                                     <tr key={s._id} className="hover:bg-slate-50 transition-colors">
                                                         <td className="px-8 py-4">
                                                             <div className="flex items-center gap-3">
-                                                                <div className="h-9 w-9 rounded-xl bg-indigo-50 flex items-center justify-center text-xs font-black text-indigo-600">{s.name[0]}</div>
+                                                                <div className="h-9 w-9 rounded-xl bg-indigo-50 flex items-center justify-center text-xs font-black text-indigo-600 overflow-hidden">
+                                                                    {s.profilePicture ? (
+                                                                        <img src={s.profilePicture.startsWith('http') ? s.profilePicture : `${API.BASE}/${s.profilePicture.replace(/^\//, '')}`} alt="" className="h-full w-full object-cover" />
+                                                                    ) : (
+                                                                        s.name[0]
+                                                                    )}
+                                                                </div>
                                                                 <div>
                                                                     <p className="text-sm font-bold text-slate-900">{s.name}</p>
                                                                     <p className="text-[10px] font-bold text-slate-400 uppercase">{s.rollNumber}</p>
@@ -374,7 +380,16 @@ const CompanyDashboard = () => {
                                                     <span className="text-indigo-500">{t.maxMarks} marks</span>
                                                 </div>
                                                 {t.assignedTo && (
-                                                    <p className="mt-2 text-[10px] font-bold text-slate-400">→ {t.assignedTo.name} ({t.assignedTo.rollNumber})</p>
+                                                    <div className="mt-3 flex items-center gap-2">
+                                                        <div className="h-6 w-6 rounded-lg bg-indigo-50 flex items-center justify-center text-[8px] font-black text-indigo-600 overflow-hidden">
+                                                            {t.assignedTo.profilePicture ? (
+                                                                <img src={t.assignedTo.profilePicture.startsWith('http') ? t.assignedTo.profilePicture : `${API.BASE}/${t.assignedTo.profilePicture.replace(/^\//, '')}`} alt="" className="h-full w-full object-cover" />
+                                                            ) : (
+                                                                t.assignedTo.name[0]
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight line-clamp-1">{t.assignedTo.name} ({t.assignedTo.rollNumber})</p>
+                                                    </div>
                                                 )}
                                             </div>
                                         ))}
@@ -395,19 +410,28 @@ const CompanyDashboard = () => {
                                         {submissions.map(sub => (
                                             <div key={sub._id} className="px-8 py-5 hover:bg-slate-50 transition-colors">
                                                 <div className="flex items-start justify-between gap-4">
-                                                    <div>
-                                                        <p className="text-sm font-black text-slate-900">{sub.student?.name} <span className="text-slate-400 font-bold">— {sub.task?.title}</span></p>
-                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">{sub.student?.rollNumber} · Submitted {new Date(sub.submittedAt).toLocaleDateString()}</p>
-                                                        <p className="text-sm text-slate-600 mt-2 line-clamp-2">{sub.content}</p>
-                                                        {sub.attachments && sub.attachments.length > 0 && (
-                                                            <div className="mt-3 flex flex-wrap gap-2">
-                                                                {sub.attachments.map((f: any, i: number) => (
-                                                                    <a key={i} href={`${API.BASE}${f.url}`} download={f.originalname} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-slate-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-tight text-slate-500 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm">
-                                                                        <File className="h-3 w-3" /> {f.originalname}
-                                                                    </a>
-                                                                ))}
-                                                            </div>
-                                                        )}
+                                                    <div className="flex items-start gap-4">
+                                                        <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden border border-slate-100 mt-1">
+                                                            {sub.student?.profilePicture ? (
+                                                                <img src={sub.student.profilePicture.startsWith('http') ? sub.student.profilePicture : `${API.BASE}/${sub.student.profilePicture.replace(/^\//, '')}`} alt="" className="h-full w-full object-cover" />
+                                                            ) : (
+                                                                <span className="text-xs font-black text-slate-400">{sub.student?.name?.[0]}</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-black text-slate-900 leading-tight">{sub.student?.name} <span className="text-slate-400 font-bold">— {sub.task?.title}</span></p>
+                                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{sub.student?.rollNumber} · Submitted {new Date(sub.submittedAt).toLocaleDateString()}</p>
+                                                            <p className="text-sm text-slate-600 mt-2 line-clamp-2">{sub.content}</p>
+                                                            {sub.attachments && sub.attachments.length > 0 && (
+                                                                <div className="mt-3 flex flex-wrap gap-2">
+                                                                    {sub.attachments.map((f: any, i: number) => (
+                                                                        <a key={i} href={f.url.startsWith('http') ? f.url : `${API.BASE}/${f.url.replace(/^\//, '')}`} download={f.originalname} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-slate-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-tight text-slate-500 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm">
+                                                                            <File className="h-3 w-3" /> {f.originalname}
+                                                                        </a>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     <div className="flex flex-col items-end gap-2 shrink-0">
                                                         <StatusBadge status={sub.status} />
@@ -550,7 +574,7 @@ const CompanyDashboard = () => {
                                 {gradeTarget.attachments && gradeTarget.attachments.length > 0 && (
                                     <div className="grid grid-cols-1 gap-2">
                                         {gradeTarget.attachments.map((f: any, i: number) => (
-                                            <a key={i} href={`${API.BASE}${f.url}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-xl bg-white border border-slate-100 px-4 py-2.5 text-[10px] font-black uppercase text-indigo-600 hover:shadow-md transition-all">
+                                            <a key={i} href={f.url.startsWith('http') ? f.url : `${API.BASE}${f.url}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-xl bg-white border border-slate-100 px-4 py-2.5 text-[10px] font-black uppercase text-indigo-600 hover:shadow-md transition-all">
                                                 <span className="flex items-center gap-2 truncate"><File className="h-4 w-4" /> {f.originalname}</span>
                                             </a>
                                         ))}

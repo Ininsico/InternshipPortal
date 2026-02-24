@@ -22,7 +22,7 @@ const getStudentSubmissions = async (req, res) => {
         const studentIds = students.map(s => s._id);
 
         const submissions = await Submission.find({ student: { $in: studentIds } })
-            .populate('student', 'name rollNumber degree assignedCompany assignedPosition')
+            .populate('student', 'name rollNumber degree assignedCompany assignedPosition profilePicture')
             .populate('task', 'title deadline maxMarks company')
             .sort({ submittedAt: -1 });
 
@@ -61,7 +61,7 @@ const gradeSubmission = async (req, res) => {
         await submission.save();
 
         await submission.populate([
-            { path: 'student', select: 'name rollNumber degree assignedCompany assignedPosition' },
+            { path: 'student', select: 'name rollNumber degree assignedCompany assignedPosition profilePicture' },
             { path: 'task', select: 'title deadline maxMarks company' }
         ]);
 
@@ -98,7 +98,7 @@ const createReport = async (req, res) => {
             existing.completionStatus = completionStatus || existing.completionStatus;
             await existing.save();
             const populated = await existing.populate([
-                { path: 'student', select: 'name rollNumber degree assignedCompany' },
+                { path: 'student', select: 'name rollNumber degree assignedCompany profilePicture' },
                 { path: 'createdBy', select: 'name email' }
             ]);
             return res.json({ success: true, message: 'Report updated.', report: populated });
@@ -115,7 +115,7 @@ const createReport = async (req, res) => {
         });
 
         const populated = await report.populate([
-            { path: 'student', select: 'name rollNumber degree assignedCompany' },
+            { path: 'student', select: 'name rollNumber degree assignedCompany profilePicture' },
             { path: 'createdBy', select: 'name email' }
         ]);
 
@@ -129,7 +129,7 @@ const createReport = async (req, res) => {
 const getMyReports = async (req, res) => {
     try {
         const reports = await Report.find({ createdBy: req.admin._id })
-            .populate('student', 'name rollNumber degree assignedCompany assignedPosition')
+            .populate('student', 'name rollNumber degree assignedCompany assignedPosition profilePicture')
             .sort({ updatedAt: -1 });
         res.json({ success: true, reports });
     } catch (err) {

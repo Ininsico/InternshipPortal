@@ -14,7 +14,7 @@ const {
     updateProfilePicture,
 } = require('../controllers/student.controller');
 const { protect, requireRole } = require('../middleware/auth.middleware');
-const upload = require('../middleware/upload.middleware');
+const { upload } = require('../config/cloudinary.config');
 
 router.use(protect);
 router.use(requireRole('student'));

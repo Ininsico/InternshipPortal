@@ -87,7 +87,7 @@ const createTask = async (req, res) => {
 const getMyTasks = async (req, res) => {
     try {
         const tasks = await Task.find({ createdBy: req.admin._id })
-            .populate('assignedTo', 'name rollNumber')
+            .populate('assignedTo', 'name rollNumber profilePicture')
             .sort({ createdAt: -1 });
         res.json({ success: true, tasks });
     } catch (err) {
@@ -137,7 +137,7 @@ const getSubmissions = async (req, res) => {
         const taskIds = tasks.map(t => t._id);
 
         const submissions = await Submission.find({ task: { $in: taskIds } })
-            .populate('student', 'name rollNumber degree assignedCompany')
+            .populate('student', 'name rollNumber degree assignedCompany profilePicture')
             .populate('task', 'title deadline maxMarks')
             .sort({ submittedAt: -1 });
 

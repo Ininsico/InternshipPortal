@@ -213,7 +213,7 @@ const AdminDashboardModals = (props: ModalsProps) => {
                                                 props.viewApp.documents.map((doc: any, i: number) => (
                                                     <a
                                                         key={i}
-                                                        href={doc.url}
+                                                        href={doc.url.startsWith('http') ? doc.url : `${props.apiBase}${doc.url}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="flex items-center gap-3 p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-all group"

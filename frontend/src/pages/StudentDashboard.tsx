@@ -684,7 +684,7 @@ const StudentDashboard = () => {
                                                                                     {sub.attachments.map((file: any, i: number) => (
                                                                                         <a
                                                                                             key={i}
-                                                                                            href={`${API.BASE}${file.url}`}
+                                                                                            href={file.url.startsWith('http') ? file.url : `${API.BASE}/${file.url.replace(/^\//, '')}`}
                                                                                             download={file.originalname}
                                                                                             target="_blank"
                                                                                             rel="noopener noreferrer"
