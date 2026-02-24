@@ -75,10 +75,20 @@ const StudentDashboard = () => {
                     axios.get(`${API_BASE}/profile`, config),
                     axios.get(`${API_BASE}/applications`, config),
                 ]);
-                if (profileRes.data.success) setProfile(profileRes.data.student);
+
+                let loadedProfile: any = null;
+                if (profileRes.data.success) {
+                    loadedProfile = profileRes.data.student;
+                    setProfile(loadedProfile);
+                }
                 if (appsRes.data.success) setApplications(appsRes.data.applications);
 
-                if (isAssigned) {
+                // Use the profile data from THIS request (not stale state)
+                const profileAssigned =
+                    loadedProfile?.internshipStatus === 'internship_assigned' &&
+                    !!loadedProfile?.assignedCompany;
+
+                if (profileAssigned) {
                     const [tasksRes, subsRes, reportRes] = await Promise.all([
                         axios.get(`${API_BASE}/tasks`, config),
                         axios.get(`${API_BASE}/submissions`, config),
@@ -95,7 +105,13 @@ const StudentDashboard = () => {
             }
         };
         fetchData();
-    }, [token, isAssigned]);
+    }, [token]);
+
+    // Auto-redirect tabs based on internship state
+    useEffect(() => {
+        if (isAssigned && activeTab === 'applications') setActiveTab('overview');
+        if (!isAssigned && activeTab === 'tasks') setActiveTab('overview');
+    }, [isAssigned, activeTab]);
 
     const handleApply = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -290,7 +306,9 @@ const StudentDashboard = () => {
 
     const menuItems = [
         { key: 'overview', label: 'Dashboard', icon: LayoutDashboard },
-        { key: 'applications', label: 'My Applications', icon: Briefcase },
+        // My Applications only visible while application is being processed (not yet assigned)
+        ...(!isAssigned ? [{ key: 'applications', label: 'My Applications', icon: Briefcase }] : []),
+        // Work Console only visible once internship is assigned
         ...(isAssigned ? [{ key: 'tasks', label: 'Work Console', icon: ClipboardList }] : []),
         { key: 'profile', label: 'Profile Settings', icon: User },
     ];
@@ -405,11 +423,14 @@ const StudentDashboard = () => {
                                         </div>
 
                                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-10">
-                                            <div className="lg:col-span-2 space-y-6">
-                                                {renderStatusTracker()}
-                                            </div>
+                                            {/* Pipeline tracker: only shown while application is in-progress (not yet assigned) */}
+                                            {!isAssigned && (
+                                                <div className="lg:col-span-2 space-y-6">
+                                                    {renderStatusTracker()}
+                                                </div>
+                                            )}
 
-                                            <div className="space-y-8">
+                                            <div className={`space-y-8 ${!isAssigned ? '' : 'lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-8'}`}>
                                                 {isAssigned && (
                                                     <div className="rounded-[2.5rem] bg-gradient-to-br from-slate-900 to-slate-800 p-10 shadow-2xl shadow-slate-900/20 text-white relative overflow-hidden group">
                                                         <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl group-hover:bg-white/10 transition-all duration-500" />
@@ -511,20 +532,20 @@ const StudentDashboard = () => {
                                             <div>
                                                 <h3 className="text-lg font-black uppercase tracking-tight text-slate-900">Work Console</h3>
                                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">
-                                                    {tasks.filter((t: any) => submissions.find((s: any) => (s.task?._id || s.task) === t._id)).length}/{tasks.length} Tasks Submitted
+                                                    {tasks.filter((t: any) => t.mySubmission || submissions.find((s: any) => (s.task?._id || s.task) === t._id)).length}/{tasks.length} Tasks Submitted
                                                 </p>
                                             </div>
                                             <div className="flex items-center gap-2 md:gap-3">
                                                 <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 border border-emerald-100 px-3 md:px-5 py-2 md:py-3">
                                                     <CheckCheck className="h-4 w-4 text-emerald-500" />
                                                     <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">
-                                                        {submissions.length} Done
+                                                        {tasks.filter((t: any) => t.mySubmission || submissions.find((s: any) => (s.task?._id || s.task) === t._id)).length} Done
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center gap-2 rounded-2xl bg-amber-50 border border-amber-100 px-3 md:px-5 py-2 md:py-3">
                                                     <Clock className="h-4 w-4 text-amber-500" />
                                                     <span className="text-[10px] font-black uppercase tracking-widest text-amber-600">
-                                                        {tasks.length - submissions.length} Left
+                                                        {tasks.filter((t: any) => !(t.mySubmission || submissions.find((s: any) => (s.task?._id || s.task) === t._id))).length} Left
                                                     </span>
                                                 </div>
                                             </div>
@@ -540,7 +561,8 @@ const StudentDashboard = () => {
                                         ) : (
                                             <div className="grid gap-5">
                                                 {tasks.map((task: any) => {
-                                                    const sub = submissions.find((s: any) => (s.task?._id || s.task) === task._id);
+                                                    // Use mySubmission embedded by backend, or fall back to separately fetched submissions
+                                                    const sub = task.mySubmission || submissions.find((s: any) => (s.task?._id || s.task) === task._id);
                                                     const isNew = new Date(task.createdAt).getTime() > Date.now() - 3 * 24 * 60 * 60 * 1000;
                                                     const isOverdue = task.deadline && new Date(task.deadline).getTime() < Date.now();
                                                     const isDueSoon = task.deadline && !isOverdue && new Date(task.deadline).getTime() < Date.now() + 2 * 24 * 60 * 60 * 1000;
