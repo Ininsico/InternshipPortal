@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import API from '../config/api';
 
 type FormMode = 'student' | 'admin';
-type StudentView = 'login' | 'signup' | 'verify-otp';
+type StudentView = 'login' | 'signup' | 'verify-otp' | 'forgot-password';
 
 interface ApiResponse {
     success: boolean;
@@ -44,7 +44,6 @@ const LandingPage = () => {
     const [loading, setLoading] = useState(false);
     const [feedback, setFeedback] = useState<{ type: 'error' | 'success'; msg: string } | null>(null);
 
-    const [showForgotModal, setShowForgotModal] = useState(false);
     const [forgotEmail, setForgotEmail] = useState('');
     const [forgotLoading, setForgotLoading] = useState(false);
     const [forgotFeedback, setForgotFeedback] = useState<{ type: 'error' | 'success'; msg: string } | null>(null);
@@ -197,7 +196,7 @@ const LandingPage = () => {
                             <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6" />
                         </div>
                         <div className="flex flex-col">
-                            <h1 className="text-lg sm:text-xl font-black tracking-[-0.05em] text-slate-900 uppercase leading-none">COMSATS</h1>
+                            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 uppercase leading-none font-display">COMSATS</h1>
                         </div>
                     </div>
 
@@ -212,7 +211,7 @@ const LandingPage = () => {
                     <div className="hidden items-center gap-10 md:flex">
                         <button
                             onClick={() => switchMode(isAdmin ? 'student' : 'admin')}
-                            className="px-8 py-3.5 rounded-2xl bg-white text-blue-600 text-[11px] font-black uppercase tracking-[0.3em] transition-all hover:bg-slate-50 hover:shadow-[0_10px_30px_-5px_rgba(37,99,235,0.15)] active:scale-95"
+                            className="px-8 py-3.5 rounded-2xl bg-slate-100 text-blue-600 text-xs font-bold uppercase tracking-wider transition-all hover:bg-slate-200 hover:shadow-xl hover:shadow-blue-500/5 active:scale-95 font-display"
                         >
                             {isAdmin ? 'Student Entry' : 'Faculty Access'}
                         </button>
@@ -230,7 +229,7 @@ const LandingPage = () => {
                         >
                             <button
                                 onClick={() => { switchMode(isAdmin ? 'student' : 'admin'); setMobileMenuOpen(false); }}
-                                className="w-full py-4 rounded-2xl bg-slate-50 text-blue-600 text-[10px] font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-2"
+                                className="w-full py-4 rounded-2xl bg-slate-100 text-blue-600 text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 font-display"
                             >
                                 {isAdmin ? 'Switch to Student Entry' : 'Switch to Faculty Access'}
                             </button>
@@ -251,25 +250,26 @@ const LandingPage = () => {
                         <div className="p-6 sm:p-10">
 
                             <div className="mb-6 sm:mb-8 text-center">
-                                <h1 className="text-3xl sm:text-4xl font-black text-slate-950 uppercase tracking-tighter leading-none mb-2">
-                                    {isAdmin ? 'FACULTY' : studentView === 'verify-otp' ? 'VERIFY' : 'STUDENT'}
+                                <h1 className="text-3xl sm:text-4xl font-bold text-slate-950 uppercase tracking-tight leading-none mb-2 font-display">
+                                    {isAdmin ? 'Faculty' : studentView === 'verify-otp' ? 'Verify' : studentView === 'forgot-password' ? 'Reset' : 'Student'}
                                 </h1>
-                                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-600 opacity-80">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600">
                                     {isAdmin ? 'Portal Authentication'
                                         : studentView === 'login' ? 'Portal Authentication'
                                             : studentView === 'signup' ? 'Create Your Account'
-                                                : 'Email Verification'}
+                                                : studentView === 'forgot-password' ? 'Account Recovery'
+                                                    : 'Email Verification'}
                                 </p>
 
-                                {!isAdmin && studentView !== 'verify-otp' && (
+                                {!isAdmin && studentView !== 'verify-otp' && studentView !== 'forgot-password' && (
                                     <div className="flex mt-6 bg-slate-50 rounded-2xl p-1 border border-slate-100">
                                         <button
                                             onClick={() => { setStudentView('login'); setFeedback(null); setSignupFeedback(null); }}
-                                            className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${studentView === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                            className={`flex-1 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all font-display ${studentView === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                                         >Sign In</button>
                                         <button
                                             onClick={() => { setStudentView('signup'); setFeedback(null); setSignupFeedback(null); }}
-                                            className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${studentView === 'signup' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                            className={`flex-1 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all font-display ${studentView === 'signup' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                                         >Sign Up</button>
                                     </div>
                                 )}
@@ -280,7 +280,7 @@ const LandingPage = () => {
                                     <motion.div
                                         key="fb"
                                         initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}
-                                        className={`mb-6 flex items-center gap-3 rounded-xl border px-4 py-3 text-[9px] font-black uppercase tracking-widest ${feedback.type === 'error' ? 'bg-red-50 border-red-100 text-red-600' : 'bg-blue-50 border-blue-100 text-blue-600'}`}
+                                        className={`mb-6 flex items-center gap-3 rounded-xl border px-4 py-3 text-[10px] font-bold uppercase tracking-wider ${feedback.type === 'error' ? 'bg-red-50 border-red-100 text-red-600' : 'bg-blue-50 border-blue-100 text-blue-600'}`}
                                     >
                                         <AlertCircle className="h-4 w-4 shrink-0" /><span>{feedback.msg}</span>
                                     </motion.div>
@@ -292,10 +292,10 @@ const LandingPage = () => {
                                 {!isAdmin && studentView === 'login' && (
                                     <motion.form key="stu-login" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} onSubmit={handleStudentSubmit} className="space-y-5" autoComplete="off">
                                         <div className="flex gap-3">
-                                            <select value={session} onChange={e => setSession(e.target.value)} className="h-13 flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-4 text-xs font-black text-slate-900 outline-none focus:border-blue-500 transition-all py-3.5">
+                                            <select value={session} onChange={e => setSession(e.target.value)} className="h-13 flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-4 text-xs font-bold text-slate-900 outline-none focus:border-blue-500 transition-all py-3.5">
                                                 {SESSIONS.map(s => <option key={s} value={s}>{s}</option>)}
                                             </select>
-                                            <select value={degree} onChange={e => setDegree(e.target.value)} className="h-13 flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-4 text-xs font-black text-slate-900 outline-none focus:border-blue-500 transition-all py-3.5">
+                                            <select value={degree} onChange={e => setDegree(e.target.value)} className="h-13 flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-4 text-xs font-bold text-slate-900 outline-none focus:border-blue-500 transition-all py-3.5">
                                                 {DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
                                             </select>
                                         </div>
@@ -307,10 +307,10 @@ const LandingPage = () => {
                                             </button>
                                         </div>
                                         <div className="flex flex-col gap-4 pt-1">
-                                            <button disabled={loading} className="h-13 w-full rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black text-[11px] uppercase tracking-[0.4em] transition-all hover:shadow-[0_20px_40px_-10px_rgba(37,99,235,0.4)] hover:brightness-110 active:scale-[0.98] disabled:opacity-50 py-3.5 flex items-center justify-center gap-2">
+                                            <button disabled={loading} className="h-13 w-full rounded-2xl bg-blue-600 text-white font-bold text-xs uppercase tracking-wider transition-all hover:bg-blue-700 active:scale-[0.98] disabled:opacity-50 py-3.5 flex items-center justify-center gap-2 font-display">
                                                 {loading && <Loader2 className="h-4 w-4 animate-spin" />} {loading ? 'Verifying...' : 'Sign In'}
                                             </button>
-                                            <button type="button" onClick={() => setShowForgotModal(true)} className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-slate-900 text-center transition-colors">Forgot Password?</button>
+                                            <button type="button" onClick={() => { setStudentView('forgot-password'); setFeedback(null); setForgotFeedback(null); }} className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-900 text-center transition-colors">Forgot Password?</button>
                                         </div>
                                     </motion.form>
                                 )}
@@ -320,7 +320,7 @@ const LandingPage = () => {
                                         <AnimatePresence>
                                             {signupFeedback && (
                                                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                                    className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-[9px] font-black uppercase tracking-widest ${signupFeedback.type === 'error' ? 'bg-red-50 border-red-100 text-red-600' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
+                                                    className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-[10px] font-bold uppercase tracking-wider ${signupFeedback.type === 'error' ? 'bg-red-50 border-red-100 text-red-600' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
                                                     <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" /><span>{signupFeedback.msg}</span>
                                                 </motion.div>
                                             )}
@@ -334,10 +334,10 @@ const LandingPage = () => {
                                                 {showSignupPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                             </button>
                                         </div>
-                                        <p className="text-[9px] font-bold text-slate-400 text-center leading-relaxed px-2">
-                                            Only <span className="text-blue-600 font-black">@cuiatd.edu.pk</span> emails are accepted.<br />A verification code will be sent to your inbox.
+                                        <p className="text-[10px] font-medium text-slate-400 text-center leading-relaxed px-2">
+                                            Only <span className="text-blue-600 font-bold">@cuiatd.edu.pk</span> emails are accepted.<br />A verification code will be sent to your inbox.
                                         </p>
-                                        <button disabled={signupLoading} className="w-full h-12 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black text-[11px] uppercase tracking-[0.4em] transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2">
+                                        <button disabled={signupLoading} className="w-full h-12 rounded-2xl bg-blue-600 text-white font-bold text-xs uppercase tracking-wider transition-all hover:bg-blue-700 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 font-display">
                                             {signupLoading && <Loader2 className="h-4 w-4 animate-spin" />}{signupLoading ? 'Creating Account...' : 'Create Account'}
                                         </button>
                                     </motion.form>
@@ -348,15 +348,15 @@ const LandingPage = () => {
                                         <div className="flex items-center gap-3 bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 mb-6">
                                             <Mail className="h-4 w-4 text-blue-500 shrink-0" />
                                             <div className="min-w-0">
-                                                <p className="text-[8px] font-black uppercase tracking-widest text-blue-400">Code sent to</p>
-                                                <p className="text-xs font-black text-blue-700 truncate">{pendingEmail}</p>
+                                                <p className="text-[9px] font-bold uppercase tracking-wider text-blue-400">Code sent to</p>
+                                                <p className="text-xs font-bold text-blue-700 truncate">{pendingEmail}</p>
                                             </div>
                                         </div>
 
                                         <AnimatePresence>
                                             {otpFeedback && (
                                                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                                    className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-[9px] font-black uppercase tracking-widest mb-4 ${otpFeedback.type === 'error' ? 'bg-red-50 border-red-100 text-red-600' : 'bg-green-50 border-green-100 text-green-600'}`}>
+                                                    className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-[10px] font-bold uppercase tracking-wider mb-4 ${otpFeedback.type === 'error' ? 'bg-red-50 border-red-100 text-red-600' : 'bg-green-50 border-green-100 text-green-600'}`}>
                                                     {otpFeedback.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
                                                     <span>{otpFeedback.msg}</span>
                                                 </motion.div>
@@ -365,7 +365,7 @@ const LandingPage = () => {
 
                                         <form onSubmit={handleVerifyOtp} className="space-y-4">
                                             <div>
-                                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1 mb-2 block">6-Digit Verification Code</label>
+                                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1 mb-2 block">Verification Code</label>
                                                 <input
                                                     type="text"
                                                     inputMode="numeric"
@@ -374,29 +374,29 @@ const LandingPage = () => {
                                                     value={otp}
                                                     onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
                                                     required
-                                                    className="h-16 w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-6 text-3xl font-black text-slate-900 text-center outline-none focus:border-blue-500 tracking-[0.5em] placeholder:text-slate-200 placeholder:text-2xl transition-all"
+                                                    className="h-16 w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-6 text-3xl font-bold text-slate-900 text-center outline-none focus:border-blue-500 tracking-[0.5em] placeholder:text-slate-200 transition-all font-display"
                                                     autoComplete="one-time-code"
                                                 />
                                             </div>
 
-                                            <button disabled={otpLoading || otp.length !== 6} className="w-full h-12 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black text-[11px] uppercase tracking-[0.4em] transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2">
+                                            <button disabled={otpLoading || otp.length !== 6} className="w-full h-12 rounded-2xl bg-blue-600 text-white font-bold text-xs uppercase tracking-wider transition-all hover:bg-blue-700 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 font-display">
                                                 {otpLoading && <Loader2 className="h-4 w-4 animate-spin" />}{otpLoading ? 'Verifying...' : 'Verify & Sign In'}
                                             </button>
                                         </form>
 
                                         <div className="flex items-center justify-between mt-5 pt-4 border-t border-slate-100">
-                                            <button onClick={handleResendOtp} disabled={resendCooldown > 0} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-500 hover:text-blue-700 disabled:text-slate-300 transition-colors">
+                                            <button onClick={handleResendOtp} disabled={resendCooldown > 0} className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-blue-500 hover:text-blue-700 disabled:text-slate-300 transition-colors">
                                                 <RefreshCw className="h-3 w-3" />
                                                 {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
                                             </button>
-                                            <button onClick={() => { setStudentView('signup'); setOtpFeedback(null); setOtp(''); }} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-700 transition-colors">
+                                            <button onClick={() => { setStudentView('signup'); setOtpFeedback(null); setOtp(''); }} className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-700 transition-colors">
                                                 ← Back
                                             </button>
                                         </div>
                                     </motion.div>
                                 )}
 
-                                {isAdmin && (
+                                {isAdmin && studentView !== 'forgot-password' && (
                                     <motion.form key="adm" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleAdminSubmit} className="space-y-5" autoComplete="off">
                                         <input type="email" placeholder="Faculty Email" value={email} onChange={e => setEmail(e.target.value)} required className="h-13 w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 transition-all placeholder:text-slate-400 py-3.5" autoComplete="off" />
                                         <div className="relative">
@@ -406,12 +406,46 @@ const LandingPage = () => {
                                             </button>
                                         </div>
                                         <div className="flex flex-col gap-4 pt-1">
-                                            <button disabled={loading} className="h-13 w-full rounded-2xl bg-slate-900 text-white font-black text-[11px] uppercase tracking-[0.4em] transition-all hover:bg-slate-800 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.2)] active:scale-[0.98] disabled:opacity-50 py-3.5 flex items-center justify-center gap-2">
+                                            <button disabled={loading} className="h-13 w-full rounded-2xl bg-slate-900 text-white font-bold text-xs uppercase tracking-wider transition-all hover:bg-black active:scale-[0.98] disabled:opacity-50 py-3.5 flex items-center justify-center gap-2 font-display">
                                                 {loading && <Loader2 className="h-4 w-4 animate-spin" />}{loading ? 'Verifying...' : 'Sign In'}
                                             </button>
-                                            <button type="button" onClick={() => setShowForgotModal(true)} className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-slate-900 text-center transition-colors">Forgot Password?</button>
+                                            <button type="button" onClick={() => { setStudentView('forgot-password'); setFeedback(null); setForgotFeedback(null); }} className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-900 text-center transition-colors">Forgot Password?</button>
                                         </div>
                                     </motion.form>
+                                )}
+
+                                {studentView === 'forgot-password' && (
+                                    <motion.div key="forgot" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                                        {forgotFeedback && (
+                                            <div className={`mb-6 p-5 rounded-xl text-[10px] font-bold uppercase tracking-wider border ${forgotFeedback.type === 'error' ? 'bg-red-50 border-red-100 text-red-600' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
+                                                {forgotFeedback.msg}
+                                            </div>
+                                        )}
+                                        <form onSubmit={handleForgotSubmit} className="space-y-6">
+                                            <div className="space-y-4">
+                                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1">University Email</label>
+                                                <input
+                                                    type="email"
+                                                    placeholder="user@cuiatd.edu.pk"
+                                                    value={forgotEmail}
+                                                    onChange={e => setForgotEmail(e.target.value)}
+                                                    required
+                                                    className="h-14 w-full rounded-2xl bg-slate-50 border border-slate-200 px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 placeholder:text-slate-300"
+                                                />
+                                            </div>
+                                            <button disabled={forgotLoading} className="w-full h-14 rounded-2xl bg-blue-600 text-white text-xs font-bold uppercase tracking-wider active:scale-95 transition-all flex items-center justify-center gap-3 font-display">
+                                                {forgotLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                                                Reset Password
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setStudentView('login')}
+                                                className="w-full text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-900 text-center transition-colors"
+                                            >
+                                                ← Back to Sign In
+                                            </button>
+                                        </form>
+                                    </motion.div>
                                 )}
 
                             </AnimatePresence>
@@ -420,35 +454,6 @@ const LandingPage = () => {
                 </motion.div>
             </main>
 
-            <AnimatePresence>
-                {showForgotModal && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6">
-                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-                            className="w-full max-w-md rounded-[2.5rem] border border-slate-100 bg-white p-8 sm:p-12 shadow-2xl relative">
-                            <button onClick={() => { setShowForgotModal(false); setForgotFeedback(null); }} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 transition-colors"><X className="h-6 w-6" /></button>
-                            <div className="mb-8 sm:mb-10 text-center">
-                                <h2 className="text-2xl sm:text-3xl font-black text-slate-950 uppercase tracking-tighter">PASSWORD RESET</h2>
-                                <p className="mt-2 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.3em] text-blue-600">Account Recovery Service</p>
-                            </div>
-                            {forgotFeedback && (
-                                <div className={`mb-8 p-5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${forgotFeedback.type === 'error' ? 'bg-red-50 border-red-100 text-red-600' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
-                                    {forgotFeedback.msg}
-                                </div>
-                            )}
-                            <form onSubmit={handleForgotSubmit} className="space-y-6">
-                                <div className="space-y-4">
-                                    <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 ml-1">University Email</label>
-                                    <input type="email" placeholder="user@cuiatd.edu.pk" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} required className="h-16 w-full rounded-2xl bg-slate-50 border border-slate-200 px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 placeholder:text-slate-300" />
-                                </div>
-                                <button disabled={forgotLoading} className="w-full h-16 rounded-2xl bg-slate-900 text-white text-[12px] font-black uppercase tracking-[0.5em] active:scale-95 transition-all flex items-center justify-center gap-3">
-                                    {forgotLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                                    RESET PASSWORD
-                                </button>
-                            </form>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
         </div>
     );
 };

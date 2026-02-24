@@ -218,7 +218,7 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
         return (
             <div className="flex flex-col items-center justify-center p-12 md:p-20 gap-4">
                 <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Loading Sync Engine...</p>
+                <p className="text-xs font-bold text-slate-400">Loading Placement Data...</p>
             </div>
         );
     }
@@ -227,10 +227,10 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
         <div className="space-y-6 md:space-y-8 max-w-7xl mx-auto">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-xl md:text-2xl font-black text-slate-900 uppercase tracking-tighter italic leading-none mb-2">
-                        Placement Sync Engine
+                    <h2 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight leading-none mb-2">
+                        Placement Coordinator
                     </h2>
-                    <p className="text-[9px] md:text-[10px] font-black text-blue-600 uppercase tracking-[0.4em]">
+                    <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">
                         {student?.name} · {student?.rollNumber}
                     </p>
                 </div>
@@ -250,7 +250,7 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
                             <div className="h-10 w-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
                                 <Sparkles className="h-5 w-5" />
                             </div>
-                            <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest leading-none italic">Auto-Inference</h3>
+                            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider leading-none">Suggested Data</h3>
                         </div>
 
                         <div className="space-y-4">
@@ -264,9 +264,9 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
                                         <StickyNote className="h-5 w-5" />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-900 mb-1">Application Hub</p>
-                                        <p className="text-[10px] font-bold text-slate-400 truncate italic">
-                                            {context?.application ? `${context.application.companyName}` : 'No Application Metadata'}
+                                        <p className="text-[9px] font-bold uppercase tracking-wider text-slate-900 mb-1">From Application</p>
+                                        <p className="text-[10px] font-bold text-slate-400 truncate">
+                                            {context?.application ? `${context.application.companyName}` : 'No Application Data'}
                                         </p>
                                     </div>
                                 </div>
@@ -277,7 +277,7 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
                                     <div className={`h-11 w-11 md:h-12 md:w-12 rounded-2xl flex items-center justify-center shrink-0 ${activeSource === 'partnered' ? 'bg-blue-600 text-white' : 'bg-white text-slate-400 border border-slate-100'}`}>
                                         <Building2 className="h-5 w-5" />
                                     </div>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-900">Partner Records</p>
+                                    <p className="text-[9px] font-bold uppercase tracking-wider text-slate-900">Partner Records</p>
                                 </div>
                                 <div className="relative">
                                     <select
@@ -300,8 +300,8 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
                                 <div className="flex items-start gap-3 md:gap-4">
                                     <div className="h-10 w-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-amber-200"><Building2 className="h-5 w-5" /></div>
                                     <div>
-                                        <p className="text-[9px] font-black text-amber-900 uppercase tracking-widest leading-none mb-1">New Entity Detected</p>
-                                        <p className="text-[10px] font-bold text-amber-600 italic leading-tight">Unregistered company name detected.</p>
+                                        <p className="text-[9px] font-bold text-amber-900 uppercase tracking-wider leading-none mb-1">New Company Detected</p>
+                                        <p className="text-[10px] font-bold text-amber-600 leading-tight">This company is not yet in our registry.</p>
                                     </div>
                                 </div>
                                 <button
@@ -321,7 +321,7 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
                     <form onSubmit={handleSubmit} className="bg-white rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 p-6 md:p-10 lg:p-12 shadow-sm space-y-8 md:y-10">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                             <div className="md:col-span-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 md:mb-4 block ml-1">Assigned Industrial Partner</label>
+                                <label className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 md:mb-4 block ml-1">Assigned Company</label>
                                 <div className="relative group">
                                     <Building2 className="absolute left-5 md:left-6 top-1/2 -translate-y-1/2 h-4 md:h-5 w-4 md:w-5 text-slate-200 group-focus-within:text-blue-500 transition-colors" />
                                     <input
@@ -337,7 +337,7 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
                             </div>
 
                             <div className="md:col-span-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 md:mb-4 block ml-1">Assigned Professional Position</label>
+                                <label className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 md:mb-4 block ml-1">Assigned Job Position</label>
                                 <div className="relative group">
                                     <Briefcase className="absolute left-5 md:left-6 top-1/2 -translate-y-1/2 h-4 md:h-5 w-4 md:w-5 text-slate-200 group-focus-within:text-blue-500 transition-colors" />
                                     <input
@@ -351,14 +351,14 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
                             </div>
 
                             <div className="md:col-span-2 bg-slate-50/50 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 space-y-6 md:y-8 border border-slate-50">
-                                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500 flex items-center gap-3 italic">
-                                    <User className="h-3 w-3" /> External Supervisor Link
+                                <h4 className="text-[10px] font-bold uppercase tracking-wider text-blue-500 flex items-center gap-3">
+                                    <User className="h-3 w-3" /> Industry Supervisor
                                 </h4>
 
                                 <div className="space-y-6">
                                     {selectedPartneredCompany && context?.companies.find(c => c._id === selectedPartneredCompany)?.supervisors?.length! > 0 && (
                                         <div className="pb-6 border-b border-slate-100">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-blue-500 mb-3 block ml-1">Select Verified Supervisor</label>
+                                            <label className="text-xs font-bold uppercase tracking-wider text-blue-500 mb-3 block ml-1">Select Verified Supervisor</label>
                                             <div className="relative">
                                                 <select
                                                     onChange={(e) => {
@@ -381,23 +381,23 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
                                                 </select>
                                                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-400 pointer-events-none" />
                                             </div>
-                                            <p className="text-[9px] font-bold text-slate-400 mt-2 italic px-1">Selecting an option will auto-fill the fields below.</p>
+                                            <p className="text-[10px] font-medium text-slate-400 mt-2 px-1">Fields below will be auto-filled if a supervisor is selected.</p>
                                         </div>
                                     )}
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                                         <div>
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-2 md:mb-3 block ml-1">Full Name</label>
+                                            <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2 md:mb-3 block ml-1">Supervisor Name</label>
                                             <input
                                                 value={form.siteSupervisorName}
                                                 onChange={e => setForm({ ...form, siteSupervisorName: e.target.value })}
-                                                placeholder="Supervisor Name"
+                                                placeholder="Full Name"
                                                 className="w-full h-12 md:h-14 rounded-2xl bg-white border border-slate-100 px-6 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 transition-all"
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-2 md:mb-3 block ml-1">Professional Email</label>
+                                            <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2 md:mb-3 block ml-1">Professional Email</label>
                                             <div className="relative group">
                                                 <Mail className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
                                                 <input
@@ -411,7 +411,7 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
                                         </div>
 
                                         <div className="md:col-span-2">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-2 md:mb-3 block ml-1">Verified Phone Line</label>
+                                            <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2 md:mb-3 block ml-1">Contact Phone</label>
                                             <div className="relative group">
                                                 <Phone className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
                                                 <input
@@ -429,7 +429,7 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
                         </div>
 
                         {(success || error) && (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex items-center gap-4 p-5 md:p-6 rounded-3xl border text-[10px] font-black uppercase tracking-widest ${success ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex items-center gap-4 p-5 md:p-6 rounded-3xl border text-xs font-bold uppercase tracking-wider ${success ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
                                 {success ? <CheckCircle2 className="h-5 md:h-6 w-5 md:w-6 shrink-0" /> : <AlertCircle className="h-5 md:h-6 w-5 md:w-6 shrink-0" />}
                                 <span>{success || error}</span>
                             </motion.div>
@@ -439,16 +439,16 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="w-full sm:flex-1 h-14 md:h-16 rounded-2xl border border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all order-2 sm:order-1"
+                                className="w-full sm:flex-1 h-14 md:h-16 rounded-2xl border border-slate-100 text-xs font-bold uppercase tracking-wider text-slate-400 hover:bg-slate-50 transition-all order-2 sm:order-1"
                             >
-                                Discard Sync
+                                Discard Changes
                             </button>
                             <button
                                 type="submit"
                                 disabled={submitting}
-                                className="w-full sm:flex-[2] h-14 md:h-16 rounded-2xl bg-blue-600 text-white text-[11px] font-black uppercase tracking-[0.4em] hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 italic order-1 sm:order-2"
+                                className="w-full sm:flex-[2] h-14 md:h-16 rounded-2xl bg-blue-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 order-1 sm:order-2"
                             >
-                                {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Execute Placement Sync'}
+                                {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Confirm Placement'}
                             </button>
                         </div>
                     </form>

@@ -5,7 +5,7 @@ import { LayoutDashboard, Users, ShieldCheck, Building2, FileText, Settings, Log
 interface AdminSidebarProps {
     activeTab: string;
     setActiveTab: (tab: any) => void;
-    isSuperAdmin: boolean;
+    isSuperAdmin: boolean; // role is still super_admin internally
     user: any;
     logout: () => void;
 }
@@ -41,13 +41,13 @@ const AdminSidebar = ({ activeTab, setActiveTab, isSuperAdmin, user, logout }: A
             >
                 <item.icon className={`shrink-0 h-4 w-4 ${isActive ? 'text-white' : ''}`} />
                 {!collapsed && (
-                    <span className="text-[10px] font-black uppercase tracking-widest leading-none whitespace-nowrap">
+                    <span className="text-sm font-semibold whitespace-nowrap">
                         {item.label}
                     </span>
                 )}
                 {/* Tooltip on collapsed */}
                 {collapsed && (
-                    <span className="pointer-events-none absolute left-full ml-3 z-50 whitespace-nowrap rounded-lg bg-slate-900 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-xl">
+                    <span className="pointer-events-none absolute left-full ml-3 z-50 whitespace-nowrap rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-xl">
                         {item.label}
                     </span>
                 )}
@@ -76,8 +76,8 @@ const AdminSidebar = ({ activeTab, setActiveTab, isSuperAdmin, user, logout }: A
                             transition={{ duration: 0.2 }}
                             className="overflow-hidden"
                         >
-                            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-900 leading-none whitespace-nowrap">Admin Panel</p>
-                            <p className="text-[8px] font-black uppercase tracking-widest text-blue-400 mt-0.5 whitespace-nowrap">Internship Portal</p>
+                            <p className="text-sm font-bold text-slate-900 leading-none whitespace-nowrap">Admin Panel</p>
+                            <p className="text-[10px] font-medium text-blue-500 mt-1 whitespace-nowrap">Internship Portal</p>
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -97,17 +97,17 @@ const AdminSidebar = ({ activeTab, setActiveTab, isSuperAdmin, user, logout }: A
                     {/* Main section */}
                     <div className="space-y-0.5">
                         {!collapsed && (
-                            <p className="text-[8px] font-black uppercase tracking-[0.3em] text-blue-300 mb-2 px-3">Main</p>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 px-3">Main Navigation</p>
                         )}
                         {collapsed && <div className="h-px bg-blue-50 mb-2 mx-2" />}
                         {mainNavItems.map(item => <NavBtn key={item.id} item={item} />)}
                     </div>
 
-                    {/* Super admin section */}
+                    {/* HOD Oversite section */}
                     {isSuperAdmin && (
                         <div className="space-y-0.5">
                             {!collapsed && (
-                                <p className="text-[8px] font-black uppercase tracking-[0.3em] text-blue-300 mb-2 px-3">Admin Ops</p>
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 px-3">HOD Oversight</p>
                             )}
                             {collapsed && <div className="h-px bg-blue-50 mb-2 mx-2" />}
                             {adminNavItems.map(item => <NavBtn key={item.id} item={item} />)}
@@ -117,7 +117,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, isSuperAdmin, user, logout }: A
                     {/* Settings */}
                     <div className="space-y-0.5">
                         {!collapsed && (
-                            <p className="text-[8px] font-black uppercase tracking-[0.3em] text-blue-300 mb-2 px-3">Account</p>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 px-3">Account</p>
                         )}
                         {collapsed && <div className="h-px bg-blue-50 mb-2 mx-2" />}
                         <NavBtn item={{ id: 'settings', label: 'Settings', icon: Settings }} />
@@ -128,7 +128,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, isSuperAdmin, user, logout }: A
                 <div className="mt-4 border-t border-blue-50 pt-4 space-y-1">
                     {/* User chip */}
                     <div className={`flex items-center gap-3 rounded-xl bg-blue-50 ${collapsed ? 'justify-center p-2' : 'px-3 py-2.5'}`}>
-                        <div className="h-7 w-7 shrink-0 rounded-lg bg-blue-600 text-white flex items-center justify-center font-black text-[10px] uppercase shadow-md shadow-blue-500/25">
+                        <div className="h-7 w-7 shrink-0 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-md shadow-blue-500/25">
                             {user?.name?.[0]}
                         </div>
                         <AnimatePresence>
@@ -140,8 +140,10 @@ const AdminSidebar = ({ activeTab, setActiveTab, isSuperAdmin, user, logout }: A
                                     transition={{ duration: 0.2 }}
                                     className="overflow-hidden min-w-0"
                                 >
-                                    <p className="text-[10px] font-black text-slate-900 truncate leading-none whitespace-nowrap">{user?.name}</p>
-                                    <p className="text-[8px] font-bold text-blue-400 uppercase tracking-widest mt-0.5 whitespace-nowrap">{user?.role?.replace('_', ' ')}</p>
+                                    <p className="text-xs font-bold text-slate-900 truncate whitespace-nowrap">{user?.name}</p>
+                                    <p className="text-[10px] font-semibold text-blue-500 mt-0.5 whitespace-nowrap uppercase tracking-wider">
+                                        {user?.role === 'super_admin' ? 'HOD' : user?.role?.replace('_', ' ')}
+                                    </p>
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -156,10 +158,10 @@ const AdminSidebar = ({ activeTab, setActiveTab, isSuperAdmin, user, logout }: A
                     >
                         <LogOut className="shrink-0 h-4 w-4" />
                         {!collapsed && (
-                            <span className="text-[10px] font-black uppercase tracking-widest">Sign Out</span>
+                            <span className="text-sm font-semibold">Sign Out</span>
                         )}
                         {collapsed && (
-                            <span className="pointer-events-none absolute left-full ml-3 z-50 whitespace-nowrap rounded-lg bg-slate-900 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-xl">
+                            <span className="pointer-events-none absolute left-full ml-3 z-50 whitespace-nowrap rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-xl">
                                 Sign Out
                             </span>
                         )}

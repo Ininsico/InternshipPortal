@@ -19,8 +19,8 @@ const OverviewTab = ({ stats, recentActivity }: OverviewTabProps) => {
             <div className="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm">
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h3 className="text-sm font-black uppercase tracking-widest text-slate-900">Recent Activity</h3>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Live system updates</p>
+                        <h3 className="text-base font-bold text-slate-900">Recent Activity</h3>
+                        <p className="text-xs font-medium text-slate-400 mt-1">Live system updates</p>
                     </div>
                     <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-blue-50 text-blue-600">
                         <Clock className="h-5 w-5" />
@@ -38,7 +38,7 @@ const OverviewTab = ({ stats, recentActivity }: OverviewTabProps) => {
                             )}
                             <div>
                                 <p className="text-sm font-bold text-slate-900 leading-tight">{activity.message}</p>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">{new Date(activity.timestamp).toLocaleTimeString()}</p>
+                                <p className="text-[10px] font-semibold text-slate-400 mt-1.5">{new Date(activity.timestamp).toLocaleTimeString()}</p>
                             </div>
                         </div>
                     ))}

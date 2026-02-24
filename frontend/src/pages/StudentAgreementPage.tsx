@@ -109,7 +109,7 @@ const StudentAgreementPage = () => {
         return (
             <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center">
                 <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Loading Agreement Form...</p>
+                <p className="text-xs font-bold text-slate-400">Loading Agreement Form...</p>
             </div>
         );
     }
@@ -139,10 +139,10 @@ const StudentAgreementPage = () => {
                     <div className="mb-12">
                         <div className="flex items-center gap-2 mb-4">
                             <span className="h-[2px] w-8 bg-blue-600" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-600">Step 4: Internship Agreement</span>
+                            <span className="text-xs font-bold uppercase tracking-wider text-blue-600">Internship Agreement</span>
                         </div>
-                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 uppercase tracking-tight mb-4 leading-none">
-                            Finalize Your <br /> <span className="text-blue-600">Placement Contract</span>
+                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-4 leading-none">
+                            Finalize Your <br /> <span className="text-blue-600 font-bold">Placement Contract</span>
                         </h1>
                         <p className="text-slate-500 font-medium max-w-lg leading-relaxed">
                             {isLocked
@@ -160,18 +160,18 @@ const StudentAgreementPage = () => {
                             <div className="w-24 h-24 bg-blue-50 rounded-[2rem] flex items-center justify-center mx-auto mb-8 text-blue-600">
                                 <Clock className="w-12 h-12 animate-pulse" />
                             </div>
-                            <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight mb-4">Agreement Under Review</h2>
-                            <p className="text-slate-500 font-medium max-w-md mx-auto mb-10">
-                                Excellent! You've completed the agreement. The internship office is currently verifying your details. You'll be notified once your portal is fully unlocked.
+                            <h2 className="text-2xl font-bold text-slate-900 tracking-tight mb-4">Agreement Under Review</h2>
+                            <p className="text-slate-500 font-medium max-w-md mx-auto mb-10 leading-relaxed">
+                                You've successfully submitted the agreement. The HOD is currently verifying your details. You'll be notified once your portal is fully active.
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md mx-auto">
-                                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-left">
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Status</p>
-                                    <p className="text-xs font-black text-blue-600 uppercase">Awaiting Verification</p>
+                                <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm text-left">
+                                    <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1">Status</p>
+                                    <p className="text-xs font-bold text-blue-600 uppercase">Awaiting Verification</p>
                                 </div>
-                                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-left">
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Priority</p>
-                                    <p className="text-xs font-black text-slate-900 uppercase">High</p>
+                                <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm text-left">
+                                    <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1">Priority</p>
+                                    <p className="text-xs font-bold text-slate-900 uppercase">Registry Standard</p>
                                 </div>
                             </div>
                             <button
@@ -195,7 +195,7 @@ const StudentAgreementPage = () => {
                                     <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                                         <Briefcase className="w-4 h-4 text-blue-600" />
                                     </div>
-                                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-900">Internship Sourcing</h3>
+                                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">Internship Sourcing</h3>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     {['Self', 'University Assigned'].map((type) => (
@@ -208,7 +208,7 @@ const StudentAgreementPage = () => {
                                                 : 'border-slate-50 bg-slate-50/50 text-slate-400 hover:border-slate-100 hover:bg-slate-50'
                                                 }`}
                                         >
-                                            <span className="text-[10px] font-black uppercase tracking-widest">{type}</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider">{type}</span>
                                             {formData.sourcingType === type && <CheckCircle2 className="w-4 h-4" />}
                                         </button>
                                     ))}
@@ -220,7 +220,7 @@ const StudentAgreementPage = () => {
                                     <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                                         <UserCircle className="w-4 h-4 text-blue-600" />
                                     </div>
-                                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-900">Personal Contact Information</h3>
+                                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">Personal Contact Information</h3>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -265,7 +265,7 @@ const StudentAgreementPage = () => {
                                         <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                                             <Building className="w-4 h-4 text-blue-600" />
                                         </div>
-                                        <h3 className="text-sm font-black uppercase tracking-widest text-slate-900">Industry Supervisor Details</h3>
+                                        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">Industry Supervisor Details</h3>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -318,7 +318,7 @@ const StudentAgreementPage = () => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full h-18 bg-blue-600 text-white rounded-[2rem] text-xs font-black uppercase tracking-[0.3em] shadow-2xl shadow-blue-500/30 hover:bg-blue-700 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-4 py-6"
+                                className="w-full h-18 bg-blue-600 text-white rounded-[2rem] text-xs font-bold uppercase tracking-wider shadow-2xl shadow-blue-500/30 hover:bg-blue-700 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-4 py-6"
                             >
                                 {loading ? (
                                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -348,7 +348,7 @@ interface InputFieldProps {
 
 const InputField = ({ label, icon: Icon, value, onChange, placeholder, disabled }: InputFieldProps) => (
     <div className="space-y-3">
-        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{label}</label>
+        <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">{label}</label>
         <div className="relative group">
             <Icon className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
             <input

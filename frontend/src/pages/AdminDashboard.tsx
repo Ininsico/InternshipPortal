@@ -414,26 +414,28 @@ const AdminDashboard = () => {
                         >
                             <Menu className="h-4 w-4" />
                         </button>
-                        <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-                        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400 hidden sm:block">
-                            Admin / {activeTab}
+                        <div className="h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                        <h2 className="text-xs font-bold uppercase tracking-wider text-blue-500 hidden sm:block">
+                            HOD / {activeTab}
                         </h2>
                     </div>
                     <div className="flex items-center gap-2 md:gap-3">
                         <button
                             onClick={() => fetchData(true)}
                             disabled={refreshing}
-                            className="flex items-center gap-2 px-2 md:px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all disabled:opacity-50"
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs font-bold hover:bg-blue-100 transition-all disabled:opacity-50"
                         >
                             {refreshing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
                             <span className="hidden sm:inline">{refreshing ? 'Syncing...' : 'Refresh'}</span>
                         </button>
                         <div className="flex items-center gap-2 md:gap-3 bg-blue-50 px-2 md:px-4 py-2 rounded-xl border border-blue-100">
                             <div className="text-right hidden sm:block">
-                                <p className="text-xs font-black text-slate-900 leading-none">{user?.name}</p>
-                                <p className="text-[8px] font-black uppercase tracking-widest text-blue-500 mt-1">{user?.role?.replace('_', ' ')}</p>
+                                <p className="text-xs font-bold text-slate-900 leading-none">{user?.name}</p>
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-500 mt-1">
+                                    {user?.role === 'super_admin' ? 'HOD' : user?.role?.replace('_', ' ')}
+                                </p>
                             </div>
-                            <div className="h-8 w-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-black text-xs uppercase shadow-lg shadow-blue-500/20">
+                            <div className="h-8 w-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-lg shadow-blue-500/20">
                                 {user?.name?.[0]}
                             </div>
                         </div>

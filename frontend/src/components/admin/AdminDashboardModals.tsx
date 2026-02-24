@@ -45,18 +45,16 @@ interface ModalsProps {
     setPartneredCompanies: (v: any) => void;
 }
 
-// ─── Legacy Input (kept for other modals) ────────────────────────────────────
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     label: string;
 }
 const Input = ({ label, ...props }: InputProps) => (
     <div>
-        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">{label}</label>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">{label}</label>
         <input {...props} required className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300" />
     </div>
 );
 
-// ─── Main Modal Container ─────────────────────────────────────────────────────
 const AdminDashboardModals = (props: ModalsProps) => {
     return (
         <>
@@ -68,21 +66,21 @@ const AdminDashboardModals = (props: ModalsProps) => {
                     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={() => props.setShowAddAdminModal(false)}>
                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl bg-white p-6 md:p-8 shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                             <div className="flex items-center justify-between mb-6 md:mb-8">
-                                <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest italic">Create Access</h3>
+                                <h3 className="text-lg font-bold text-slate-900 uppercase tracking-wider">Add Personnel</h3>
                                 <button onClick={() => props.setShowAddAdminModal(false)} className="h-8 w-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-900 transition-all"><X className="h-4 w-4" /></button>
                             </div>
                             <form onSubmit={props.handleCreateAdmin} className="space-y-6">
                                 <Input label="Full Name" placeholder="Dr. John Doe" value={props.newAdmin.name} onChange={e => props.setNewAdmin({ ...props.newAdmin, name: e.target.value })} />
                                 <Input label="Email Address" type="email" placeholder="john@university.edu" value={props.newAdmin.email} onChange={e => props.setNewAdmin({ ...props.newAdmin, email: e.target.value })} />
                                 <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Account Role</label>
+                                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Account Role</label>
                                     <select
                                         value={props.newAdmin.role}
                                         onChange={e => props.setNewAdmin({ ...props.newAdmin, role: e.target.value })}
                                         className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all"
                                     >
                                         <option value="admin">Faculty Supervisor</option>
-                                        <option value="company_admin">Company Staff</option>
+                                        <option value="company_admin">Industry Partner</option>
                                     </select>
                                 </div>
                                 {props.newAdmin.role === 'company_admin' && (
@@ -101,10 +99,10 @@ const AdminDashboardModals = (props: ModalsProps) => {
                                                 <option key={i} value={c.company} />
                                             ))}
                                         </datalist>
-                                        <p className="text-[8px] font-bold text-slate-400 mt-2 uppercase tracking-widest px-2 italic">Select existing or type a new company name</p>
+                                        <p className="text-[10px] font-medium text-slate-400 mt-2 px-2">Select an existing company or type to register a new one.</p>
                                     </div>
                                 )}
-                                <button type="submit" className="w-full h-14 rounded-2xl bg-blue-600 text-white text-[11px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 active:scale-95">Complete Setup</button>
+                                <button type="submit" className="w-full h-14 rounded-2xl bg-blue-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-blue-700 transition-all shadow-xl shadow-blue-100">Finish Registration</button>
                             </form>
                         </motion.div>
                     </div>
@@ -117,15 +115,15 @@ const AdminDashboardModals = (props: ModalsProps) => {
                     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={() => props.setEditFaculty(null)}>
                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl bg-white p-6 md:p-8 shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                             <div className="flex items-center justify-between mb-6 md:mb-8">
-                                <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest italic">Edit Manager</h3>
+                                <h3 className="text-lg font-bold text-slate-900 uppercase tracking-wider">Edit Personnel</h3>
                                 <button onClick={() => props.setEditFaculty(null)} className="h-8 w-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-900 transition-all"><X className="h-4 w-4" /></button>
                             </div>
                             <form onSubmit={props.handleUpdateFaculty} className="space-y-6">
                                 <Input label="Full Name" value={props.editFacultyForm.name} onChange={e => props.setEditFacultyForm({ ...props.editFacultyForm, name: e.target.value })} />
                                 <Input label="Email Address" type="email" value={props.editFacultyForm.email} onChange={e => props.setEditFacultyForm({ ...props.editFacultyForm, email: e.target.value })} />
                                 {props.editFacultyError && <p className="text-xs font-bold text-red-500 bg-red-50 p-4 rounded-xl">{props.editFacultyError}</p>}
-                                <button disabled={props.editFacultyLoading} className="w-full h-14 rounded-2xl bg-slate-900 text-white text-[11px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl active:scale-95 disabled:opacity-50">
-                                    {props.editFacultyLoading ? 'Processing...' : 'Save Configuration'}
+                                <button disabled={props.editFacultyLoading} className="w-full h-14 rounded-2xl bg-slate-900 text-white text-xs font-bold uppercase tracking-wider hover:bg-black transition-all shadow-xl">
+                                    {props.editFacultyLoading ? 'Updating...' : 'Save Changes'}
                                 </button>
                             </form>
                         </motion.div>

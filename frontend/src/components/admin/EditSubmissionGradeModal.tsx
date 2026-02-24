@@ -35,8 +35,8 @@ const EditSubmissionGradeModal = ({
                     >
                         <div className="bg-slate-900 p-8 flex items-center justify-between">
                             <div>
-                                <p className="text-white/40 text-[10px] font-black uppercase tracking-[0.3em] mb-1 italic">Grade Intervention</p>
-                                <h2 className="text-xl font-black text-white italic tracking-tight uppercase">Modify Submission Marks</h2>
+                                <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-1">Administrative Grading</p>
+                                <h2 className="text-xl font-bold text-white tracking-tight uppercase">Edit Submission Grade</h2>
                             </div>
                             <button onClick={() => setEditSubmission(null)} className="h-10 w-10 flex items-center justify-center rounded-full bg-white/5 text-white/40 hover:text-white transition-all">
                                 <X className="h-5 w-5" />
@@ -45,14 +45,14 @@ const EditSubmissionGradeModal = ({
 
                         <form onSubmit={handleUpdateSubmission} className="p-10 space-y-8">
                             <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 italic">Student & Task</p>
-                                <p className="text-sm font-black text-slate-900 leading-none">{editSubmission.student?.name}</p>
-                                <p className="text-[11px] font-bold text-blue-600 mt-2 italic">{editSubmission.task?.title}</p>
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Student & Task Details</p>
+                                <p className="text-sm font-bold text-slate-900 leading-none">{editSubmission.student?.name}</p>
+                                <p className="text-[11px] font-bold text-blue-600 mt-2">{editSubmission.task?.title}</p>
                             </div>
 
                             <div className="grid grid-cols-2 gap-8">
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Faculty Grade</label>
+                                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Faculty Grade</label>
                                     <input
                                         type="number"
                                         min="0"
@@ -62,11 +62,11 @@ const EditSubmissionGradeModal = ({
                                             ...editSubmissionForm,
                                             facultyGrade: { ...editSubmissionForm.facultyGrade, marks: Number(e.target.value) }
                                         })}
-                                        className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-xl font-black text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all font-sans"
+                                        className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all font-sans"
                                     />
                                 </div>
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Company Grade {!isSuperAdmin && '(S.Admin Only)'}</label>
+                                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Company Grade {!isSuperAdmin && '(HOD Only)'}</label>
                                     <input
                                         type="number"
                                         min="0"
@@ -77,13 +77,13 @@ const EditSubmissionGradeModal = ({
                                             ...editSubmissionForm,
                                             companyGrade: { ...editSubmissionForm.companyGrade, marks: Number(e.target.value) }
                                         })}
-                                        className={`w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-xl font-black text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all font-sans ${!isSuperAdmin ? 'opacity-50' : ''}`}
+                                        className={`w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all font-sans ${!isSuperAdmin ? 'opacity-50' : ''}`}
                                     />
                                 </div>
                             </div>
 
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Submission Status</label>
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Submission Status</label>
                                 <select
                                     disabled={!isSuperAdmin}
                                     value={editSubmissionForm.status}
@@ -98,8 +98,8 @@ const EditSubmissionGradeModal = ({
                             </div>
 
                             {editSubmissionError && (
-                                <p className="text-xs font-bold text-red-500 bg-red-50 p-4 rounded-2xl italic border border-red-100">
-                                    ⚠ {editSubmissionError}
+                                <p className="text-xs font-bold text-red-500 bg-red-50 p-4 rounded-2xl border border-red-100">
+                                    {editSubmissionError}
                                 </p>
                             )}
 
@@ -107,17 +107,17 @@ const EditSubmissionGradeModal = ({
                                 <button
                                     type="button"
                                     onClick={() => setEditSubmission(null)}
-                                    className="flex-1 h-14 rounded-2xl border border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all active:scale-95"
+                                    className="flex-1 h-14 rounded-2xl border border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:bg-slate-50 transition-all"
                                 >
-                                    Abort
+                                    Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={editSubmissionLoading}
-                                    className="flex-1 h-14 rounded-2xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/10 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                                    className="flex-1 h-14 rounded-2xl bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/10 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                                 >
                                     {editSubmissionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                                    {editSubmissionLoading ? 'Saving...' : 'Confirm Overwrite'}
+                                    {editSubmissionLoading ? 'Saving...' : 'Save Changes'}
                                 </button>
                             </div>
                         </form>

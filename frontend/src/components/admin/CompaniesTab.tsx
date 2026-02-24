@@ -12,14 +12,14 @@ const CompaniesTab = ({ companies, setShowAddCompanyModal, handleDeleteCompany }
         <div className="space-y-8">
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                    <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase italic">Partnered Companies</h3>
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mt-1">Official industry partners for student placements</p>
+                    <h3 className="text-xl font-bold text-slate-900 tracking-tight">Partnered Companies</h3>
+                    <p className="text-xs font-medium text-slate-400 mt-1">Official industry partners for student placements</p>
                 </div>
                 <button
                     onClick={() => setShowAddCompanyModal(true)}
-                    className="h-10 sm:h-12 px-4 sm:px-6 rounded-2xl bg-blue-600 text-white text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 flex items-center gap-2"
+                    className="h-10 px-5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2"
                 >
-                    <Building2 className="h-4 w-4" /> <span className="hidden sm:inline">Add Partner</span><span className="inline sm:hidden">Add</span>
+                    <Building2 className="h-4 w-4" /> <span className="hidden sm:inline">Add Industry Partner</span><span className="inline sm:hidden">Add Partner</span>
                 </button>
             </div>
 

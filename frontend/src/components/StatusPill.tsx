@@ -18,8 +18,8 @@ const StatusPill = ({ status }: StatusPillProps) => {
     };
 
     return (
-        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${getStatusStyles(status)} transition-all duration-300`}>
-            {status || 'N/A'}
+        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusStyles(status)} transition-all duration-300`}>
+            {status?.replace(/_/g, ' ') || 'N/A'}
         </span>
     );
 };

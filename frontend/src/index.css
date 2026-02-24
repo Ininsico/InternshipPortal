@@ -3,7 +3,8 @@
 @theme {
   --color-primary: #3b82f6;
   --color-secondary: #ffffff;
-  --font-sans: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Montserrat', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Outfit', 'Montserrat', sans-serif;
 }
 
 *,
@@ -51,7 +52,7 @@ body {
   }
 
   .rounded-2xl,
-  .rounded-[2.5rem] {
+  .rounded-\[2\.5rem\] {
     border-radius: 0 !important;
     border: 1px solid #eee !important;
     box-shadow: none !important;

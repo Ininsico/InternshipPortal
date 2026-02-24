@@ -85,13 +85,13 @@ const FacultyTab = ({
         return (
             <div className="h-[60vh] flex flex-col items-center justify-center text-center p-8 bg-red-50 rounded-[3rem] border border-red-100">
                 <AlertCircle className="h-16 w-16 text-red-500 mb-6" />
-                <h3 className="text-xl font-black text-red-900 uppercase tracking-tight italic">Registry Connection Failed</h3>
-                <p className="text-sm font-bold text-red-600 mt-2 max-w-md mx-auto uppercase tracking-widest leading-relaxed">
+                <h3 className="text-xl font-bold text-red-900 tracking-tight">Registry Connection Failed</h3>
+                <p className="text-sm font-medium text-red-600 mt-2 max-w-md mx-auto leading-relaxed">
                     We were unable to synchronize with the staff directory. This may be due to a network interruption or session expiry.
                 </p>
                 <button
                     onClick={() => queryClient.invalidateQueries({ queryKey: ['faculty'] })}
-                    className="mt-8 h-14 px-8 rounded-2xl bg-red-600 text-white text-[11px] font-black uppercase tracking-[0.3em] hover:bg-red-700 transition-all shadow-xl shadow-red-200"
+                    className="mt-8 h-12 px-8 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-500/20"
                 >
                     Retry Connection
                 </button>
@@ -112,17 +112,17 @@ const FacultyTab = ({
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                         <input
                             type="text"
-                            placeholder="Universal Staff Search..."
+                            placeholder="Search directory..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="h-14 w-full sm:w-80 bg-white border border-slate-100 rounded-2xl pl-12 pr-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all shadow-sm placeholder:text-slate-300"
+                            className="h-12 w-full sm:w-80 bg-white border border-slate-100 rounded-xl pl-12 pr-6 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all shadow-sm placeholder:text-slate-300"
                         />
                     </div>
                     <button
                         onClick={() => setShowAddAdminModal(true)}
-                        className="h-14 px-6 rounded-2xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.3em] hover:bg-black transition-all shadow-2xl shadow-slate-200 active:scale-95 flex items-center gap-3"
+                        className="h-12 px-6 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95 flex items-center gap-3"
                     >
-                        <UserPlus className="h-4 w-4" /> <span className="hidden sm:inline">Initialize Access</span>
+                        <UserPlus className="h-4 w-4" /> <span className="hidden sm:inline">Add Staff Member</span>
                     </button>
                 </div>
             </div>
@@ -132,31 +132,31 @@ const FacultyTab = ({
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => setTypeFilter('all')}
-                        className={`h-10 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${typeFilter === 'all' ? 'bg-white text-blue-600 shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
+                        className={`h-10 px-6 rounded-xl text-xs font-bold transition-all ${typeFilter === 'all' ? 'bg-white text-blue-600 shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                         All Staff
                     </button>
                     <button
                         onClick={() => setTypeFilter('faculty')}
-                        className={`h-10 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${typeFilter === 'faculty' ? 'bg-white text-blue-600 shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
+                        className={`h-10 px-6 rounded-xl text-xs font-bold transition-all ${typeFilter === 'faculty' ? 'bg-white text-blue-600 shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                         Faculty
                     </button>
                     <button
                         onClick={() => setTypeFilter('staff')}
-                        className={`h-10 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${typeFilter === 'staff' ? 'bg-white text-blue-600 shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
+                        className={`h-10 px-6 rounded-xl text-xs font-bold transition-all ${typeFilter === 'staff' ? 'bg-white text-blue-600 shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                         Company Admins
                     </button>
                 </div>
 
-                <div className="flex items-center gap-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    <button onClick={() => toggleSort('name')} className="flex items-center gap-1 hover:text-slate-900 transition-colors">
-                        Sorting by: <span className="text-slate-900 underline decoration-blue-500/30 underline-offset-4">{sortField}</span>
+                <div className="flex items-center gap-4 text-xs font-bold text-slate-400">
+                    <button onClick={() => toggleSort('name')} className="flex items-center gap-1 hover:text-slate-900 transition-colors uppercase tracking-wider">
+                        Sort: <span className="text-slate-900 underline decoration-blue-500/30 underline-offset-4">{sortField}</span>
                         <ArrowUpDown className="h-3 w-3" />
                     </button>
                     <div className="h-4 w-px bg-slate-200" />
-                    <span>Total: <span className="text-slate-900">{totalItems} Results</span></span>
+                    <span className="uppercase tracking-wider">Total: <span className="text-slate-900">{totalItems} Results</span></span>
                 </div>
             </div>
 
@@ -180,8 +180,8 @@ const FacultyTab = ({
                         <div className="h-20 w-20 rounded-3xl bg-slate-50 flex items-center justify-center text-slate-200 mb-6">
                             <Search className="h-10 w-10" />
                         </div>
-                        <h4 className="text-lg font-black text-slate-900 italic uppercase tracking-tight">Zero Matches Found</h4>
-                        <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest">Adjust your filters or search parameters</p>
+                        <h4 className="text-lg font-bold text-slate-900 tracking-tight">Zero Matches Found</h4>
+                        <p className="text-xs font-semibold text-slate-400 mt-2 uppercase tracking-widest">Adjust your filters or search parameters</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -228,24 +228,24 @@ const FacultyTab = ({
 
                                 <div className="relative z-10">
                                     <div className="flex items-center justify-between mb-2">
-                                        <h4 className="text-xl font-black text-slate-900 tracking-tight italic">{admin.name}</h4>
+                                        <h4 className="text-xl font-bold text-slate-900 tracking-tight">{admin.name}</h4>
                                         {!admin.isActive && (
-                                            <span className="text-[7px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full border border-amber-100 animate-pulse">Pending Onboarding</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-600 px-3 py-1 rounded-full border border-amber-100">Pending Onboarding</span>
                                         )}
                                     </div>
-                                    <p className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest italic truncate">
-                                        <Mail className="h-3 w-3 text-blue-400" /> {admin.email}
+                                    <p className="flex items-center gap-2 text-xs font-medium text-slate-500 truncate">
+                                        <Mail className="h-3.5 w-3.5 text-blue-400" /> {admin.email}
                                     </p>
 
                                     <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-between">
                                         <div className="flex flex-col gap-1">
-                                            <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest leading-none">Designated Role</span>
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">Designated Role</span>
                                             <StatusPill status={admin.role === 'company_admin' ? (admin.company || 'Enterprise Staff') : 'Faculty Supervisor'} />
                                         </div>
                                         {/* Explicit button — replaces unreliable whole-card click */}
                                         <button
                                             onClick={() => setViewAdminStudents(admin)}
-                                            className="flex items-center gap-2 h-10 px-4 rounded-2xl bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all active:scale-90 shadow-sm"
+                                            className="flex items-center gap-2 h-10 px-4 rounded-xl bg-blue-50 text-blue-600 text-xs font-bold hover:bg-blue-600 hover:text-white transition-all active:scale-95 shadow-sm"
                                             title="View assigned students"
                                         >
                                             <Users className="h-3.5 w-3.5" />

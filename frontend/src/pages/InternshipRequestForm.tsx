@@ -137,7 +137,7 @@ const InternshipRequestForm = () => {
         return (
             <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center">
                 <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Verifying Session State...</p>
+                <p className="text-xs font-bold text-slate-400">Verifying Status...</p>
             </div>
         );
     }
@@ -163,38 +163,38 @@ const InternshipRequestForm = () => {
                                         <Clock className="w-12 h-12 animate-pulse" />
                                     )}
                                 </div>
-                                <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight mb-3">
-                                    {isRejected ? 'Request Rejected' : 'Approval Pending'}
+                                <h2 className="text-2xl font-bold text-slate-900 tracking-tight mb-3">
+                                    {isRejected ? 'Application Rejected' : 'Approval Pending'}
                                 </h2>
                                 <p className="text-slate-500 font-medium max-w-sm">
                                     {isRejected
                                         ? 'Your previous request was not approved. Please review the feedback and resubmit.'
-                                        : 'Your internship request is currently being reviewed by the Super Admin.'}
+                                        : 'Your internship request is currently being reviewed by the HOD.'}
                                 </p>
                             </div>
 
                             <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-100 mb-8">
                                 <div className="flex items-center justify-between mb-6">
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Current Record</span>
-                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${isRejected ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
+                                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Application Status</span>
+                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${isRejected ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
                                         }`}>
-                                        {user?.internshipStatus === 'none' ? 'Processing' : user?.internshipStatus}
+                                        {user?.internshipStatus === 'none' ? 'In Review' : user?.internshipStatus}
                                     </span>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-8">
                                     <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Company</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Company</p>
                                         <p className="text-sm font-bold text-slate-900">{application?.companyName || 'N/A'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Position</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Position</p>
                                         <p className="text-sm font-bold text-slate-900">{application?.position || 'N/A'}</p>
                                     </div>
                                 </div>
 
                                 <div className="mt-8 pt-6 border-t border-slate-200">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Internship Description</p>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Internship Description</p>
                                     <p className="text-sm font-medium text-slate-600 leading-relaxed italic">
                                         {application?.description || 'No description provided.'}
                                     </p>
@@ -202,11 +202,11 @@ const InternshipRequestForm = () => {
 
                                 <div className="grid grid-cols-2 gap-8 mt-4">
                                     <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Work Arrangement</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Work Arrangement</p>
                                         <p className="text-sm font-bold text-slate-900">{application?.internshipType || 'N/A'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Duration</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Duration</p>
                                         <p className="text-sm font-bold text-slate-900">{application?.duration || 'N/A'}</p>
                                     </div>
                                 </div>
@@ -232,7 +232,7 @@ const InternshipRequestForm = () => {
 
                                 {application?.feedback && (
                                     <div className="mt-8 pt-6 border-t border-slate-200">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-2">Admin Feedback</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-red-500 mb-2">HOD Feedback</p>
                                         <p className="text-sm font-medium text-slate-600 italic leading-relaxed">
                                             "{application.feedback}"
                                         </p>
@@ -244,15 +244,15 @@ const InternshipRequestForm = () => {
                                 {isRejected && (
                                     <button
                                         onClick={() => setIsEditing(true)}
-                                        className="flex-1 h-14 bg-white border-2 border-slate-100 rounded-2xl flex items-center justify-center gap-3 text-xs font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 hover:border-slate-200 transition-all active:scale-[0.98]"
+                                        className="flex-1 h-14 bg-white border-2 border-slate-100 rounded-2xl flex items-center justify-center gap-3 text-xs font-bold uppercase tracking-wider text-slate-600 hover:bg-slate-50 hover:border-slate-200 transition-all"
                                     >
                                         <Edit3 className="w-4 h-4" />
-                                        Edit Form
+                                        Edit Application
                                     </button>
                                 )}
                                 <button
                                     onClick={() => logout()}
-                                    className="flex-1 h-14 bg-slate-900 rounded-2xl flex items-center justify-center gap-3 text-xs font-black uppercase tracking-widest text-white hover:bg-slate-800 transition-all active:scale-[0.98]"
+                                    className="flex-1 h-14 bg-slate-900 rounded-2xl flex items-center justify-center gap-3 text-xs font-bold uppercase tracking-wider text-white hover:bg-slate-800 transition-all"
                                 >
                                     <LogOut className="w-4 h-4" />
                                     Sign Out
@@ -272,7 +272,7 @@ const InternshipRequestForm = () => {
                     <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                         <Building2 className="w-5 h-5 md:w-6 md:h-6 text-white" />
                     </div>
-                    <span className="text-lg md:text-xl font-black text-slate-900 tracking-tight uppercase italic">CU Portal</span>
+                    <span className="text-lg md:text-xl font-bold text-slate-900 tracking-tight">University Portal</span>
                 </div>
                 <button
                     onClick={() => logout()}
@@ -288,10 +288,10 @@ const InternshipRequestForm = () => {
                     <div className="mb-8 md:mb-12">
                         <div className="flex items-center gap-2 mb-4">
                             <span className="h-[2px] w-8 bg-blue-600" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-600">Verification Process</span>
+                            <span className="text-xs font-bold uppercase tracking-widest text-blue-600">Verification Status</span>
                         </div>
-                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 uppercase tracking-tight mb-4 leading-none">
-                            Internship <br /> <span className="text-blue-600">Approval Request</span>
+                        <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-4 leading-none">
+                            Internship <br /> <span className="text-blue-600 font-bold">Registration</span>
                         </h1>
                         <p className="text-slate-500 font-medium max-w-lg leading-relaxed">
                             {isEditing
@@ -469,8 +469,8 @@ const InternshipRequestForm = () => {
             </main>
 
             <footer className="py-10 text-center">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300">
-                    Precision Academic Management System &trade;
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+                    Internship Management System
                 </p>
             </footer>
         </div>
