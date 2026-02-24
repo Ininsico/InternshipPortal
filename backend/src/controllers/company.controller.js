@@ -41,7 +41,7 @@ const getMyStudents = async (req, res) => {
 };
 
 // POST /api/company/tasks — create a task for students
-const createTask = async (req, res) => {1
+const createTask = async (req, res) => {
     try {
         const { title, description, deadline, maxMarks, assignedTo } = req.body;
         const companyName = req.admin.company;

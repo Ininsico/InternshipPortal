@@ -152,11 +152,13 @@ const getMyTasks = async (req, res) => {
             return res.json({ success: true, tasks: [] });
         }
 
+        // Use case-insensitive regex so company name mismatches don't block tasks
+        const companyRegex = new RegExp(`^${student.assignedCompany.trim()}$`, 'i');
+
         const tasks = await Task.find({
-            company: student.assignedCompany,
+            company: companyRegex,
             status: 'active',
             $or: [{ assignedTo: req.user.id }, { assignedTo: null }],
-            createdAt: { $gte: student.internshipAssignedAt || new Date(0) }
         })
             .populate('createdBy', 'name company')
             .sort({ deadline: 1 });
