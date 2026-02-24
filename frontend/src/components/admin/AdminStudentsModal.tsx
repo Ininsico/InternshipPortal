@@ -1,6 +1,8 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Briefcase, GraduationCap, Mail, AlertCircle, Loader2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
+import API from '../../config/api';
 
 interface AdminStudentsModalProps {
     isOpen: boolean;
@@ -9,30 +11,15 @@ interface AdminStudentsModalProps {
     token: string;
 }
 
-import { request, gql } from 'graphql-request';
-
-const GET_ADMIN_STUDENTS = gql`
-    query GetStudentsByAdmin($adminId: ID!) {
-        students: getStudentsByAdmin(adminId: $adminId) {
-            _id
-            name
-            rollNumber
-            email
-            assignedCompany
-            internshipStatus
-        }
-    }
-`;
-
-const AdminStudentsModal = ({ isOpen, onClose, admin }: AdminStudentsModalProps) => {
+const AdminStudentsModal = ({ isOpen, onClose, admin, token }: AdminStudentsModalProps) => {
     const { data: studentsData, isLoading, error } = useQuery({
         queryKey: ['admin-students', admin?._id],
         queryFn: async () => {
-            const endpoint = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/graphql` : 'http://localhost:5000/graphql';
-            const { students } = await request(endpoint, GET_ADMIN_STUDENTS, { adminId: admin._id });
-            return students || [];
+            const config = { headers: { Authorization: `Bearer ${token}` } };
+            const { data } = await axios.get(`${API.ADMIN}/faculty/${admin._id}/students`, config);
+            return data.success ? data.students : [];
         },
-        enabled: !!admin && isOpen,
+        enabled: !!admin && !!token && isOpen,
     });
 
     if (!admin) return null;
@@ -84,13 +71,15 @@ const AdminStudentsModal = ({ isOpen, onClose, admin }: AdminStudentsModalProps)
                             {isLoading ? (
                                 <div className="h-64 flex flex-col items-center justify-center gap-4">
                                     <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
-                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Synchronizing Intern Data...</p>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Loading Students...</p>
                                 </div>
                             ) : error ? (
                                 <div className="h-64 flex flex-col items-center justify-center text-center p-8 bg-red-50 rounded-[2rem] border border-red-100">
                                     <AlertCircle className="h-10 w-10 text-red-500 mb-4" />
-                                    <h4 className="text-sm font-black text-red-900 uppercase tracking-tight">Sync Failure</h4>
-                                    <p className="text-[10px] font-bold text-red-600 mt-1 uppercase tracking-widest leading-relaxed italic">Failed to retrieve assigned students. Please verify your connection.</p>
+                                    <h4 className="text-sm font-black text-red-900 uppercase tracking-tight">Failed to Load</h4>
+                                    <p className="text-[10px] font-bold text-red-600 mt-1 uppercase tracking-widest leading-relaxed italic">
+                                        Could not retrieve assigned students. Please try again.
+                                    </p>
                                 </div>
                             ) : assignedStudents.length === 0 ? (
                                 <div className="h-64 flex flex-col items-center justify-center text-center">
