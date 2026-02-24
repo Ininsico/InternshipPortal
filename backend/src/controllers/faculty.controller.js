@@ -7,7 +7,8 @@ const Task = require('../models/Task.model');
 const getMyStudents = async (req, res) => {
     try {
         const students = await Student.find({ supervisorId: req.admin._id })
-            .select('-passwordHash');
+            .select('-passwordHash')
+            .lean();
         res.json({ success: true, students });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });

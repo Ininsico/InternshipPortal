@@ -47,5 +47,10 @@ const TaskSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+// Performance Optimization Indexes
+TaskSchema.index({ company: 1, status: 1 });
+TaskSchema.index({ assignedTo: 1 });
+TaskSchema.index({ createdAt: -1 });
+
 const Task = mongoose.model('Task', TaskSchema);
 module.exports = Task;

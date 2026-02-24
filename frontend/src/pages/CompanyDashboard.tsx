@@ -402,7 +402,7 @@ const CompanyDashboard = () => {
                                                         {sub.attachments && sub.attachments.length > 0 && (
                                                             <div className="mt-3 flex flex-wrap gap-2">
                                                                 {sub.attachments.map((f: any, i: number) => (
-                                                                    <a key={i} href={f.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-slate-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-tight text-slate-500 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm">
+                                                                    <a key={i} href={`${API.BASE}${f.url}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-slate-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-tight text-slate-500 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm">
                                                                         <File className="h-3 w-3" /> {f.originalname}
                                                                     </a>
                                                                 ))}
@@ -550,7 +550,7 @@ const CompanyDashboard = () => {
                                 {gradeTarget.attachments && gradeTarget.attachments.length > 0 && (
                                     <div className="grid grid-cols-1 gap-2">
                                         {gradeTarget.attachments.map((f: any, i: number) => (
-                                            <a key={i} href={f.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-xl bg-white border border-slate-100 px-4 py-2.5 text-[10px] font-black uppercase text-indigo-600 hover:shadow-md transition-all">
+                                            <a key={i} href={`${API.BASE}${f.url}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-xl bg-white border border-slate-100 px-4 py-2.5 text-[10px] font-black uppercase text-indigo-600 hover:shadow-md transition-all">
                                                 <span className="flex items-center gap-2 truncate"><File className="h-4 w-4" /> {f.originalname}</span>
                                             </a>
                                         ))}

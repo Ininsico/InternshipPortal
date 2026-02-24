@@ -31,6 +31,15 @@ app.use(express.urlencoded({ extended: true }));
 
 const path = require('path');
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.get('/uploads/submissions/:file', (req, res) => {
+    const filePath = path.join(process.cwd(), 'uploads', 'submissions', req.params.file);
+    if (fs.existsSync(filePath)) return res.sendFile(filePath);
+    if (process.env.VERCEL) {
+        const tmpPath = path.join(os.tmpdir(), 'uploads', 'submissions', req.params.file);
+        if (fs.existsSync(tmpPath)) return res.sendFile(tmpPath);
+    }
+    res.status(404).json({ success: false, message: 'File not found' });
+});
 
 // In Vercel, also serve from /tmp so uploaded files can be read back (temporarily)
 if (process.env.VERCEL) {

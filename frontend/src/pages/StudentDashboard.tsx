@@ -684,7 +684,7 @@ const StudentDashboard = () => {
                                                                                     {sub.attachments.map((file: any, i: number) => (
                                                                                         <a
                                                                                             key={i}
-                                                                                            href={file.url}
+                                                                                            href={`${API.BASE}${file.url}`}
                                                                                             target="_blank"
                                                                                             rel="noopener noreferrer"
                                                                                             className="inline-flex items-center gap-2 rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-[10px] font-black uppercase text-slate-600 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"

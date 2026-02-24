@@ -148,7 +148,8 @@ const getDashboardState = async (req, res) => {
     try {
         const student = await Student.findById(req.user.id)
             .populate('supervisorId', 'name email')
-            .select('-passwordHash');
+            .select('-passwordHash')
+            .lean();
 
         if (!student) {
             return res.status(404).json({ success: false, message: 'Student not found' });
@@ -162,19 +163,19 @@ const getDashboardState = async (req, res) => {
 
         // Fetch applications, tasks, submissions and report in parallel
         const [applications, tasks, allSubmissions, report] = await Promise.all([
-            Application.find({ studentId: req.user.id }).sort({ createdAt: -1 }),
+            Application.find({ studentId: req.user.id }).sort({ createdAt: -1 }).lean(),
             student.internshipStatus === 'internship_assigned' && student.assignedCompany
                 ? Task.find({
                     company: { $regex: new RegExp(`^${student.assignedCompany.trim()}$`, 'i') },
                     status: 'active',
                     $or: [{ assignedTo: req.user.id }, { assignedTo: null }]
-                }).populate('createdBy', 'name company').sort({ deadline: 1 })
+                }).populate('createdBy', 'name company').sort({ deadline: 1 }).lean()
                 : Promise.resolve([]),
             student.internshipStatus === 'internship_assigned'
-                ? Submission.find({ student: req.user.id }).select('task status companyGrade facultyGrade submittedAt content attachments')
+                ? Submission.find({ student: req.user.id }).select('task status companyGrade facultyGrade submittedAt content attachments').lean()
                 : Promise.resolve([]),
             student.internshipStatus === 'internship_assigned'
-                ? Report.findOne({ student: req.user.id }).populate('createdBy', 'name email')
+                ? Report.findOne({ student: req.user.id }).populate('createdBy', 'name email').lean()
                 : Promise.resolve(null)
         ]);
 
@@ -182,7 +183,7 @@ const getDashboardState = async (req, res) => {
         allSubmissions.forEach(s => { submissionMap[String(s.task)] = s; });
 
         const tasksWithStatus = tasks.map(t => ({
-            ...t.toObject(),
+            ...t,
             mySubmission: submissionMap[String(t._id)] || null,
         }));
 
@@ -269,7 +270,7 @@ const submitTask = async (req, res) => {
                 path: file.path.replace(/\\/g, '/'), // Windows fix
                 mimetype: file.mimetype,
                 size: file.size,
-                url: `${req.protocol}://${req.get('host')}/uploads/submissions/${file.filename}`
+                url: `/uploads/submissions/${file.filename}`
             }));
         }
 

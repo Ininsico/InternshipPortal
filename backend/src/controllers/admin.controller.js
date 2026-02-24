@@ -174,74 +174,43 @@ const ALLOWED_DEGREES = ['BSE', 'BCS', 'BBA'];
 
 const getAllStudents = async (req, res) => {
     try {
-        const students = await Student.aggregate([
-            { $match: { degree: { $in: ALLOWED_DEGREES } } },
-            // Join Supervisor (Admin)
-            {
-                $lookup: {
-                    from: 'admins',
-                    localField: 'supervisorId',
-                    foreignField: '_id',
-                    as: 'supervisor'
-                }
-            },
-            { $unwind: { path: '$supervisor', preserveNullAndEmptyArrays: true } },
-            // Join Latest Application (Since studentId is unique, this is safe and much faster than pipeline lookup)
-            {
-                $lookup: {
-                    from: 'applications',
-                    localField: '_id',
-                    foreignField: 'studentId',
-                    as: 'latestApp'
-                }
-            },
-            { $unwind: { path: '$latestApp', preserveNullAndEmptyArrays: true } },
-            // Join Latest Agreement (Since studentId is unique)
-            {
-                $lookup: {
-                    from: 'agreements',
-                    localField: '_id',
-                    foreignField: 'studentId',
-                    as: 'latestAgreement'
-                }
-            },
-            { $unwind: { path: '$latestAgreement', preserveNullAndEmptyArrays: true } },
-            // Join Report (Limit to 1 if multiple exist, but keep it simple)
-            {
-                $lookup: {
-                    from: 'reports',
-                    localField: '_id',
-                    foreignField: 'student',
-                    as: 'report'
-                }
-            },
-            { $unwind: { path: '$report', preserveNullAndEmptyArrays: true } },
-            // Projection to exclude sensitive data
-            {
-                $project: {
-                    passwordHash: 0,
-                    'supervisor.passwordHash': 0,
-                    'supervisor.resetPasswordToken': 0,
-                    'supervisor.resetPasswordExpire': 0,
-                    'supervisor.invitationToken': 0,
-                    'supervisor.invitationExpire': 0
-                }
-            }
+        const students = await Student.find({ degree: { $in: ALLOWED_DEGREES } })
+            .select('-passwordHash')
+            .populate('supervisorId', 'name email')
+            .lean();
+
+        // Fetch related data in parallel for all students, ensuring we get the LATEST one by sorting
+        const [apps, agreements, reports] = await Promise.all([
+            Application.find({ studentId: { $in: students.map(s => s._id) } }).sort({ createdAt: -1 }).lean(),
+            Agreement.find({ studentId: { $in: students.map(s => s._id) } }).sort({ createdAt: -1 }).lean(),
+            Report.find({ student: { $in: students.map(s => s._id) } }).sort({ createdAt: -1 }).lean()
         ]);
 
-        const enhancedStudents = students.map(stu => ({
-            ...stu,
-            supervisorId: stu.supervisor ? { _id: stu.supervisor._id, name: stu.supervisor.name, email: stu.supervisor.email } : null,
-            pipeline: {
-                hasApplication: !!stu.latestApp,
-                applicationStatus: stu.latestApp?.status || 'none',
-                hasAgreement: !!stu.latestAgreement,
-                agreementStatus: stu.latestAgreement?.status || 'none',
-                hasReport: !!stu.report,
-                reportStatus: stu.report?.completionStatus || 'none',
-                reportRating: stu.report?.overallRating || null
-            }
-        }));
+        // Map them efficiently (taking the first/latest one)
+        const appMap = {}; apps.forEach(a => { if (!appMap[a.studentId]) appMap[a.studentId.toString()] = a; });
+        const agreeMap = {}; agreements.forEach(a => { if (!agreeMap[a.studentId]) agreeMap[a.studentId.toString()] = a; });
+        const reportMap = {}; reports.forEach(r => { if (!reportMap[r.student]) reportMap[r.student.toString()] = r; });
+
+        const enhancedStudents = students.map(stu => {
+            const latestApp = appMap[stu._id.toString()];
+            const latestAgreement = agreeMap[stu._id.toString()];
+            const report = reportMap[stu._id.toString()];
+
+            return {
+                ...stu,
+                // Ensure supervisorId matches the exact format { _id, name, email }
+                supervisorId: stu.supervisorId ? { _id: stu.supervisorId._id, name: stu.supervisorId.name, email: stu.supervisorId.email } : null,
+                pipeline: {
+                    hasApplication: !!latestApp,
+                    applicationStatus: latestApp?.status || 'none',
+                    hasAgreement: !!latestAgreement,
+                    agreementStatus: latestAgreement?.status || 'none',
+                    hasReport: !!report,
+                    reportStatus: report?.completionStatus || 'none',
+                    reportRating: report?.overallRating || null
+                }
+            };
+        });
 
         res.json({ success: true, students: enhancedStudents });
     } catch (err) {
@@ -275,30 +244,19 @@ const assignStudentToSupervisor = async (req, res) => {
 
 const getDashboardStats = async (req, res) => {
     try {
-        const statsAggregation = await Student.aggregate([
-            { $match: { degree: { $in: ALLOWED_DEGREES } } },
-            {
-                $facet: {
-                    totalStudents: [{ $count: 'count' }],
-                    completedPlacements: [
-                        { $match: { internshipStatus: 'internship_assigned' } },
-                        { $count: 'count' }
-                    ],
-                    pendingAgreements: [
-                        { $match: { internshipStatus: 'agreement_submitted' } },
-                        { $count: 'count' }
-                    ]
-                }
-            }
+        const [totalStudents, completedPlacements, pendingAgreements] = await Promise.all([
+            Student.countDocuments({ degree: { $in: ALLOWED_DEGREES } }),
+            Student.countDocuments({ degree: { $in: ALLOWED_DEGREES }, internshipStatus: 'internship_assigned' }),
+            Student.countDocuments({ degree: { $in: ALLOWED_DEGREES }, internshipStatus: 'agreement_submitted' })
         ]);
 
         const activeAppsCount = await Application.countDocuments({ status: 'pending' });
 
         const stats = {
-            totalStudents: statsAggregation[0]?.totalStudents[0]?.count || 0,
+            totalStudents: totalStudents || 0,
             activeApplications: activeAppsCount,
-            completedPlacements: statsAggregation[0]?.completedPlacements[0]?.count || 0,
-            pendingAgreements: statsAggregation[0]?.pendingAgreements[0]?.count || 0
+            completedPlacements: completedPlacements || 0,
+            pendingAgreements: pendingAgreements || 0
         };
 
         const [recentApps, recentAgreements, recentSubmissions] = await Promise.all([
@@ -576,7 +534,7 @@ const getStudentsBySupervisor = async (req, res) => {
             query.supervisorId = adminId;
         }
 
-        const students = await Student.find(query).select('-passwordHash');
+        const students = await Student.find(query).select('-passwordHash').lean();
         res.json({ success: true, students });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
