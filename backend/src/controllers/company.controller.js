@@ -9,7 +9,10 @@ const getMyStudents = async (req, res) => {
         if (!companyName) {
             return res.status(400).json({ success: false, message: 'No company associated with this account.' });
         }
-        const students = await Student.find({ assignedCompany: companyName, internshipStatus: 'internship_assigned' })
+        const students = await Student.find({
+            assignedCompany: { $regex: new RegExp(`^${companyName.trim()}$`, 'i') },
+            internshipStatus: 'internship_assigned'
+        })
             .populate('supervisorId', 'name email')
             .select('-passwordHash');
         res.json({ success: true, students });
@@ -24,8 +27,11 @@ const createTask = async (req, res) => {
         const { title, description, deadline, maxMarks, assignedTo } = req.body;
         const companyName = req.admin.company;
 
-        // Check if any students are assigned to this company
-        const studentsCount = await Student.countDocuments({ assignedCompany: companyName, internshipStatus: 'internship_assigned' });
+        // Check if any students are assigned to this company (Case-Insensitive)
+        const studentsCount = await Student.countDocuments({
+            assignedCompany: { $regex: new RegExp(`^${companyName.trim()}$`, 'i') },
+            internshipStatus: 'internship_assigned'
+        });
         if (studentsCount === 0) {
             return res.status(403).json({ success: false, message: 'You cannot create tasks until students are assigned to your company.' });
         }
@@ -34,10 +40,10 @@ const createTask = async (req, res) => {
             return res.status(400).json({ success: false, message: 'title, description, and deadline are required.' });
         }
 
-        // If assignedTo is provided, verify student is at this company
+        // If assignedTo is provided, verify student is at this company (Case-Insensitive)
         if (assignedTo) {
             const student = await Student.findById(assignedTo);
-            if (!student || student.assignedCompany !== companyName) {
+            if (!student || student.assignedCompany?.toLowerCase() !== companyName.toLowerCase()) {
                 return res.status(403).json({ success: false, message: 'Student is not assigned to your company.' });
             }
         }

@@ -194,9 +194,12 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
         setError('');
         setSuccess('');
         try {
-            const { data } = await axios.put(`${API.ADMIN}/students/${student._id}/internship`, form, config);
+            const { data } = await axios.put(`${API.ADMIN}/students/${student._id}/internship`, {
+                ...form,
+                internshipStatus: 'internship_assigned'
+            }, config);
             if (data.success) {
-                setSuccess('Placement synchronization successful.');
+                setSuccess('Placement synchronization successful. Intern is now active.');
                 setTimeout(() => onSuccess(), 1000);
             }
         } catch (err: any) {
