@@ -21,11 +21,13 @@ const {
     createCompany,
     deleteCompany,
     updateStudentInternship,
-    getStudentPlacementContext
+    getStudentPlacementContext,
+    resendAdminInvitation
 } = require('../controllers/admin.controller');
 
 router.use(protect);
 
+router.post('/resend-invitation/:adminId', requireRole('super_admin'), resendAdminInvitation);
 router.put('/students/:studentId/internship', requireRole('super_admin'), updateStudentInternship);
 router.get('/students/:studentId/placement-context', requireRole('super_admin'), getStudentPlacementContext);
 

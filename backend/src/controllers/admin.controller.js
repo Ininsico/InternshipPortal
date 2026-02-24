@@ -28,7 +28,6 @@ const createAdmin = async (req, res) => {
         const resetPasswordExpire = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
 
         if (role === 'company_admin' && company) {
-            // Ensure a Company record exists for this name
             const companyExists = await Company.findOne({ name: new RegExp(`^${company}$`, 'i') });
             if (!companyExists) {
                 await Company.create({ name: company, email: email, isPartnered: true });
@@ -41,12 +40,12 @@ const createAdmin = async (req, res) => {
             passwordHash: crypto.randomBytes(16).toString('hex'),
             role: role || 'admin',
             company: role === 'company_admin' ? company : null,
-            isActive: false,
+            isActive: false, // Inactive until onboarding completed
             resetPasswordToken,
             resetPasswordExpire
         });
 
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
         const setupUrl = `${frontendUrl}/complete-onboarding/${resetToken}`;
         const html = staffInvitationTemplate(admin.role, setupUrl);
 
@@ -57,13 +56,47 @@ const createAdmin = async (req, res) => {
             message: 'Invitation email sent to new administrator',
             admin: {
                 id: admin._id,
+                _id: admin._id,
                 name: admin.name,
                 email: admin.email,
                 role: admin.role,
                 company: admin.company,
+                isActive: admin.isActive
             }
         });
     } catch (err) {
+        console.error('Error in createAdmin:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+const resendAdminInvitation = async (req, res) => {
+    try {
+        const { adminId } = req.params;
+        const admin = await Admin.findById(adminId);
+
+        if (!admin) {
+            return res.status(404).json({ success: false, message: 'Administrator not found' });
+        }
+
+        if (admin.isActive) {
+            return res.status(400).json({ success: false, message: 'This account is already active.' });
+        }
+
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        admin.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+        admin.resetPasswordExpire = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
+        await admin.save();
+
+        const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
+        const setupUrl = `${frontendUrl}/complete-onboarding/${resetToken}`;
+        const html = staffInvitationTemplate(admin.role, setupUrl);
+
+        await sendEmail(admin.email, 'Staff Onboarding Invitation (Resent) - CU Portal', html);
+
+        res.json({ success: true, message: 'Invitation email resent successfully.' });
+    } catch (err) {
+        console.error('Error in resendAdminInvitation:', err);
         res.status(500).json({ success: false, message: err.message });
     }
 };
@@ -101,7 +134,6 @@ const getAllStudents = async (req, res) => {
             .select('-passwordHash')
             .lean();
 
-        // Enhance each student with their current status in the pipeline
         const enhancedStudents = await Promise.all(students.map(async (stu) => {
             const [application, agreement, report] = await Promise.all([
                 Application.findOne({ studentId: stu._id }).sort({ createdAt: -1 }),
@@ -111,6 +143,7 @@ const getAllStudents = async (req, res) => {
 
             return {
                 ...stu,
+                isEmailVerified: stu.isEmailVerified, // Explicitly include
                 pipeline: {
                     hasApplication: !!application,
                     applicationStatus: application?.status || 'none',
@@ -125,6 +158,7 @@ const getAllStudents = async (req, res) => {
 
         res.json({ success: true, students: enhancedStudents });
     } catch (err) {
+        console.error('Error in getAllStudents:', err);
         res.status(500).json({ success: false, message: err.message });
     }
 };
@@ -474,32 +508,39 @@ const deleteAdmin = async (req, res) => {
             return res.status(403).json({ success: false, message: 'Cannot delete a super admin.' });
         }
 
+        console.log(`[WIPEOUT] Starting deletion for admin: ${admin.name} (${adminId})`);
+
         // 1. Unset supervisorId on all assigned students
-        await Student.updateMany({ supervisorId: adminId }, { $unset: { supervisorId: '' } });
+        const studentUpdate = await Student.updateMany({ supervisorId: adminId }, { $unset: { supervisorId: '' } });
+        console.log(`[WIPEOUT] Unset supervisor for ${studentUpdate.modifiedCount} students.`);
 
         // 2. Delete all reports created by this admin
-        await Report.deleteMany({ createdBy: adminId });
+        const reportDelete = await Report.deleteMany({ createdBy: adminId });
+        console.log(`[WIPEOUT] Deleted ${reportDelete.deletedCount} reports.`);
 
         // 3. If they were a company admin, delete their tasks AND the submissions for those tasks
         if (admin.role === 'company_admin') {
             const tasks = await Task.find({ createdBy: adminId });
             const taskIds = tasks.map(t => t._id);
-            await Submission.deleteMany({ task: { $in: taskIds } });
-            await Task.deleteMany({ createdBy: adminId });
+            const submissionDelete = await Submission.deleteMany({ task: { $in: taskIds } });
+            const taskDelete = await Task.deleteMany({ createdBy: adminId });
+            console.log(`[WIPEOUT] Deleted ${taskDelete.deletedCount} tasks and ${submissionDelete.deletedCount} submissions.`);
         }
 
-        // 4. Update any submissions they graded to nullify the grader (optional, or just leave as is if submission is deleted)
+        // 4. Update any submissions they graded to nullify the grader
         await Submission.updateMany({ 'companyGrade.gradedBy': adminId }, { $set: { 'companyGrade.gradedBy': null } });
         await Submission.updateMany({ 'facultyGrade.gradedBy': adminId }, { $set: { 'facultyGrade.gradedBy': null } });
 
         await Admin.findByIdAndDelete(adminId);
+        console.log(`[WIPEOUT] Admin ${adminId} permanently removed.`);
 
         res.json({
             success: true,
             message: `Administrator "${admin.name}" and all their related records (tasks, reports, grading history) have been permanently wiped out.`
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        console.error('[WIPEOUT ERROR] deleteAdmin:', err);
+        res.status(500).json({ success: false, message: `Deletion failed: ${err.message}` });
     }
 };
 
@@ -513,27 +554,35 @@ const deleteStudent = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Student not found.' });
         }
 
+        console.log(`[WIPEOUT] Starting complete wipeout for student: ${student.name} (${studentId})`);
+
         // 1. Delete all applications
-        await Application.deleteMany({ studentId });
+        const appDelete = await Application.deleteMany({ studentId });
+        console.log(`[WIPEOUT] Deleted ${appDelete.deletedCount} applications.`);
 
         // 2. Delete all agreements
-        await Agreement.deleteMany({ studentId });
+        const agreementDelete = await Agreement.deleteMany({ studentId });
+        console.log(`[WIPEOUT] Deleted ${agreementDelete.deletedCount} agreements.`);
 
         // 3. Delete all submissions
-        await Submission.deleteMany({ student: studentId });
+        const submissionDelete = await Submission.deleteMany({ student: studentId });
+        console.log(`[WIPEOUT] Deleted ${submissionDelete.deletedCount} submissions.`);
 
         // 4. Delete all faculty reports regarding this student
-        await Report.deleteMany({ student: studentId });
+        const reportDelete = await Report.deleteMany({ student: studentId });
+        console.log(`[WIPEOUT] Deleted ${reportDelete.deletedCount} reports.`);
 
         // 5. Finally delete the student record
         await Student.findByIdAndDelete(studentId);
+        console.log(`[WIPEOUT] Student ${studentId} permanently removed.`);
 
         res.json({
             success: true,
             message: `Student "${student.name}" (${student.rollNumber}) and all their relative records (applications, agreements, submissions, evaluations) have been permanently wiped out.`
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        console.error('[WIPEOUT ERROR] deleteStudent:', err);
+        res.status(500).json({ success: false, message: `Deletion failed: ${err.message}` });
     }
 };
 

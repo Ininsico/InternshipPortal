@@ -9,6 +9,7 @@ interface StudentsTabProps {
     setChangeSupervisorId: (id: string) => void;
     setDeleteStudentTarget: (student: any) => void;
     setEditStudentTarget: (student: any) => void;
+    handleResendStudentEmail: (email: string) => void;
 }
 
 const StudentsTab = ({
@@ -18,7 +19,8 @@ const StudentsTab = ({
     setChangeSupervisorTarget,
     setChangeSupervisorId,
     setDeleteStudentTarget,
-    setEditStudentTarget
+    setEditStudentTarget,
+    handleResendStudentEmail
 }: StudentsTabProps) => {
     return (
         <div className="space-y-8">
@@ -57,15 +59,27 @@ const StudentsTab = ({
                                             {stu.name}
                                         </h4>
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{stu.rollNumber} · {stu.degree}</p>
-                                        <div className="flex gap-2 mt-3">
+                                        <div className="flex gap-2 mt-3 items-center">
                                             <StatusPill status={stu.pipeline?.applicationStatus || 'none'} />
                                             <StatusPill status={stu.pipeline?.agreementStatus || 'none'} />
+                                            {!stu.isEmailVerified && (
+                                                <span className="text-[7px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-100 italic">Unverified</span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
 
                                 {isSuperAdmin && (
                                     <div className="flex gap-2">
+                                        {!stu.isEmailVerified && (
+                                            <button
+                                                onClick={() => handleResendStudentEmail(stu.email)}
+                                                className="h-10 w-10 flex items-center justify-center rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white transition-all shadow-sm"
+                                                title="Resend Verification Email"
+                                            >
+                                                <Mail className="h-4 w-4" />
+                                            </button>
+                                        )}
                                         <button
                                             onClick={() => setEditStudentTarget(stu)}
                                             className="h-10 w-10 flex items-center justify-center rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-sm"

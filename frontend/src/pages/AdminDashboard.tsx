@@ -191,11 +191,10 @@ const AdminDashboard = () => {
             if (data.success) {
                 if (deleteFaculty.role === 'company_admin') {
                     setCompanyAdmins(prev => prev.filter(f => f._id !== deleteFaculty._id));
-                    // Also refresh partnered companies list so stale company cards are removed
                     try {
                         const companiesRes = await axios.get(`${API_BASE}/partnered-companies`, config);
                         if (companiesRes.data.success) setPartneredCompanies(companiesRes.data.companies);
-                    } catch (_) { /* best effort */ }
+                    } catch (_) { }
                 } else {
                     setFaculty(prev => prev.filter(f => f._id !== deleteFaculty._id));
                 }
@@ -203,6 +202,28 @@ const AdminDashboard = () => {
             }
         } catch (err) { console.error(err); }
         finally { setDeleteFacultyLoading(false); }
+    };
+
+    const handleResendInvitation = async (adminId: string) => {
+        try {
+            const { data } = await axios.post(`${API_BASE}/resend-invitation/${adminId}`, {}, config);
+            if (data.success) {
+                alert('Invitation email resent successfully.');
+            }
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Failed to resend invitation.');
+        }
+    };
+
+    const handleResendStudentEmail = async (email: string) => {
+        try {
+            const { data } = await axios.post(`${API.AUTH}/resend-otp`, { email });
+            if (data.success) {
+                alert('Verification email resent to student.');
+            }
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Failed to resend email.');
+        }
     };
 
     const handleDeleteStudent = async () => {
@@ -410,10 +431,11 @@ const AdminDashboard = () => {
                                                 internshipStatus: stu.internshipStatus || ''
                                             });
                                         }}
+                                        handleResendStudentEmail={handleResendStudentEmail}
                                     />
                                 )}
                                 {activeTab === 'reports' && <ReportsTab reports={reports} handleDeleteReport={handleDeleteReport} setSelectedReport={setSelectedReport} setEditReport={(r) => { setEditReport(r); setEditReportForm({ summary: r.summary, overallRating: r.overallRating, recommendation: r.recommendation, completionStatus: r.completionStatus, scores: r.scores || {} }); }} />}
-                                {activeTab === 'faculty' && isSuperAdmin && <FacultyTab faculty={faculty} companyAdmins={companyAdmins} setShowAddAdminModal={setShowAddAdminModal} setEditFaculty={setEditFaculty} setEditFacultyForm={setEditFacultyForm} setDeleteFaculty={setDeleteFaculty} />}
+                                {activeTab === 'faculty' && isSuperAdmin && <FacultyTab faculty={faculty} companyAdmins={companyAdmins} setShowAddAdminModal={setShowAddAdminModal} setEditFaculty={setEditFaculty} setEditFacultyForm={setEditFacultyForm} setDeleteFaculty={setDeleteFaculty} handleResendInvitation={handleResendInvitation} />}
                                 {activeTab === 'companies' && isSuperAdmin && <CompaniesTab companies={partneredCompanies} setShowAddCompanyModal={setShowAddCompanyModal} handleDeleteCompany={handleDeleteCompany} />}
                                 {activeTab === 'approvals' && isSuperAdmin && <ApprovalsTab students={students} handleViewApp={handleViewApp} viewAppLoading={viewAppLoading} handleApprove={handleApprove} />}
                                 {activeTab === 'agreements' && isSuperAdmin && <AgreementsTab agreements={agreements} handleVerifyAgreement={handleVerifyAgreement} />}

@@ -8,6 +8,7 @@ interface FacultyTabProps {
     setEditFaculty: (faculty: any) => void;
     setEditFacultyForm: (form: any) => void;
     setDeleteFaculty: (faculty: any) => void;
+    handleResendInvitation: (adminId: string) => void;
 }
 
 const FacultyTab = ({
@@ -16,7 +17,8 @@ const FacultyTab = ({
     setShowAddAdminModal,
     setEditFaculty,
     setEditFacultyForm,
-    setDeleteFaculty
+    setDeleteFaculty,
+    handleResendInvitation
 }: FacultyTabProps) => {
     return (
         <div className="space-y-8">
@@ -47,6 +49,15 @@ const FacultyTab = ({
                                         <ShieldCheck className="h-6 w-6" />
                                     </div>
                                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                                        {!f.isActive && (
+                                            <button
+                                                onClick={() => handleResendInvitation(f._id)}
+                                                className="h-9 w-9 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-all"
+                                                title="Resend Invitation"
+                                            >
+                                                <Mail className="h-4 w-4" />
+                                            </button>
+                                        )}
                                         <button
                                             onClick={() => { setEditFaculty(f); setEditFacultyForm({ name: f.name, email: f.email }); }}
                                             className="h-9 w-9 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-all"
@@ -61,7 +72,12 @@ const FacultyTab = ({
                                         </button>
                                     </div>
                                 </div>
-                                <h4 className="text-lg font-black text-slate-900 mb-1">{f.name}</h4>
+                                <div className="flex items-center justify-between mb-1">
+                                    <h4 className="text-lg font-black text-slate-900">{f.name}</h4>
+                                    {!f.isActive && (
+                                        <span className="text-[7px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full border border-amber-100">Pending</span>
+                                    )}
+                                </div>
                                 <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest italic">
                                     <Mail className="h-3 w-3" /> {f.email}
                                 </div>
@@ -87,19 +103,35 @@ const FacultyTab = ({
                                     </div>
                                     <StatusPill status="Staff" />
                                 </div>
-                                <h4 className="text-base font-black text-slate-900">{ca.name}</h4>
+                                <div className="flex items-center justify-between">
+                                    <h4 className="text-base font-black text-slate-900">{ca.name}</h4>
+                                    {!ca.isActive && (
+                                        <span className="text-[7px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full border border-amber-100">Pending</span>
+                                    )}
+                                </div>
                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{ca.email}</p>
                                 <div className="mt-3 flex items-center justify-between">
                                     <div className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-black text-indigo-600">
                                         <ShieldCheck className="h-3.5 w-3.5" />{ca.company || 'No company set'}
                                     </div>
-                                    <button
-                                        onClick={() => setDeleteFaculty(ca)}
-                                        className="h-8 w-8 flex items-center justify-center rounded-lg bg-red-50 text-red-400 hover:bg-red-600 hover:text-white transition-all shadow-sm"
-                                        title="Delete Admin"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        {!ca.isActive && (
+                                            <button
+                                                onClick={() => handleResendInvitation(ca._id)}
+                                                className="h-8 w-8 flex items-center justify-center rounded-lg bg-indigo-50 text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                                                title="Resend Invitation"
+                                            >
+                                                <Mail className="h-4 w-4" />
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => setDeleteFaculty(ca)}
+                                            className="h-8 w-8 flex items-center justify-center rounded-lg bg-red-50 text-red-400 hover:bg-red-600 hover:text-white transition-all shadow-sm"
+                                            title="Delete Admin"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}

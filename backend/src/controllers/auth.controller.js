@@ -354,7 +354,8 @@ const forgotPassword = async (req, res) => {
 
         await userInstance.save();
 
-        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+        const frontendUrl = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
+        const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
         const html = passwordResetTemplate(userInstance.name, resetUrl);
 
         await sendEmail(userInstance.email, 'Password Reset Request - CU Portal', html);
