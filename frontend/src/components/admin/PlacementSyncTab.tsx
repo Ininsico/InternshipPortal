@@ -181,8 +181,8 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
             ...form,
             assignedCompany: company.name || 'N/A',
             siteSupervisorName: supervisor ? supervisor.name : 'N/A',
-            siteSupervisorEmail: supervisor ? supervisor.email : (company.email || 'N/A'),
-            siteSupervisorPhone: company.phone || 'N/A',
+            siteSupervisorEmail: supervisor ? supervisor.email : (company.email && company.email !== '—' ? company.email : 'N/A'),
+            siteSupervisorPhone: company.phone && company.phone !== '—' ? company.phone : 'N/A',
         });
         setSelectedPartneredCompany(id);
         setActiveSource('partnered');
@@ -347,42 +347,73 @@ const PlacementSyncTab = ({ student, token, onClose, onSuccess }: PlacementSyncT
                                     <User className="h-3 w-3" /> External Supervisor Link
                                 </h4>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                                    <div>
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-2 md:mb-3 block ml-1">Full Name</label>
-                                        <input
-                                            value={form.siteSupervisorName}
-                                            onChange={e => setForm({ ...form, siteSupervisorName: e.target.value })}
-                                            placeholder="Supervisor Name"
-                                            className="w-full h-12 md:h-14 rounded-2xl bg-white border border-slate-100 px-6 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 transition-all"
-                                        />
-                                    </div>
+                                <div className="space-y-6">
+                                    {selectedPartneredCompany && context?.companies.find(c => c._id === selectedPartneredCompany)?.supervisors?.length! > 0 && (
+                                        <div className="pb-6 border-b border-slate-100">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-blue-500 mb-3 block ml-1">Select Verified Supervisor</label>
+                                            <div className="relative">
+                                                <select
+                                                    onChange={(e) => {
+                                                        const company = context?.companies.find(c => c._id === selectedPartneredCompany);
+                                                        const supervisor = company?.supervisors[parseInt(e.target.value)];
+                                                        if (supervisor) {
+                                                            setForm({
+                                                                ...form,
+                                                                siteSupervisorName: supervisor.name,
+                                                                siteSupervisorEmail: supervisor.email
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="w-full h-12 rounded-xl bg-white border-2 border-blue-100 px-4 pr-10 text-[10px] font-bold text-slate-700 outline-none appearance-none cursor-pointer focus:border-blue-400 transition-colors"
+                                                >
+                                                    <option value="">— Pick a Registered Supervisor —</option>
+                                                    {context?.companies.find(c => c._id === selectedPartneredCompany)?.supervisors.map((s, idx) => (
+                                                        <option key={idx} value={idx}>{s.name} ({s.email})</option>
+                                                    ))}
+                                                </select>
+                                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-400 pointer-events-none" />
+                                            </div>
+                                            <p className="text-[9px] font-bold text-slate-400 mt-2 italic px-1">Selecting an option will auto-fill the fields below.</p>
+                                        </div>
+                                    )}
 
-                                    <div>
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-2 md:mb-3 block ml-1">Professional Email</label>
-                                        <div className="relative group">
-                                            <Mail className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                                        <div>
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-2 md:mb-3 block ml-1">Full Name</label>
                                             <input
-                                                type="email"
-                                                value={form.siteSupervisorEmail}
-                                                onChange={e => setForm({ ...form, siteSupervisorEmail: e.target.value })}
-                                                placeholder="email@partner.com"
-                                                className="w-full h-12 md:h-14 rounded-2xl bg-white border border-slate-100 pl-14 pr-6 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 transition-all"
+                                                value={form.siteSupervisorName}
+                                                onChange={e => setForm({ ...form, siteSupervisorName: e.target.value })}
+                                                placeholder="Supervisor Name"
+                                                className="w-full h-12 md:h-14 rounded-2xl bg-white border border-slate-100 px-6 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 transition-all"
                                             />
                                         </div>
-                                    </div>
 
-                                    <div className="md:col-span-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-2 md:mb-3 block ml-1">Verified Phone Line</label>
-                                        <div className="relative group">
-                                            <Phone className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
-                                            <input
-                                                type="tel"
-                                                value={form.siteSupervisorPhone}
-                                                onChange={e => setForm({ ...form, siteSupervisorPhone: e.target.value })}
-                                                placeholder="Contact Number"
-                                                className="w-full h-12 md:h-14 rounded-2xl bg-white border border-slate-100 pl-14 pr-6 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 transition-all"
-                                            />
+                                        <div>
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-2 md:mb-3 block ml-1">Professional Email</label>
+                                            <div className="relative group">
+                                                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
+                                                <input
+                                                    type="email"
+                                                    value={form.siteSupervisorEmail}
+                                                    onChange={e => setForm({ ...form, siteSupervisorEmail: e.target.value })}
+                                                    placeholder="email@partner.com"
+                                                    className="w-full h-12 md:h-14 rounded-2xl bg-white border border-slate-100 pl-14 pr-6 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 transition-all"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="md:col-span-2">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-2 md:mb-3 block ml-1">Verified Phone Line</label>
+                                            <div className="relative group">
+                                                <Phone className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
+                                                <input
+                                                    type="tel"
+                                                    value={form.siteSupervisorPhone}
+                                                    onChange={e => setForm({ ...form, siteSupervisorPhone: e.target.value })}
+                                                    placeholder="Contact Number"
+                                                    className="w-full h-12 md:h-14 rounded-2xl bg-white border border-slate-100 pl-14 pr-6 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 transition-all"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

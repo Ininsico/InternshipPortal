@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Trash2, Paperclip } from 'lucide-react';
+import { X, Trash2, Paperclip, User, ShieldCheck, Loader2 } from 'lucide-react';
 
 interface ModalsProps {
     showAddAdminModal: boolean;
@@ -257,31 +257,87 @@ const AdminDashboardModals = (props: ModalsProps) => {
             {/* ── Change Supervisor ── */}
             <AnimatePresence>
                 {props.changeSupervisorTarget && (
-                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={() => props.setChangeSupervisorTarget(null)}>
-                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl bg-white p-6 md:p-8 shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                            <div className="flex items-center justify-between mb-8">
+                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4" onClick={() => props.setChangeSupervisorTarget(null)}>
+                        <motion.div
+                            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            className="w-full max-w-md rounded-[2.5rem] bg-white p-8 md:p-10 shadow-2xl border border-slate-100"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-10">
                                 <div>
-                                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest italic leading-none">Modify Supervisor</h3>
-                                    <p className="text-[10px] font-black text-slate-400 mt-2 uppercase tracking-widest">{props.changeSupervisorTarget.name}</p>
+                                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic leading-none">Modify Supervisor</h3>
+                                    <p className="text-[10px] font-black text-blue-600 mt-3 uppercase tracking-[0.3em] flex items-center gap-2">
+                                        <User className="h-3 w-3" /> {props.changeSupervisorTarget.name}
+                                    </p>
                                 </div>
-                                <button onClick={() => props.setChangeSupervisorTarget(null)} className="h-8 w-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-900 transition-all"><X className="h-4 w-4" /></button>
+                                <button onClick={() => props.setChangeSupervisorTarget(null)} className="h-10 w-10 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-400 hover:text-slate-900 transition-all">
+                                    <X className="h-5 w-5" />
+                                </button>
                             </div>
-                            <form onSubmit={props.handleChangeSupervisor} className="space-y-6">
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">New Faculty Supervisor</label>
-                                    <select
-                                        required
-                                        value={props.changeSupervisorId}
-                                        onChange={e => props.setChangeSupervisorId(e.target.value)}
-                                        className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all font-sans"
-                                    >
-                                        <option value="">— Select Supervisor —</option>
-                                        {props.faculty.map(f => <option key={f._id} value={f._id}>{f.name}</option>)}
-                                    </select>
+
+                            <form onSubmit={props.handleChangeSupervisor} className="space-y-8">
+                                <div className="space-y-6">
+                                    {/* Current Supervisor Card */}
+                                    <div className="p-5 rounded-3xl bg-slate-50 border border-slate-100">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 italic">Current Assignment</p>
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-10 w-10 rounded-2xl bg-white border border-slate-200 text-slate-400 flex items-center justify-center">
+                                                <ShieldCheck className="h-5 w-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-black text-slate-900">
+                                                    {props.changeSupervisorTarget.supervisorId?.name || 'No Supervisor Linked'}
+                                                </p>
+                                                <p className="text-[10px] font-bold text-slate-400">
+                                                    {props.changeSupervisorTarget.supervisorId?.email || 'System Unassigned'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 block ml-1">New Faculty Supervisor</label>
+                                        <div className="relative group">
+                                            <select
+                                                required
+                                                value={props.changeSupervisorId}
+                                                onChange={e => props.setChangeSupervisorId(e.target.value)}
+                                                className="w-full h-14 md:h-16 rounded-2xl bg-slate-50 border-2 border-transparent px-6 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all appearance-none cursor-pointer"
+                                            >
+                                                <option value="">— Select from Faculty List —</option>
+                                                {props.faculty.map(f => (
+                                                    <option key={f._id} value={f._id}>
+                                                        {f.name} ({f.email})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                                <ShieldCheck className="h-5 w-5" />
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                {props.changeSupervisorError && <p className="text-xs font-bold text-red-500 bg-red-50 p-4 rounded-xl">{props.changeSupervisorError}</p>}
-                                <button disabled={props.changeSupervisorLoading} className="w-full h-14 rounded-2xl bg-slate-900 text-white text-[11px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl active:scale-95 disabled:opacity-50">
-                                    {props.changeSupervisorLoading ? 'Processing...' : 'Confirm Reassignment'}
+
+                                {props.changeSupervisorError ? (
+                                    <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="text-[10px] font-black uppercase tracking-widest text-red-500 bg-red-50 p-5 rounded-2xl border border-red-100">
+                                        ⚠️ {props.changeSupervisorError}
+                                    </motion.div>
+                                ) : (
+                                    <p className="text-[9px] font-bold text-slate-400 italic px-2">
+                                        * Changing the supervisor will re-route all future evaluation tasks for this student.
+                                    </p>
+                                )}
+
+                                <button
+                                    disabled={props.changeSupervisorLoading}
+                                    className="w-full h-14 md:h-16 rounded-2xl bg-slate-900 text-white text-[11px] font-black uppercase tracking-[0.3em] hover:bg-blue-600 transition-all shadow-xl active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 italic"
+                                >
+                                    {props.changeSupervisorLoading ? (
+                                        <Loader2 className="h-5 w-5 animate-spin" />
+                                    ) : (
+                                        'Confirm Reassignment'
+                                    )}
                                 </button>
                             </form>
                         </motion.div>

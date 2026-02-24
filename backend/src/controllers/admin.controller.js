@@ -103,12 +103,9 @@ const resendAdminInvitation = async (req, res) => {
 
 const getAllAdmins = async (req, res) => {
     try {
-        console.log('GET /faculty - Fetching all faculty admins');
-        const admins = await Admin.find({ role: 'admin' }).select('-passwordHash');
-        console.log(`Found ${admins.length} faculty admins`);
+        const admins = await Admin.find({ role: { $in: ['admin', 'super_admin'] } }).select('-passwordHash');
         res.json({ success: true, admins });
     } catch (err) {
-        console.error('Error in getAllAdmins:', err);
         res.status(500).json({ success: false, message: err.message });
     }
 };

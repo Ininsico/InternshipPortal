@@ -103,8 +103,12 @@ const AdminDashboard = () => {
                     break;
                 case 'students':
                 case 'approvals': // Both use students data mainly
-                    const studentsRes = await axios.get(`${API_BASE}/students`, config);
+                    const [studentsRes, facultyRes] = await Promise.all([
+                        axios.get(`${API_BASE}/students`, config),
+                        user?.role === 'super_admin' ? axios.get(`${API_BASE}/faculty`, config) : Promise.resolve({ data: { success: true, admins: [] } })
+                    ]);
                     if (studentsRes.data.success) setStudents(studentsRes.data.students);
+                    if (facultyRes.data.success) setFaculty(facultyRes.data.admins);
                     break;
                 case 'faculty':
                     if (user?.role === 'super_admin') {
