@@ -1,4 +1,4 @@
-import { UserPlus, Pencil, Trash2, Mail, ShieldCheck } from 'lucide-react';
+import { UserPlus, Pencil, Trash2, Mail, ShieldCheck, RefreshCw } from 'lucide-react';
 import StatusPill from '../StatusPill';
 
 interface FacultyTabProps {
@@ -9,6 +9,7 @@ interface FacultyTabProps {
     setEditFacultyForm: (form: any) => void;
     setDeleteFaculty: (faculty: any) => void;
     handleResendInvitation: (adminId: string) => void;
+    fetchData: (silent?: boolean) => void;
 }
 
 const FacultyTab = ({
@@ -18,7 +19,8 @@ const FacultyTab = ({
     setEditFaculty,
     setEditFacultyForm,
     setDeleteFaculty,
-    handleResendInvitation
+    handleResendInvitation,
+    fetchData
 }: FacultyTabProps) => {
     return (
         <div className="space-y-8">
@@ -27,12 +29,20 @@ const FacultyTab = ({
                     <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase italic">User Management</h3>
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mt-1">Manage system administrators and staff</p>
                 </div>
-                <button
-                    onClick={() => setShowAddAdminModal(true)}
-                    className="flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-4 text-xs font-black uppercase tracking-widest text-white hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95"
-                >
-                    <UserPlus className="h-4 w-4" /> Add Administrator
-                </button>
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => fetchData(true)}
+                        className="flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 hover:text-slate-900 transition-all"
+                    >
+                        <RefreshCw className="h-3 w-3" /> Refresh
+                    </button>
+                    <button
+                        onClick={() => setShowAddAdminModal(true)}
+                        className="flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-4 text-xs font-black uppercase tracking-widest text-white hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95"
+                    >
+                        <UserPlus className="h-4 w-4" /> Add Administrator
+                    </button>
+                </div>
             </div>
 
             <div className="space-y-12">

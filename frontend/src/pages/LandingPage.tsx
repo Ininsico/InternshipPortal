@@ -67,7 +67,8 @@ const LandingPage = () => {
             if (user.role === 'student') navigate('/dashboard', { replace: true });
             else if (user.role === 'company_admin') navigate('/company-portal', { replace: true });
             else if (user.role === 'admin') navigate('/faculty-portal', { replace: true });
-            else navigate('/admin', { replace: true });
+            else if (user.role === 'super_admin') navigate('/admin', { replace: true });
+            else navigate('/', { replace: true }); 
         }
     }, [user, navigate]);
 
@@ -112,7 +113,7 @@ const LandingPage = () => {
                 if (role === 'company_admin') navigate('/company-portal', { replace: true });
                 else if (role === 'admin') navigate('/faculty-portal', { replace: true });
                 else if (role === 'super_admin') navigate('/admin', { replace: true });
-                else navigate('/admin', { replace: true });
+                else navigate('/', { replace: true });
             }
             setFeedback({ type: 'success', msg: data.message });
         } catch (err: unknown) {

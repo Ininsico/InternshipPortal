@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import {
     LayoutDashboard, Users, ClipboardList, BarChart2,
     LogOut, Plus, Loader2,
-    Send, Briefcase, File, Pencil, Trash2
+    Send, Briefcase, File, Pencil, Trash2, RefreshCw
 } from 'lucide-react';
 
 import API from '../config/api';
@@ -49,26 +49,30 @@ const CompanyDashboard = () => {
     const [editTaskLoading, setEditTaskLoading] = useState(false);
     const [editTaskError, setEditTaskError] = useState('');
 
+    const [refreshing, setRefreshing] = useState(false);
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
+    const fetchAll = async (silent = false) => {
+        if (!silent) setLoading(true);
+        else setRefreshing(true);
+        try {
+            const [stuRes, taskRes, subRes] = await Promise.all([
+                axios.get(`${API_BASE}/students`, config),
+                axios.get(`${API_BASE}/tasks`, config),
+                axios.get(`${API_BASE}/submissions`, config),
+            ]);
+            if (stuRes.data.success) setStudents(stuRes.data.students);
+            if (taskRes.data.success) setTasks(taskRes.data.tasks);
+            if (subRes.data.success) setSubmissions(subRes.data.submissions);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchAll = async () => {
-            setLoading(true);
-            try {
-                const [stuRes, taskRes, subRes] = await Promise.all([
-                    axios.get(`${API_BASE}/students`, config),
-                    axios.get(`${API_BASE}/tasks`, config),
-                    axios.get(`${API_BASE}/submissions`, config),
-                ]);
-                if (stuRes.data.success) setStudents(stuRes.data.students);
-                if (taskRes.data.success) setTasks(taskRes.data.tasks);
-                if (subRes.data.success) setSubmissions(subRes.data.submissions);
-            } catch (e) {
-                console.error(e);
-            } finally {
-                setLoading(false);
-            }
-        };
         if (token) fetchAll();
     }, [token]);
 
@@ -86,6 +90,7 @@ const CompanyDashboard = () => {
                 setTasks(prev => [data.task, ...prev]);
                 setShowTaskModal(false);
                 setTaskForm({ title: '', description: '', deadline: '', maxMarks: 100, assignedTo: '' });
+                fetchAll(true);
             }
         } catch (err: any) {
             setTaskError(err?.response?.data?.message || 'Failed to create task.');
@@ -109,6 +114,7 @@ const CompanyDashboard = () => {
             if (data.success) {
                 setTasks(prev => prev.map(t => t._id === editTaskTarget._id ? data.task : t));
                 setEditTaskTarget(null);
+                fetchAll(true);
             }
         } catch (err: any) {
             setEditTaskError(err?.response?.data?.message || 'Failed to update task.');
@@ -123,6 +129,7 @@ const CompanyDashboard = () => {
             const { data } = await axios.delete(`${API_BASE}/tasks/${taskId}`, config);
             if (data.success) {
                 setTasks(prev => prev.filter(t => t._id !== taskId));
+                fetchAll(true);
             }
         } catch (err: any) {
             alert(err?.response?.data?.message || 'Failed to delete task.');
@@ -182,14 +189,24 @@ const CompanyDashboard = () => {
                 ) : (
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-6xl mx-auto space-y-8">
 
-                        <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-1">Company Portal</p>
-                            <h1 className="text-3xl font-black text-slate-900">
-                                {activeTab === 'overview' && 'Dashboard'}
-                                {activeTab === 'students' && 'My Interns'}
-                                {activeTab === 'tasks' && 'Task Management'}
-                                {activeTab === 'submissions' && 'Submissions & Grading'}
-                            </h1>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-1">Company Portal</p>
+                                <h1 className="text-3xl font-black text-slate-900">
+                                    {activeTab === 'overview' && 'Dashboard'}
+                                    {activeTab === 'students' && 'My Interns'}
+                                    {activeTab === 'tasks' && 'Task Management'}
+                                    {activeTab === 'submissions' && 'Submissions & Grading'}
+                                </h1>
+                            </div>
+                            <button
+                                onClick={() => fetchAll(true)}
+                                disabled={refreshing}
+                                className="h-10 px-4 rounded-xl border border-slate-200 bg-white text-slate-500 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2 disabled:opacity-50"
+                            >
+                                {refreshing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                                {refreshing ? 'Syncing...' : 'Sync Data'}
+                            </button>
                         </div>
 
                         {activeTab === 'overview' && (

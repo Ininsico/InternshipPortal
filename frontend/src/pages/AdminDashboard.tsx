@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-import { Loader2, X } from 'lucide-react';
+import { Loader2, X, RefreshCw } from 'lucide-react';
 
 import AdminSidebar from '../components/admin/AdminSidebar';
 import OverviewTab from '../components/admin/OverviewTab';
@@ -89,65 +89,60 @@ const AdminDashboard = () => {
     const [editReportLoading, setEditReportLoading] = useState(false);
     const [editReportError, setEditReportError] = useState('');
 
+    const [refreshing, setRefreshing] = useState(false);
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
-    useEffect(() => {
-        const fetchData = async () => {
-            if (!token) return;
-            setLoading(true);
-            try {
-                const [statsRes, studentsRes] = await Promise.all([
-                    axios.get(`${API_BASE}/stats`, config),
-                    axios.get(`${API_BASE}/students`, config),
+    const fetchData = async (silent = false) => {
+        if (!token) return;
+        if (!silent) setLoading(true);
+        else setRefreshing(true);
+
+        try {
+            const [statsRes, studentsRes] = await Promise.all([
+                axios.get(`${API_BASE}/stats`, config),
+                axios.get(`${API_BASE}/students`, config),
+            ]);
+
+            if (statsRes.data.success) {
+                setStats(statsRes.data.stats);
+                setRecentActivity(statsRes.data.recentActivity);
+            }
+            if (studentsRes.data.success) {
+                setStudents(studentsRes.data.students);
+            }
+
+            if (user?.role === 'super_admin') {
+                const results = await Promise.allSettled([
+                    axios.get(`${API_BASE}/faculty`, config),
+                    axios.get(`${API_BASE}/agreements`, config),
+                    axios.get(`${API_BASE}/company-admins`, config),
+                    axios.get(`${API_BASE}/reports`, config),
+                    axios.get(`${API_BASE}/partnered-companies`, config),
                 ]);
 
-                if (statsRes.data.success) {
-                    setStats(statsRes.data.stats);
-                    setRecentActivity(statsRes.data.recentActivity);
+                const [facultyRes, agreementsRes, companyAdminRes, reportsRes, partneredRes] = results;
+
+                if (facultyRes.status === 'fulfilled' && facultyRes.value.data.success) {
+                    setFaculty(facultyRes.value.data.admins);
                 }
-                if (studentsRes.data.success) {
-                    setStudents(studentsRes.data.students);
+                if (agreementsRes.status === 'fulfilled' && agreementsRes.value.data.success) setAgreements(agreementsRes.value.data.agreements);
+                if (companyAdminRes.status === 'fulfilled' && companyAdminRes.value.data.success) {
+                    setCompanyAdmins(companyAdminRes.value.data.admins);
                 }
-
-                if (user?.role === 'super_admin') {
-                    const results = await Promise.allSettled([
-                        axios.get(`${API_BASE}/faculty`, config),
-                        axios.get(`${API_BASE}/agreements`, config),
-                        axios.get(`${API_BASE}/company-admins`, config),
-                        axios.get(`${API_BASE}/reports`, config),
-                        axios.get(`${API_BASE}/partnered-companies`, config),
-                    ]);
-
-                    const [facultyRes, agreementsRes, companyAdminRes, reportsRes, partneredRes] = results;
-
-                    if (facultyRes.status === 'fulfilled' && facultyRes.value.data.success) {
-                        console.log('Setting faculty:', facultyRes.value.data.admins);
-                        setFaculty(facultyRes.value.data.admins);
-                    }
-                    if (agreementsRes.status === 'fulfilled' && agreementsRes.value.data.success) setAgreements(agreementsRes.value.data.agreements);
-                    if (companyAdminRes.status === 'fulfilled' && companyAdminRes.value.data.success) {
-                        console.log('Setting company admins:', companyAdminRes.value.data.admins);
-                        setCompanyAdmins(companyAdminRes.value.data.admins);
-                    }
-                    if (reportsRes.status === 'fulfilled' && reportsRes.value.data.success) setReports(reportsRes.value.data.reports);
-                    if (partneredRes.status === 'fulfilled' && partneredRes.value.data.success) {
-                        console.log('Setting partnered companies:', partneredRes.value.data.companies);
-                        setPartneredCompanies(partneredRes.value.data.companies);
-                    }
-
-                    // Log failures for debugging
-                    results.forEach((res, idx) => {
-                        if (res.status === 'rejected') {
-                            console.error(`Request ${idx} failed:`, res.reason);
-                        }
-                    });
+                if (reportsRes.status === 'fulfilled' && reportsRes.value.data.success) setReports(reportsRes.value.data.reports);
+                if (partneredRes.status === 'fulfilled' && partneredRes.value.data.success) {
+                    setPartneredCompanies(partneredRes.value.data.companies);
                 }
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
             }
-        };
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    useEffect(() => {
         fetchData();
     }, [token, user?.role]);
 
@@ -165,6 +160,7 @@ const AdminDashboard = () => {
                 }
                 setShowAddAdminModal(false);
                 setNewAdmin({ name: '', email: '', role: 'admin', company: '' });
+                fetchData(true);
             }
         } catch (err) { console.error(err); }
     };
@@ -178,6 +174,7 @@ const AdminDashboard = () => {
             if (data.success) {
                 setFaculty(prev => prev.map(f => f._id === editFaculty._id ? data.admin : f));
                 setEditFaculty(null);
+                fetchData(true);
             }
         } catch (err: any) {
             setEditFacultyError(err.response?.data?.message || 'Update failed');
@@ -199,6 +196,7 @@ const AdminDashboard = () => {
                     setFaculty(prev => prev.filter(f => f._id !== deleteFaculty._id));
                 }
                 setDeleteFaculty(null);
+                fetchData(true);
             }
         } catch (err) { console.error(err); }
         finally { setDeleteFacultyLoading(false); }
@@ -233,9 +231,7 @@ const AdminDashboard = () => {
             if (data.success) {
                 setStudents(prev => prev.filter(s => s._id !== deleteStudentTarget._id));
                 setDeleteStudentTarget(null);
-                // Also update stats since a student was removed
-                const statsRes = await axios.get(`${API_BASE}/stats`, config);
-                if (statsRes.data.success) setStats(statsRes.data.stats);
+                fetchData(true);
             }
         } catch (err) { console.error(err); }
         finally { setDeleteStudentLoading(false); }
@@ -251,9 +247,7 @@ const AdminDashboard = () => {
             if (data.success) {
                 setStudents(prev => prev.map(s => s._id === editStudentTarget._id ? { ...s, ...data.student } : s));
                 setEditStudentTarget(null);
-                // Update stats
-                const statsRes = await axios.get(`${API_BASE}/stats`, config);
-                if (statsRes.data.success) setStats(statsRes.data.stats);
+                fetchData(true);
             } else {
                 setEditStudentError(data.message);
             }
@@ -269,6 +263,7 @@ const AdminDashboard = () => {
             const { data } = await axios.post(`${API_BASE}/approve-internship`, { studentId, status }, config);
             if (data.success) {
                 setStudents(prev => prev.map(s => s._id === studentId ? { ...s, internshipStatus: status, pipeline: { ...s.pipeline, applicationStatus: status } } : s));
+                fetchData(true);
             }
         } catch (err) { console.error(err); }
     };
@@ -277,6 +272,7 @@ const AdminDashboard = () => {
         try {
             await axios.post(`${API_BASE}/verify-agreement`, { agreementId, status }, config);
             setAgreements(prev => prev.filter(a => a._id !== agreementId));
+            fetchData(true);
         } catch (err) { console.error(err); }
     };
 
@@ -290,6 +286,7 @@ const AdminDashboard = () => {
             if (data.success) {
                 setStudents(prev => prev.map(s => s._id === changeSupervisorTarget._id ? { ...s, supervisorId: faculty.find(f => f._id === changeSupervisorId) } : s));
                 setChangeSupervisorTarget(null);
+                fetchData(true);
             }
         } catch (err: any) {
             setChangeSupervisorError(err.response?.data?.message || 'Reassignment failed');
@@ -329,9 +326,7 @@ const AdminDashboard = () => {
             const { data } = await axios.delete(`${API_BASE}/companies/${id}`, config);
             if (data.success) {
                 setPartneredCompanies(prev => prev.filter((c: any) => c._id !== id));
-                // Update stats
-                const statsRes = await axios.get(`${API_BASE}/stats`, config);
-                if (statsRes.data.success) setStats(statsRes.data.stats);
+                fetchData(true);
             }
         } catch (err: any) {
             const status = err.response?.status;
@@ -339,6 +334,7 @@ const AdminDashboard = () => {
             if (status === 404 && message.includes('not found')) {
                 // Record is already gone — remove from UI and refresh
                 setPartneredCompanies(prev => prev.filter((c: any) => c._id !== id));
+                fetchData(true);
             } else if (message.includes('Representative')) {
                 // This is a company_admin supervisor — tell the user where to delete it
                 alert(message);
@@ -355,6 +351,7 @@ const AdminDashboard = () => {
             if (data.success) {
                 setReports(prev => prev.filter((r: any) => r._id !== reportId));
                 setSelectedReport(null);
+                fetchData(true);
             }
         } catch (err) { console.error(err); }
     };
@@ -391,6 +388,14 @@ const AdminDashboard = () => {
                         </h2>
                     </div>
                     <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => fetchData(true)}
+                            disabled={refreshing}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all disabled:opacity-50"
+                        >
+                            {refreshing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                            {refreshing ? 'Syncing...' : 'Refresh Data'}
+                        </button>
                         <div className="flex items-center gap-3 bg-blue-50 px-4 py-2 rounded-xl border border-blue-100">
                             <div className="text-right">
                                 <p className="text-xs font-black text-slate-900 leading-none">{user?.name}</p>
@@ -435,7 +440,7 @@ const AdminDashboard = () => {
                                     />
                                 )}
                                 {activeTab === 'reports' && <ReportsTab reports={reports} handleDeleteReport={handleDeleteReport} setSelectedReport={setSelectedReport} setEditReport={(r) => { setEditReport(r); setEditReportForm({ summary: r.summary, overallRating: r.overallRating, recommendation: r.recommendation, completionStatus: r.completionStatus, scores: r.scores || {} }); }} />}
-                                {activeTab === 'faculty' && isSuperAdmin && <FacultyTab faculty={faculty} companyAdmins={companyAdmins} setShowAddAdminModal={setShowAddAdminModal} setEditFaculty={setEditFaculty} setEditFacultyForm={setEditFacultyForm} setDeleteFaculty={setDeleteFaculty} handleResendInvitation={handleResendInvitation} />}
+                                {activeTab === 'faculty' && isSuperAdmin && <FacultyTab faculty={faculty} companyAdmins={companyAdmins} setShowAddAdminModal={setShowAddAdminModal} setEditFaculty={setEditFaculty} setEditFacultyForm={setEditFacultyForm} setDeleteFaculty={setDeleteFaculty} handleResendInvitation={handleResendInvitation} fetchData={fetchData} />}
                                 {activeTab === 'companies' && isSuperAdmin && <CompaniesTab companies={partneredCompanies} setShowAddCompanyModal={setShowAddCompanyModal} handleDeleteCompany={handleDeleteCompany} />}
                                 {activeTab === 'approvals' && isSuperAdmin && <ApprovalsTab students={students} handleViewApp={handleViewApp} viewAppLoading={viewAppLoading} handleApprove={handleApprove} />}
                                 {activeTab === 'agreements' && isSuperAdmin && <AgreementsTab agreements={agreements} handleVerifyAgreement={handleVerifyAgreement} />}

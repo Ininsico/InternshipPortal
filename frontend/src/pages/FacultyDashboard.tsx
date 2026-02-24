@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import {
     LayoutDashboard, Users, FileText, ClipboardList,
-    LogOut, Plus, Loader2, Star, BookOpen, Award, CheckCircle2, Pencil, Building2, X
+    LogOut, Plus, Loader2, Star, BookOpen, Award, CheckCircle2, Pencil, Building2, X, RefreshCw
 } from 'lucide-react';
 
 import API from '../config/api';
@@ -57,26 +57,30 @@ const FacultyDashboard = () => {
     const [companyLoading, setCompanyLoading] = useState(false);
     const [companyError, setCompanyError] = useState('');
 
+    const [refreshing, setRefreshing] = useState(false);
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
+    const fetchAll = async (silent = false) => {
+        if (!silent) setLoading(true);
+        else setRefreshing(true);
+        try {
+            const [stuRes, subRes, repRes] = await Promise.all([
+                axios.get(`${API_BASE}/students`, config),
+                axios.get(`${API_BASE}/submissions`, config),
+                axios.get(`${API_BASE}/reports`, config),
+            ]);
+            if (stuRes.data.success) setStudents(stuRes.data.students);
+            if (subRes.data.success) setSubmissions(subRes.data.submissions);
+            if (repRes.data.success) setReports(repRes.data.reports);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchAll = async () => {
-            setLoading(true);
-            try {
-                const [stuRes, subRes, repRes] = await Promise.all([
-                    axios.get(`${API_BASE}/students`, config),
-                    axios.get(`${API_BASE}/submissions`, config),
-                    axios.get(`${API_BASE}/reports`, config),
-                ]);
-                if (stuRes.data.success) setStudents(stuRes.data.students);
-                if (subRes.data.success) setSubmissions(subRes.data.submissions);
-                if (repRes.data.success) setReports(repRes.data.reports);
-            } catch (e) {
-                console.error(e);
-            } finally {
-                setLoading(false);
-            }
-        };
         if (token) fetchAll();
     }, [token]);
 
@@ -93,6 +97,7 @@ const FacultyDashboard = () => {
             if (data.success) {
                 setSubmissions(prev => prev.map(s => s._id === gradeTarget._id ? data.submission : s));
                 setGradeTarget(null);
+                fetchAll(true);
             }
         } catch (err: any) {
             setGradeError(err?.response?.data?.message || 'Failed to grade.');
@@ -119,6 +124,7 @@ const FacultyDashboard = () => {
                 });
                 setShowReportModal(false);
                 setReportTarget(null);
+                fetchAll(true);
             }
         } catch (err: any) {
             setReportError(err?.response?.data?.message || 'Failed to save report.');
@@ -136,6 +142,7 @@ const FacultyDashboard = () => {
             if (data.success) {
                 setShowAddCompanyModal(false);
                 setNewCompany({ name: '', email: '', website: '', phone: '', address: '' });
+                fetchAll(true);
             }
         } catch (err: any) {
             setCompanyError(err?.response?.data?.message || 'Failed to add company.');
@@ -226,14 +233,24 @@ const FacultyDashboard = () => {
                                     {activeTab === 'reports' && 'Internship Reports'}
                                 </h1>
                             </div>
-                            {activeTab === 'overview' && (
+                            <div className="flex items-center gap-4">
                                 <button
-                                    onClick={() => setShowAddCompanyModal(true)}
-                                    className="h-12 px-6 rounded-2xl bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-xl shadow-teal-100 flex items-center gap-2"
+                                    onClick={() => fetchAll(true)}
+                                    disabled={refreshing}
+                                    className="h-10 px-4 rounded-xl border border-slate-200 bg-white text-slate-500 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2 disabled:opacity-50"
                                 >
-                                    <Building2 className="h-4 w-4" /> Add Partner
+                                    {refreshing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                                    {refreshing ? 'Syncing...' : 'Sync Data'}
                                 </button>
-                            )}
+                                {activeTab === 'overview' && (
+                                    <button
+                                        onClick={() => setShowAddCompanyModal(true)}
+                                        className="h-12 px-6 rounded-2xl bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-xl shadow-teal-100 flex items-center gap-2"
+                                    >
+                                        <Building2 className="h-4 w-4" /> Add Partner
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {activeTab === 'overview' && (
