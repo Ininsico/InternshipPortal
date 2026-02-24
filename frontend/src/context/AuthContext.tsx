@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import axios from 'axios';
 import API from '../config/api';
 
@@ -21,6 +21,7 @@ interface AuthContextType {
     loading: boolean;
     login: (token: string, user: User) => void;
     logout: () => void;
+    refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -29,6 +30,7 @@ const AuthContext = createContext<AuthContextType>({
     loading: true,
     login: () => { },
     logout: () => { },
+    refreshUser: async () => { },
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -37,12 +39,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
     const [loading, setLoading] = useState(true);
+    const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const clearAuth = useCallback(() => {
         localStorage.removeItem('token');
         setToken(null);
         setUser(null);
         axios.defaults.headers.common['Authorization'] = '';
+        if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+        }
     }, []);
 
     const logout = useCallback(async () => {
@@ -66,35 +73,71 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     }, []);
 
+    const fetchUser = useCallback(async (currentToken: string, isInitial = false) => {
+        try {
+            const { data } = await axios.get(`${API_BASE}/me`, {
+                headers: { Authorization: `Bearer ${currentToken}` },
+            });
+            if (data.success) {
+                setUser(data.user);
+                axios.defaults.headers.common['Authorization'] = `Bearer ${currentToken}`;
+            } else {
+                clearAuth();
+            }
+        } catch {
+            clearAuth();
+        } finally {
+            if (isInitial) setLoading(false);
+        }
+    }, [clearAuth]);
+
+    const refreshUser = useCallback(async () => {
+        const currentToken = localStorage.getItem('token');
+        if (currentToken) await fetchUser(currentToken);
+    }, [fetchUser]);
+
     useEffect(() => {
         if (!token) {
             setLoading(false);
             return;
         }
 
-        const fetchUser = async () => {
+        // Initial fetch
+        fetchUser(token, true);
+
+        // Poll every 10s if user is a student (to catch admin approval status changes immediately)
+        if (pollingRef.current) clearInterval(pollingRef.current);
+        pollingRef.current = setInterval(async () => {
+            const currentToken = localStorage.getItem('token');
+            if (!currentToken) return;
             try {
                 const { data } = await axios.get(`${API_BASE}/me`, {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: { Authorization: `Bearer ${currentToken}` },
                 });
-                if (data.success) {
-                    setUser(data.user);
-                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                } else {
-                    clearAuth();
+                if (data.success && data.user?.role === 'student') {
+                    setUser(prev => {
+                        // Only update if something changed to avoid unnecessary re-renders
+                        if (prev?.internshipStatus !== data.user.internshipStatus) {
+                            return data.user;
+                        }
+                        return prev;
+                    });
                 }
             } catch {
-                clearAuth();
-            } finally {
-                setLoading(false);
+                // Silently ignore polling errors
+            }
+        }, 10000);
+
+        return () => {
+            if (pollingRef.current) {
+                clearInterval(pollingRef.current);
+                pollingRef.current = null;
             }
         };
-
-        fetchUser();
-    }, [token, clearAuth]);
+    }, [token, fetchUser]);
 
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+        <AuthContext.Provider value={{ user, token, loading, login, logout, refreshUser }}>
             {children}
         </AuthContext.Provider>
     );

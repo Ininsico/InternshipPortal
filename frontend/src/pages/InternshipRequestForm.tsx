@@ -12,7 +12,12 @@ import {
     AlertCircle,
     Loader2,
     LogOut,
-    Edit3
+    Edit3,
+    Paperclip,
+    FilePlus,
+    X as XIcon,
+    FileText,
+    Image as ImageIcon
 } from 'lucide-react';
 
 import API from '../config/api';
@@ -29,6 +34,7 @@ const InternshipRequestForm = () => {
     const [application, setApplication] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
 
+    const [files, setFiles] = useState<File[]>([]);
     const [formData, setFormData] = useState({
         companyName: '',
         position: '',
@@ -71,12 +77,22 @@ const InternshipRequestForm = () => {
                 navigate('/dashboard');
                 return;
             }
-
             await fetchApplication();
         };
 
         init();
-    }, [user, navigate, fetchApplication]);
+    }, [user?.internshipStatus, navigate, fetchApplication]);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const newFiles = Array.from(e.target.files);
+            setFiles(prev => [...prev, ...newFiles]);
+        }
+    };
+
+    const removeFile = (index: number) => {
+        setFiles(prev => prev.filter((_, i) => i !== index));
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -85,14 +101,28 @@ const InternshipRequestForm = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const { data } = await axios.post(`${API_BASE}/apply`, formData, {
-                headers: { Authorization: `Bearer ${token}` }
+            const data = new FormData();
+            data.append('companyName', formData.companyName);
+            data.append('position', formData.position);
+            data.append('internshipType', formData.internshipType);
+            data.append('duration', formData.duration);
+            data.append('description', formData.description);
+
+            files.forEach(file => {
+                data.append('files', file);
             });
 
-            if (data.success) {
+            const res = await axios.post(`${API_BASE}/apply`, data, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            if (res.data.success) {
                 await fetchApplication();
                 setIsEditing(false);
-                window.location.reload();
+                setFiles([]);
             }
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to submit request');
@@ -161,8 +191,18 @@ const InternshipRequestForm = () => {
                                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Position</p>
                                         <p className="text-sm font-bold text-slate-900">{application?.position || 'N/A'}</p>
                                     </div>
+                                </div>
+
+                                <div className="mt-8 pt-6 border-t border-slate-200">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Internship Description</p>
+                                    <p className="text-sm font-medium text-slate-600 leading-relaxed italic">
+                                        {application?.description || 'No description provided.'}
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-8 mt-4">
                                     <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Type</p>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Work Arrangement</p>
                                         <p className="text-sm font-bold text-slate-900">{application?.internshipType || 'N/A'}</p>
                                     </div>
                                     <div>
@@ -170,6 +210,25 @@ const InternshipRequestForm = () => {
                                         <p className="text-sm font-bold text-slate-900">{application?.duration || 'N/A'}</p>
                                     </div>
                                 </div>
+
+                                {application?.documents && application.documents.length > 0 && (
+                                    <div className="mt-8 pt-6 border-t border-slate-200">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Submitted Attachments</p>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            {application.documents.map((doc: any, i: number) => (
+                                                <a key={i} href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 hover:border-blue-200 transition-all group">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center group-hover:bg-blue-50 transition-all">
+                                                            <Paperclip className="w-4 h-4 text-slate-400 group-hover:text-blue-500" />
+                                                        </div>
+                                                        <p className="text-[10px] font-bold text-slate-600 truncate max-w-[180px]">{doc.name}</p>
+                                                    </div>
+                                                    <span className="text-[8px] font-black uppercase tracking-widest text-blue-500">View →</span>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {application?.feedback && (
                                     <div className="mt-8 pt-6 border-t border-slate-200">
@@ -319,14 +378,54 @@ const InternshipRequestForm = () => {
                             </div>
 
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Brief Overview</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Internship Description</label>
                                 <textarea
+                                    required
                                     rows={4}
-                                    placeholder="Briefly describe your responsibilities..."
+                                    placeholder="Briefly describe your responsibilities and the work your will be doing..."
                                     className="w-full p-6 bg-slate-50 border-none rounded-3xl focus:ring-2 focus:ring-blue-500/10 focus:bg-white text-sm font-bold text-slate-900 transition-all placeholder:text-slate-300 resize-none"
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 />
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Attachments (Offer Letter / Pictures)</label>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <label className="relative flex flex-col items-center justify-center h-40 border-2 border-dashed border-slate-200 rounded-3xl hover:border-blue-400 hover:bg-blue-50/50 transition-all cursor-pointer group">
+                                        <input type="file" multiple onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform mb-3">
+                                            <FilePlus className="w-6 h-6 text-blue-500" />
+                                        </div>
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Click to upload files</p>
+                                    </label>
+
+                                    <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                                        {files.map((file, i) => (
+                                            <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shrink-0 shadow-sm">
+                                                        {file.type.startsWith('image/') ? <ImageIcon className="w-4 h-4 text-blue-500" /> : <FileText className="w-4 h-4 text-slate-400" />}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-[10px] font-bold text-slate-700 truncate leading-none mb-1">{file.name}</p>
+                                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">{(file.size / 1024).toFixed(0)} KB</p>
+                                                    </div>
+                                                </div>
+                                                <button type="button" onClick={() => removeFile(i)} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
+                                                    <XIcon className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        {files.length === 0 && (
+                                            <div className="h-full flex flex-col items-center justify-center border border-slate-50 rounded-3xl bg-slate-50/30 p-8">
+                                                <Paperclip className="w-6 h-6 text-slate-200 mb-2" />
+                                                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">No files attached</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

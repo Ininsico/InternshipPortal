@@ -32,6 +32,17 @@ const createApplication = async (req, res) => {
     try {
         const { companyName, position, description, internshipType, duration } = req.body;
 
+        // Process uploaded files if any
+        let documents = [];
+        if (req.files && req.files.length > 0) {
+            documents = req.files.map(file => ({
+                name: file.originalname,
+                url: `${req.protocol}://${req.get('host')}/uploads/submissions/${file.filename}`,
+                type: file.mimetype,
+                uploadedAt: new Date()
+            }));
+        }
+
         // Check if application already exists for this student
         const existingApp = await Application.findOne({ studentId: req.user.id });
 
@@ -49,6 +60,10 @@ const createApplication = async (req, res) => {
             existingApp.internshipType = internshipType;
             existingApp.duration = duration;
             existingApp.description = description;
+            // Merge or replace documents
+            if (documents.length > 0) {
+                existingApp.documents = documents;
+            }
             existingApp.status = 'pending'; // Reset to pending after correction
             await existingApp.save();
 
@@ -62,7 +77,8 @@ const createApplication = async (req, res) => {
             position,
             internshipType,
             duration,
-            description
+            description,
+            documents
         });
 
         // Update student's internship status
@@ -72,6 +88,7 @@ const createApplication = async (req, res) => {
 
         res.status(201).json({ success: true, message: 'Internship request submitted successfully', application });
     } catch (err) {
+        console.error('Error in createApplication:', err);
         res.status(500).json({ success: false, message: err.message });
     }
 };

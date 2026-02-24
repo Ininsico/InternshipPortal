@@ -90,7 +90,7 @@ router.get('/applications', getStudentApplications);
  *       201:
  *         description: Success
  */
-router.post('/apply', createApplication);
+router.post('/apply', upload.array('files'), createApplication);
 
 /**
  * @openapi

@@ -462,28 +462,65 @@ const AdminDashboardModals = (props: ModalsProps) => {
                                 <button onClick={() => props.setViewApp(null)} className="h-10 w-10 flex items-center justify-center rounded-full bg-white text-slate-400 shadow-sm hover:text-slate-900 transition-all"><X className="h-5 w-5" /></button>
                             </div>
                             <div className="p-10 space-y-10 max-h-[70vh] overflow-y-auto italic">
-                                <div className="grid grid-cols-2 gap-10">
+                                <div className="grid grid-cols-3 gap-8">
                                     <div>
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Position Title</p>
-                                        <p className="text-sm font-bold text-slate-900">{props.viewApp.position}</p>
+                                        <p className="text-sm font-bold text-slate-900">{props.viewApp.position || 'N/A'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Employment Type</p>
-                                        <p className="text-sm font-bold text-slate-900 capitalize">{props.viewApp.internshipType}</p>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Work Arrangement</p>
+                                        <p className="text-sm font-bold text-slate-900 capitalize">{props.viewApp.internshipType || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Duration</p>
+                                        <p className="text-sm font-bold text-slate-900">{props.viewApp.duration || 'N/A'}</p>
                                     </div>
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Professional Summary</p>
-                                    <p className="text-sm font-bold text-slate-600 leading-relaxed border-l-4 border-blue-50 pl-6 py-2">{props.viewApp.summary}</p>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Internship Description</p>
+                                    <p className="text-sm font-bold text-slate-600 leading-relaxed border-l-4 border-blue-100 pl-6 py-2">{props.viewApp.description || 'No description provided.'}</p>
                                 </div>
                                 <div className="grid grid-cols-2 gap-10 pt-10 border-t border-slate-50">
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Company Domain</p>
-                                        <p className="text-sm font-bold text-slate-900">{props.viewApp.companyDomain || 'N/A'}</p>
+                                    <div className="col-span-2">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Supporting Attachments</p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {props.viewApp.documents && props.viewApp.documents.length > 0 ? (
+                                                props.viewApp.documents.map((doc: any, i: number) => (
+                                                    <a
+                                                        key={i}
+                                                        href={doc.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-all group"
+                                                    >
+                                                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                                            <Paperclip className="w-5 h-5" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-[10px] font-black text-slate-900 truncate uppercase tracking-widest leading-none mb-1">{doc.name || 'Attachment'}</p>
+                                                            <p className="text-[8px] font-bold text-blue-500 uppercase tracking-widest leading-none">View Document →</p>
+                                                        </div>
+                                                    </a>
+                                                ))
+                                            ) : (
+                                                <div className="col-span-2 py-8 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200 flex flex-col items-center justify-center">
+                                                    <Paperclip className="w-8 h-8 text-slate-200 mb-2" />
+                                                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">No attachments provided</p>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Submission Record</p>
-                                        <p className="text-sm font-bold text-slate-900">{new Date(props.viewApp.createdAt).toLocaleDateString()}</p>
+                                    <div className="col-span-2 pt-6 border-t border-slate-50">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Submission Record</p>
+                                                <p className="text-sm font-bold text-slate-900">{new Date(props.viewApp.createdAt).toLocaleDateString()}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Verification Status</p>
+                                                <p className="text-sm font-black text-blue-600 uppercase tracking-widest">{props.viewApp.status}</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
