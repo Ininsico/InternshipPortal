@@ -1,35 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const { protect, requireRole } = require('../middleware/auth.middleware');
-const {
-    createAdmin,
-    getAllAdmins,
-    getAllStudents,
-    assignStudentToSupervisor,
-    getDashboardStats,
-    approveInternship,
-    getPendingAgreements,
-    verifyAgreement,
-    getVerifiedStudents,
-    assignInternship,
-    deleteAdmin,
-    deleteStudent,
-    updateAdmin,
-    changeSupervisor,
-    getPartneredCompanies,
-    getCompanyAdmins,
-    createCompany,
-    deleteCompany,
-    updateStudentInternship,
-    getStudentPlacementContext,
-    resendAdminInvitation
-} = require('../controllers/admin.controller');
+const AdminController = require('../controllers/admin.controller');
 
 router.use(protect);
 
-router.post('/resend-invitation/:adminId', requireRole('super_admin'), resendAdminInvitation);
-router.put('/students/:studentId/internship', requireRole('super_admin'), updateStudentInternship);
-router.get('/students/:studentId/placement-context', requireRole('super_admin'), getStudentPlacementContext);
+router.post('/resend-invitation/:adminId', requireRole('super_admin'), AdminController.resendAdminInvitation);
+router.put('/students/:studentId/internship', requireRole('super_admin'), AdminController.updateStudentInternship);
+router.get('/students/:studentId/placement-context', requireRole('super_admin'), AdminController.getStudentPlacementContext);
 
 /**
  * @openapi
@@ -43,7 +21,7 @@ router.get('/students/:studentId/placement-context', requireRole('super_admin'),
  *       200:
  *         description: Successfully retrieved stats
  */
-router.get('/stats', requireRole('admin', 'super_admin'), getDashboardStats);
+router.get('/stats', requireRole('admin', 'super_admin'), AdminController.getDashboardStats);
 
 /**
  * @openapi
@@ -57,7 +35,7 @@ router.get('/stats', requireRole('admin', 'super_admin'), getDashboardStats);
  *       200:
  *         description: List of students
  */
-router.get('/students', requireRole('admin', 'super_admin'), getAllStudents);
+router.get('/students', requireRole('admin', 'super_admin'), AdminController.getAllStudents);
 
 /**
  * @openapi
@@ -108,7 +86,7 @@ router.get('/application/:studentId', requireRole('super_admin'), async (req, re
  *       201:
  *         description: Admin created
  */
-router.post('/create-admin', requireRole('super_admin'), createAdmin);
+router.post('/create-admin', requireRole('super_admin'), AdminController.createAdmin);
 
 /**
  * @openapi
@@ -120,8 +98,8 @@ router.post('/create-admin', requireRole('super_admin'), createAdmin);
  *       200:
  *         description: Success
  */
-router.get('/faculty', requireRole('super_admin'), getAllAdmins);
-router.get('/company-admins', requireRole('super_admin'), getCompanyAdmins);
+router.get('/faculty', requireRole('super_admin'), AdminController.getAllAdmins);
+router.get('/company-admins', requireRole('super_admin'), AdminController.getCompanyAdmins);
 
 /**
  * @openapi
@@ -134,7 +112,7 @@ router.get('/company-admins', requireRole('super_admin'), getCompanyAdmins);
  *         name: adminId
  *         required: true
  */
-router.put('/faculty/:adminId', requireRole('super_admin'), updateAdmin);
+router.put('/faculty/:adminId', requireRole('super_admin'), AdminController.updateAdmin);
 
 /**
  * @openapi
@@ -147,7 +125,7 @@ router.put('/faculty/:adminId', requireRole('super_admin'), updateAdmin);
  *         name: adminId
  *         required: true
  */
-router.delete('/faculty/:adminId', requireRole('super_admin'), deleteAdmin);
+router.delete('/faculty/:adminId', requireRole('super_admin'), AdminController.deleteAdmin);
 
 /**
  * @openapi
@@ -160,7 +138,7 @@ router.delete('/faculty/:adminId', requireRole('super_admin'), deleteAdmin);
  *         name: studentId
  *         required: true
  */
-router.delete('/students/:studentId', requireRole('super_admin'), deleteStudent);
+router.delete('/students/:studentId', requireRole('super_admin'), AdminController.deleteStudent);
 
 /**
  * @openapi
@@ -178,7 +156,7 @@ router.delete('/students/:studentId', requireRole('super_admin'), deleteStudent)
  *               studentId: { type: string }
  *               supervisorId: { type: string }
  */
-router.post('/assign-student', requireRole('super_admin'), assignStudentToSupervisor);
+router.post('/assign-student', requireRole('super_admin'), AdminController.assignStudentToSupervisor);
 
 /**
  * @openapi
@@ -187,7 +165,7 @@ router.post('/assign-student', requireRole('super_admin'), assignStudentToSuperv
  *     summary: Change faculty supervisor for a student
  *     tags: [Admin]
  */
-router.post('/change-supervisor', requireRole('super_admin'), changeSupervisor);
+router.post('/change-supervisor', requireRole('super_admin'), AdminController.changeSupervisor);
 
 /**
  * @openapi
@@ -196,7 +174,7 @@ router.post('/change-supervisor', requireRole('super_admin'), changeSupervisor);
  *     summary: Step 2 - Approve/Reject internship application
  *     tags: [Admin]
  */
-router.post('/approve-internship', requireRole('super_admin'), approveInternship);
+router.post('/approve-internship', requireRole('super_admin'), AdminController.approveInternship);
 
 /**
  * @openapi
@@ -205,7 +183,7 @@ router.post('/approve-internship', requireRole('super_admin'), approveInternship
  *     summary: Step 4 - Get all pending agreements
  *     tags: [Admin]
  */
-router.get('/agreements', requireRole('super_admin'), getPendingAgreements);
+router.get('/agreements', requireRole('super_admin'), AdminController.getPendingAgreements);
 
 /**
  * @openapi
@@ -214,7 +192,7 @@ router.get('/agreements', requireRole('super_admin'), getPendingAgreements);
  *     summary: Step 5 - Verify student agreement
  *     tags: [Admin]
  */
-router.post('/verify-agreement', requireRole('super_admin'), verifyAgreement);
+router.post('/verify-agreement', requireRole('super_admin'), AdminController.verifyAgreement);
 
 /**
  * @openapi
@@ -223,7 +201,7 @@ router.post('/verify-agreement', requireRole('super_admin'), verifyAgreement);
  *     summary: Get students whose agreements are verified
  *     tags: [Admin]
  */
-router.get('/verified-students', requireRole('super_admin'), getVerifiedStudents);
+router.get('/verified-students', requireRole('super_admin'), AdminController.getVerifiedStudents);
 
 /**
  * @openapi
@@ -232,9 +210,9 @@ router.get('/verified-students', requireRole('super_admin'), getVerifiedStudents
  *     summary: Get list of partnered companies
  *     tags: [Admin]
  */
-router.get('/partnered-companies', requireRole('super_admin'), getPartneredCompanies);
-router.post('/companies', requireRole('admin', 'super_admin'), createCompany);
-router.delete('/companies/:companyId', requireRole('super_admin'), deleteCompany);
+router.get('/partnered-companies', requireRole('super_admin'), AdminController.getPartneredCompanies);
+router.post('/companies', requireRole('admin', 'super_admin'), AdminController.createCompany);
+router.delete('/companies/:companyId', requireRole('super_admin'), AdminController.deleteCompany);
 
 /**
  * @openapi
@@ -243,7 +221,7 @@ router.delete('/companies/:companyId', requireRole('super_admin'), deleteCompany
  *     summary: Step 6 - Finalize internship assignment
  *     tags: [Admin]
  */
-router.post('/assign-internship', requireRole('super_admin'), assignInternship);
+router.post('/assign-internship', requireRole('super_admin'), AdminController.assignInternship);
 
 /**
  * @openapi

@@ -797,6 +797,7 @@ module.exports = {
     createCompany,
     deleteCompany,
     updateStudentInternship,
-    getStudentPlacementContext
+    getStudentPlacementContext,
+    resendAdminInvitation
 };
 
