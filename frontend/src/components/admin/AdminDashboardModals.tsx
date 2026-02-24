@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Trash2, Building2, Sparkles, StickyNote, ChevronDown } from 'lucide-react';
+import { X, Trash2, Building2, Sparkles, StickyNote, ChevronDown, Paperclip } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
@@ -340,9 +340,9 @@ const AdminDashboardModals = (props: ModalsProps) => {
             {/* ── Create Admin / Company Staff ── */}
             <AnimatePresence>
                 {props.showAddAdminModal && (
-                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => props.setShowAddAdminModal(false)}>
-                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl" onClick={e => e.stopPropagation()}>
-                            <div className="flex items-center justify-between mb-8">
+                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={() => props.setShowAddAdminModal(false)}>
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl bg-white p-6 md:p-8 shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                            <div className="flex items-center justify-between mb-6 md:mb-8">
                                 <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest italic">Create Access</h3>
                                 <button onClick={() => props.setShowAddAdminModal(false)} className="h-8 w-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-900 transition-all"><X className="h-4 w-4" /></button>
                             </div>
@@ -389,9 +389,9 @@ const AdminDashboardModals = (props: ModalsProps) => {
             {/* ── Edit Faculty ── */}
             <AnimatePresence>
                 {props.editFaculty && (
-                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => props.setEditFaculty(null)}>
-                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl" onClick={e => e.stopPropagation()}>
-                            <div className="flex items-center justify-between mb-8">
+                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={() => props.setEditFaculty(null)}>
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl bg-white p-6 md:p-8 shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                            <div className="flex items-center justify-between mb-6 md:mb-8">
                                 <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest italic">Edit Manager</h3>
                                 <button onClick={() => props.setEditFaculty(null)} className="h-8 w-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-900 transition-all"><X className="h-4 w-4" /></button>
                             </div>
@@ -411,8 +411,8 @@ const AdminDashboardModals = (props: ModalsProps) => {
             {/* ── Delete Faculty ── */}
             <AnimatePresence>
                 {props.deleteFaculty && (
-                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => props.setDeleteFaculty(null)}>
-                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl bg-white p-10 shadow-2xl text-center" onClick={e => e.stopPropagation()}>
+                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={() => props.setDeleteFaculty(null)}>
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl bg-white p-6 md:p-10 shadow-2xl text-center max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                             <div className="h-20 w-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6"><Trash2 className="h-10 w-10" /></div>
                             <h3 className="text-xl font-black text-slate-900 mb-2 italic tracking-tight">Terminate Access?</h3>
                             <p className="text-sm font-bold text-slate-400 mb-8 leading-relaxed italic">Are you sure you want to remove <span className="text-slate-900 font-black">"{props.deleteFaculty.name}"</span>? This action will immediately revoke all system credentials.</p>
@@ -430,8 +430,8 @@ const AdminDashboardModals = (props: ModalsProps) => {
             {/* ── Delete Student ── */}
             <AnimatePresence>
                 {props.deleteStudent && (
-                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => props.setDeleteStudent(null)}>
-                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl bg-white p-10 shadow-2xl text-center" onClick={e => e.stopPropagation()}>
+                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={() => props.setDeleteStudent(null)}>
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl bg-white p-6 md:p-10 shadow-2xl text-center max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                             <div className="h-20 w-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6"><Trash2 className="h-10 w-10" /></div>
                             <h3 className="text-xl font-black text-slate-900 mb-2 italic tracking-tight uppercase">System Wipeout?</h3>
                             <p className="text-sm font-bold text-slate-400 mb-8 leading-relaxed italic">
@@ -452,17 +452,17 @@ const AdminDashboardModals = (props: ModalsProps) => {
             {/* ── View Application ── */}
             <AnimatePresence>
                 {props.viewApp && (
-                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => props.setViewApp(null)}>
-                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-2xl rounded-3xl bg-white shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-                            <div className="border-b border-slate-50 px-10 py-8 flex items-center justify-between bg-slate-50/50">
+                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={() => props.setViewApp(null)}>
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-2xl rounded-3xl bg-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                            <div className="border-b border-slate-50 px-6 md:px-10 py-6 md:py-8 flex items-center justify-between bg-slate-50/50 shrink-0">
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600 mb-1 italic">Internship Application Dossier</p>
                                     <h3 className="text-2xl font-black text-slate-900 italic tracking-tight">{props.viewApp.companyName}</h3>
                                 </div>
                                 <button onClick={() => props.setViewApp(null)} className="h-10 w-10 flex items-center justify-center rounded-full bg-white text-slate-400 shadow-sm hover:text-slate-900 transition-all"><X className="h-5 w-5" /></button>
                             </div>
-                            <div className="p-10 space-y-10 max-h-[70vh] overflow-y-auto italic">
-                                <div className="grid grid-cols-3 gap-8">
+                            <div className="p-6 md:p-10 space-y-8 md:space-y-10 overflow-y-auto italic">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-8">
                                     <div>
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Position Title</p>
                                         <p className="text-sm font-bold text-slate-900">{props.viewApp.position || 'N/A'}</p>
@@ -532,8 +532,8 @@ const AdminDashboardModals = (props: ModalsProps) => {
             {/* ── Change Supervisor ── */}
             <AnimatePresence>
                 {props.changeSupervisorTarget && (
-                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => props.setChangeSupervisorTarget(null)}>
-                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={() => props.setChangeSupervisorTarget(null)}>
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl bg-white p-6 md:p-8 shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                             <div className="flex items-center justify-between mb-8">
                                 <div>
                                     <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest italic leading-none">Modify Supervisor</h3>

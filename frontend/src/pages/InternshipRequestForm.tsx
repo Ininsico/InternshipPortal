@@ -150,10 +150,10 @@ const InternshipRequestForm = () => {
         const isRejected = user?.internshipStatus === 'rejected';
 
         return (
-            <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-6">
+            <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-4 md:p-6">
                 <div className="max-w-2xl w-full">
                     <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-blue-500/5 border border-slate-100 overflow-hidden">
-                        <div className="p-12">
+                        <div className="p-6 md:p-12">
                             <div className="flex flex-col items-center text-center mb-10">
                                 <div className={`w-24 h-24 rounded-[2rem] flex items-center justify-center mb-6 ${isRejected ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
                                     }`}>
@@ -267,12 +267,12 @@ const InternshipRequestForm = () => {
 
     return (
         <div className="min-h-screen bg-[#f8fafc] flex flex-col">
-            <header className="h-20 bg-white/80 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between px-10 sticky top-0 z-20">
-                <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                        <Building2 className="w-6 h-6 text-white" />
+            <header className="h-16 md:h-20 bg-white/80 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between px-5 md:px-10 sticky top-0 z-20">
+                <div className="flex items-center gap-3 md:gap-4">
+                    <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                        <Building2 className="w-5 h-5 md:w-6 md:h-6 text-white" />
                     </div>
-                    <span className="text-xl font-black text-slate-900 tracking-tight uppercase italic">CU Portal</span>
+                    <span className="text-lg md:text-xl font-black text-slate-900 tracking-tight uppercase italic">CU Portal</span>
                 </div>
                 <button
                     onClick={() => logout()}
@@ -283,14 +283,14 @@ const InternshipRequestForm = () => {
                 </button>
             </header>
 
-            <main className="flex-1 flex items-center justify-center p-8">
+            <main className="flex-1 flex items-start md:items-center justify-center p-4 md:p-8 py-8">
                 <div className="max-w-3xl w-full">
-                    <div className="mb-12">
+                    <div className="mb-8 md:mb-12">
                         <div className="flex items-center gap-2 mb-4">
                             <span className="h-[2px] w-8 bg-blue-600" />
                             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-600">Verification Process</span>
                         </div>
-                        <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tight mb-4 leading-none">
+                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 uppercase tracking-tight mb-4 leading-none">
                             Internship <br /> <span className="text-blue-600">Approval Request</span>
                         </h1>
                         <p className="text-slate-500 font-medium max-w-lg leading-relaxed">
@@ -300,12 +300,12 @@ const InternshipRequestForm = () => {
                         </p>
                     </div>
 
-                    <div className="mb-10 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                    <div className="mb-8 md:mb-10 bg-white p-4 md:p-6 rounded-3xl border border-slate-100 shadow-sm">
                         <StatusTracker currentStatus={user?.internshipStatus || 'none'} />
                     </div>
 
-                    <form onSubmit={handleSubmit} className="bg-white rounded-[2.5rem] shadow-2xl shadow-blue-500/5 border border-slate-100 overflow-hidden">
-                        <div className="p-12 space-y-8">
+                    <form onSubmit={handleSubmit} className="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-2xl shadow-blue-500/5 border border-slate-100 overflow-hidden">
+                        <div className="p-6 md:p-12 space-y-8">
                             {error && (
                                 <div className="bg-red-50 border border-red-100 text-red-600 px-6 py-4 rounded-2xl flex items-center gap-4 animate-shake">
                                     <AlertCircle className="w-5 h-5 shrink-0" />
@@ -429,7 +429,7 @@ const InternshipRequestForm = () => {
                             </div>
                         </div>
 
-                        <div className="bg-slate-50 p-10 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-8">
+                        <div className="bg-slate-50 p-6 md:p-10 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-6 md:gap-8">
                             <div className="flex items-start gap-4 max-w-sm">
                                 <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center shrink-0 mt-1">
                                     <CheckCircle2 className="w-3 h-3 text-blue-600" />

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-import { Loader2, X, RefreshCw } from 'lucide-react';
+import { Loader2, X, RefreshCw, Menu } from 'lucide-react';
 
 import AdminSidebar from '../components/admin/AdminSidebar';
 import OverviewTab from '../components/admin/OverviewTab';
@@ -27,6 +27,7 @@ const AdminDashboard = () => {
     const { user, token, logout } = useAuth();
     const [activeTab, setActiveTab] = useState<AdminTab>('overview');
     const [loading, setLoading] = useState(true);
+    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const [stats, setStats] = useState({
         totalStudents: 0,
         activeApplications: 0,
@@ -377,27 +378,55 @@ const AdminDashboard = () => {
 
     return (
         <div className="flex h-screen bg-blue-50/40 overflow-hidden">
-            <AdminSidebar activeTab={activeTab} setActiveTab={(tab) => setActiveTab(tab as AdminTab)} isSuperAdmin={isSuperAdmin} user={user} logout={logout} />
+            {/* Mobile sidebar overlay */}
+            <AnimatePresence>
+                {mobileSidebarOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm lg:hidden"
+                        onClick={() => setMobileSidebarOpen(false)}
+                    />
+                )}
+            </AnimatePresence>
 
-            <main className="flex-1 overflow-y-auto">
-                <header className="sticky top-0 z-30 flex h-14 items-center justify-between bg-white/90 px-8 backdrop-blur-xl border-b border-blue-50 shadow-sm">
+            {/* Sidebar — hidden on mobile unless toggled */}
+            <div className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:relative lg:translate-x-0 ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <AdminSidebar
+                    activeTab={activeTab}
+                    setActiveTab={(tab) => { setActiveTab(tab as AdminTab); setMobileSidebarOpen(false); }}
+                    isSuperAdmin={isSuperAdmin}
+                    user={user}
+                    logout={logout}
+                />
+            </div>
+
+            <main className="flex-1 overflow-y-auto min-w-0">
+                <header className="sticky top-0 z-30 flex h-14 items-center justify-between bg-white/90 px-4 md:px-8 backdrop-blur-xl border-b border-blue-50 shadow-sm">
                     <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setMobileSidebarOpen(true)}
+                            className="lg:hidden h-8 w-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all"
+                        >
+                            <Menu className="h-4 w-4" />
+                        </button>
                         <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-                        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400">
+                        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400 hidden sm:block">
                             Admin / {activeTab}
                         </h2>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 md:gap-3">
                         <button
                             onClick={() => fetchData(true)}
                             disabled={refreshing}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all disabled:opacity-50"
+                            className="flex items-center gap-2 px-2 md:px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all disabled:opacity-50"
                         >
                             {refreshing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                            {refreshing ? 'Syncing...' : 'Refresh Data'}
+                            <span className="hidden sm:inline">{refreshing ? 'Syncing...' : 'Refresh'}</span>
                         </button>
-                        <div className="flex items-center gap-3 bg-blue-50 px-4 py-2 rounded-xl border border-blue-100">
-                            <div className="text-right">
+                        <div className="flex items-center gap-2 md:gap-3 bg-blue-50 px-2 md:px-4 py-2 rounded-xl border border-blue-100">
+                            <div className="text-right hidden sm:block">
                                 <p className="text-xs font-black text-slate-900 leading-none">{user?.name}</p>
                                 <p className="text-[8px] font-black uppercase tracking-widest text-blue-500 mt-1">{user?.role?.replace('_', ' ')}</p>
                             </div>
@@ -408,7 +437,7 @@ const AdminDashboard = () => {
                     </div>
                 </header>
 
-                <div className="p-8 pb-20">
+                <div className="p-4 md:p-8 pb-20">
                     <AnimatePresence mode="wait">
                         {loading ? (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-[60vh] items-center justify-center">

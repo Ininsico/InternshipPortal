@@ -24,19 +24,19 @@ const StudentsTab = ({
 }: StudentsTabProps) => {
     return (
         <div className="space-y-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase italic">Student Records</h3>
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mt-1">Single source of truth for internship pipeline</p>
                 </div>
-                <div className="flex gap-4">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 rounded-xl border border-amber-100">
+                <div className="flex flex-wrap gap-2 md:gap-4">
+                    <div className="flex items-center gap-2 px-3 md:px-4 py-2 bg-amber-50 rounded-xl border border-amber-100">
                         <div className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-600">Pending Apps: {students.filter(s => s.pipeline?.applicationStatus === 'pending').length}</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-600">Pending: {students.filter(s => s.pipeline?.applicationStatus === 'pending').length}</span>
                     </div>
-                    <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-xl border border-blue-100">
+                    <div className="flex items-center gap-2 px-3 md:px-4 py-2 bg-blue-50 rounded-xl border border-blue-100">
                         <div className="h-2 w-2 rounded-full bg-blue-400 animate-pulse" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Pending Contracts: {students.filter(s => s.pipeline?.agreementStatus === 'pending').length}</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Contracts: {students.filter(s => s.pipeline?.agreementStatus === 'pending').length}</span>
                     </div>
                 </div>
             </div>

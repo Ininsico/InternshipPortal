@@ -24,23 +24,23 @@ const FacultyTab = ({
 }: FacultyTabProps) => {
     return (
         <div className="space-y-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase italic">User Management</h3>
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mt-1">Manage system administrators and staff</p>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 md:gap-4">
                     <button
                         onClick={() => fetchData(true)}
-                        className="flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 hover:text-slate-900 transition-all"
+                        className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 md:px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 hover:text-slate-900 transition-all"
                     >
                         <RefreshCw className="h-3 w-3" /> Refresh
                     </button>
                     <button
                         onClick={() => setShowAddAdminModal(true)}
-                        className="flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-4 text-xs font-black uppercase tracking-widest text-white hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95"
+                        className="flex items-center gap-2 rounded-2xl bg-slate-900 px-4 md:px-6 py-3 md:py-4 text-xs font-black uppercase tracking-widest text-white hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95"
                     >
-                        <UserPlus className="h-4 w-4" /> Add Administrator
+                        <UserPlus className="h-4 w-4" /> <span className="hidden sm:inline">Add Administrator</span><span className="sm:hidden">Add</span>
                     </button>
                 </div>
             </div>

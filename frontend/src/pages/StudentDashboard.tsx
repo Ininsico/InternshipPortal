@@ -295,22 +295,23 @@ const StudentDashboard = () => {
 
     return (
         <div className="flex min-h-screen bg-slate-50/50">
-            <aside className="fixed left-0 top-0 z-40 h-screen w-20 flex-col border-r border-slate-100 bg-white md:w-72 shadow-sm">
-                <div className="flex h-24 items-center px-8">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 shadow-xl shadow-blue-500/20">
-                        <GraduationCap className="h-6 w-6 text-white" />
+            <aside className="fixed left-0 top-0 z-40 h-screen w-14 sm:w-20 flex-col border-r border-slate-100 bg-white md:w-72 shadow-sm flex">
+                <div className="flex h-16 md:h-24 items-center justify-center md:justify-start px-3 md:px-8">
+                    <div className="flex h-9 w-9 md:h-12 md:w-12 items-center justify-center rounded-2xl bg-blue-600 shadow-xl shadow-blue-500/20 shrink-0">
+                        <GraduationCap className="h-5 w-5 md:h-6 md:w-6 text-white" />
                     </div>
                     <div className="ml-4 hidden md:block">
                         <span className="text-sm font-black tracking-tight text-slate-900 uppercase italic">CU Portal</span>
                         <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Student Access</p>
                     </div>
                 </div>
-                <nav className="flex-1 space-y-1 px-4">
+                <nav className="flex-1 space-y-1 px-2 md:px-4">
                     {menuItems.map((item) => (
                         <button
                             key={item.key}
                             onClick={() => setActiveTab(item.key as any)}
-                            className={`flex w-full items-center rounded-[1.25rem] px-5 py-4 transition-all duration-300 ${activeTab === item.key
+                            title={item.label}
+                            className={`flex w-full items-center justify-center md:justify-start rounded-[1.25rem] px-2 md:px-5 py-3 md:py-4 transition-all duration-300 ${activeTab === item.key
                                 ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/20'
                                 : 'text-slate-400 hover:bg-slate-50 hover:text-slate-900'
                                 }`}
@@ -320,27 +321,27 @@ const StudentDashboard = () => {
                         </button>
                     ))}
                 </nav>
-                <div className="p-4">
-                    <button onClick={logout} className="flex w-full items-center rounded-[1.25rem] px-5 py-4 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all font-black text-[11px] uppercase tracking-[0.2em]">
+                <div className="p-2 md:p-4">
+                    <button onClick={logout} title="Logout" className="flex w-full items-center justify-center md:justify-start rounded-[1.25rem] px-2 md:px-5 py-3 md:py-4 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all font-black text-[11px] uppercase tracking-[0.2em]">
                         <LogOut className="h-5 w-5 shrink-0" />
                         <span className="ml-4 hidden md:block">Logout</span>
                     </button>
                 </div>
             </aside>
 
-            <main className="ml-20 flex-1 md:ml-72 transition-all">
-                <header className="sticky top-0 z-30 flex h-24 items-center justify-between border-b border-slate-100 bg-white/80 px-10 backdrop-blur-xl">
+            <main className="ml-14 sm:ml-20 flex-1 md:ml-72 transition-all min-w-0">
+                <header className="sticky top-0 z-30 flex h-16 md:h-24 items-center justify-between border-b border-slate-100 bg-white/80 px-4 md:px-10 backdrop-blur-xl">
                     <div className="flex items-center gap-4">
-                        <h2 className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-400">Portal / {activeTab}</h2>
+                        <h2 className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] text-slate-400 hidden sm:block">Portal / {activeTab}</h2>
                     </div>
-                    <div className="flex items-center gap-8">
-                        <div className="flex items-center gap-5 border-r border-slate-100 pr-8">
-                            <div className="text-right">
+                    <div className="flex items-center gap-3 md:gap-8">
+                        <div className="flex items-center gap-3 md:gap-5 md:border-r border-slate-100 md:pr-8">
+                            <div className="text-right hidden sm:block">
                                 <p className="text-sm font-black text-slate-900 leading-none capitalize">{user?.name}</p>
                                 <p className="mt-1.5 text-[10px] font-black uppercase tracking-widest text-blue-600">{profile?.rollNumber}</p>
                             </div>
                             <div className="relative group">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 text-xs font-black text-white shadow-xl shadow-slate-900/10 overflow-hidden ring-4 ring-white">
+                                <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-2xl bg-slate-900 text-xs font-black text-white shadow-xl shadow-slate-900/10 overflow-hidden ring-4 ring-white">
                                     {profile?.profilePicture ? (
                                         <img src={profile.profilePicture} alt="" className="w-full h-full object-cover" />
                                     ) : (
@@ -351,13 +352,13 @@ const StudentDashboard = () => {
                             </div>
                         </div>
                         <button className="text-slate-400 hover:text-slate-900 transition-colors relative">
-                            <Bell className="h-6 w-6" />
+                            <Bell className="h-5 w-5 md:h-6 md:w-6" />
                             <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full border-2 border-white" />
                         </button>
                     </div>
                 </header>
 
-                <div className="p-10 max-w-7xl mx-auto">
+                <div className="p-4 md:p-10 max-w-7xl mx-auto">
                     <AnimatePresence mode="wait">
                         {loading ? (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-[60vh] items-center justify-center">
@@ -366,22 +367,22 @@ const StudentDashboard = () => {
                         ) : (
                             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
                                 {activeTab === 'overview' && (
-                                    <div className="space-y-10">
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                    <div className="space-y-6 md:space-y-10">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-8">
                                             {[
                                                 { label: 'Internship Status', val: internshipStatus.replace('_', ' '), sub: 'Current Pipeline', color: 'blue' },
                                                 { label: 'Position Sourced', val: applications[0]?.position || 'Not Applied', sub: applications[0]?.companyName || 'N/A', color: 'slate' },
                                                 { label: 'Task Compliance', val: isAssigned ? `${submissions.length} / ${tasks.length}` : '—', sub: 'Submissions', color: 'indigo' }
                                             ].map((stat, i) => (
-                                                <div key={i} className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all group">
+                                                <div key={i} className="bg-white rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 p-5 md:p-8 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all group">
                                                     <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 group-hover:text-blue-600 transition-colors">{stat.label}</p>
-                                                    <p className="mt-4 text-2xl font-black tracking-tight text-slate-900 leading-none capitalize">{stat.val}</p>
+                                                    <p className="mt-3 md:mt-4 text-xl md:text-2xl font-black tracking-tight text-slate-900 leading-none capitalize">{stat.val}</p>
                                                     <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">{stat.sub}</p>
                                                 </div>
                                             ))}
                                         </div>
 
-                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-10">
                                             <div className="lg:col-span-2 space-y-6">
                                                 {renderStatusTracker()}
                                             </div>
@@ -426,8 +427,8 @@ const StudentDashboard = () => {
                                 )}
 
                                 {activeTab === 'applications' && (
-                                    <div className="rounded-[2.5rem] border border-slate-100 bg-white shadow-xl shadow-slate-200/50 overflow-hidden">
-                                        <div className="border-b border-slate-100 px-10 py-8 flex justify-between items-center bg-slate-50/50">
+                                    <div className="rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 bg-white shadow-xl shadow-slate-200/50 overflow-hidden">
+                                        <div className="border-b border-slate-100 px-5 md:px-10 py-5 md:py-8 flex flex-wrap justify-between items-center gap-4 bg-slate-50/50">
                                             <div>
                                                 <h3 className="text-sm font-black uppercase tracking-[0.25em] text-slate-900">Historical Records</h3>
                                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Found {applications.length} submitted requests</p>
@@ -435,7 +436,7 @@ const StudentDashboard = () => {
                                             <button
                                                 onClick={() => setShowApplyModal(true)}
                                                 disabled={!canApply}
-                                                className={`flex items-center gap-3 rounded-2xl px-8 h-14 text-[11px] font-black uppercase tracking-[0.2em] text-white transition-all shadow-2xl ${!canApply
+                                                className={`flex items-center gap-3 rounded-2xl px-5 md:px-8 h-12 md:h-14 text-[11px] font-black uppercase tracking-[0.2em] text-white transition-all shadow-2xl ${!canApply
                                                     ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
                                                     : 'bg-blue-600 shadow-blue-500/30 hover:bg-blue-700 active:scale-95'
                                                     }`}
@@ -444,37 +445,39 @@ const StudentDashboard = () => {
                                             </button>
                                         </div>
                                         {applications.length === 0 ? (
-                                            <div className="p-32 text-center text-[11px] font-black uppercase tracking-[0.3em] text-slate-300">Null records found</div>
+                                            <div className="p-16 md:p-32 text-center text-[11px] font-black uppercase tracking-[0.3em] text-slate-300">Null records found</div>
                                         ) : (
-                                            <table className="w-full text-left">
-                                                <thead>
-                                                    <tr className="border-b border-slate-100 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 bg-slate-50/20">
-                                                        <th className="px-10 py-6">Placement / Position</th>
-                                                        <th className="px-10 py-6">Approval Status</th>
-                                                        <th className="px-10 py-6">Log Date</th>
-                                                        <th className="px-10 py-6 text-right">Action</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-50">
-                                                    {applications.map((app: any) => (
-                                                        <tr key={app._id} className="hover:bg-slate-50 transition-colors group">
-                                                            <td className="px-10 py-8">
-                                                                <p className="text-sm font-black text-slate-900">{app.companyName}</p>
-                                                                <p className="text-[10px] font-bold text-slate-400 uppercase mt-1.5 tracking-widest">{app.position}</p>
-                                                            </td>
-                                                            <td className="px-10 py-8">
-                                                                <StatusPill status={app.status || 'pending'} />
-                                                            </td>
-                                                            <td className="px-10 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest">
-                                                                {app.appliedDate ? new Date(app.appliedDate).toLocaleDateString() : 'N/A'}
-                                                            </td>
-                                                            <td className="px-10 py-8 text-right">
-                                                                <button className="h-10 w-10 rounded-xl border border-slate-100 flex items-center justify-center text-slate-300 hover:text-blue-600 hover:border-blue-100 transition-all"><ArrowUpRight className="h-5 w-5" /></button>
-                                                            </td>
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-left min-w-[500px]">
+                                                    <thead>
+                                                        <tr className="border-b border-slate-100 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 bg-slate-50/20">
+                                                            <th className="px-5 md:px-10 py-4 md:py-6">Placement / Position</th>
+                                                            <th className="px-5 md:px-10 py-4 md:py-6">Status</th>
+                                                            <th className="px-5 md:px-10 py-4 md:py-6 hidden sm:table-cell">Date</th>
+                                                            <th className="px-5 md:px-10 py-4 md:py-6 text-right">Action</th>
                                                         </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-50">
+                                                        {applications.map((app: any) => (
+                                                            <tr key={app._id} className="hover:bg-slate-50 transition-colors group">
+                                                                <td className="px-5 md:px-10 py-5 md:py-8">
+                                                                    <p className="text-sm font-black text-slate-900">{app.companyName}</p>
+                                                                    <p className="text-[10px] font-bold text-slate-400 uppercase mt-1.5 tracking-widest">{app.position}</p>
+                                                                </td>
+                                                                <td className="px-5 md:px-10 py-5 md:py-8">
+                                                                    <StatusPill status={app.status || 'pending'} />
+                                                                </td>
+                                                                <td className="px-5 md:px-10 py-5 md:py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest hidden sm:table-cell">
+                                                                    {app.appliedDate ? new Date(app.appliedDate).toLocaleDateString() : 'N/A'}
+                                                                </td>
+                                                                <td className="px-5 md:px-10 py-5 md:py-8 text-right">
+                                                                    <button className="h-10 w-10 rounded-xl border border-slate-100 flex items-center justify-center text-slate-300 hover:text-blue-600 hover:border-blue-100 transition-all"><ArrowUpRight className="h-5 w-5" /></button>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         )}
                                     </div>
                                 )}
@@ -482,24 +485,24 @@ const StudentDashboard = () => {
                                 {activeTab === 'tasks' && isAssigned && (
                                     <div className="space-y-8">
                                         {/* Header */}
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex flex-wrap items-center justify-between gap-4">
                                             <div>
                                                 <h3 className="text-lg font-black uppercase tracking-tight text-slate-900">Work Console</h3>
                                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">
                                                     {tasks.filter((t: any) => submissions.find((s: any) => (s.task?._id || s.task) === t._id)).length}/{tasks.length} Tasks Submitted
                                                 </p>
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 border border-emerald-100 px-5 py-3">
+                                            <div className="flex items-center gap-2 md:gap-3">
+                                                <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 border border-emerald-100 px-3 md:px-5 py-2 md:py-3">
                                                     <CheckCheck className="h-4 w-4 text-emerald-500" />
                                                     <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">
-                                                        {submissions.length} Submitted
+                                                        {submissions.length} Done
                                                     </span>
                                                 </div>
-                                                <div className="flex items-center gap-2 rounded-2xl bg-amber-50 border border-amber-100 px-5 py-3">
+                                                <div className="flex items-center gap-2 rounded-2xl bg-amber-50 border border-amber-100 px-3 md:px-5 py-2 md:py-3">
                                                     <Clock className="h-4 w-4 text-amber-500" />
                                                     <span className="text-[10px] font-black uppercase tracking-widest text-amber-600">
-                                                        {tasks.length - submissions.length} Pending
+                                                        {tasks.length - submissions.length} Left
                                                     </span>
                                                 </div>
                                             </div>
@@ -776,9 +779,9 @@ const StudentDashboard = () => {
             </main>
 
             {showApplyModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-xl p-8">
-                    <motion.div initial={{ opacity: 0, scale: 0.9, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="w-full max-w-xl rounded-[3.5rem] border border-slate-100 bg-white p-14 shadow-[0_40px_100px_rgba(0,0,0,0.1)] relative">
-                        <button onClick={() => setShowApplyModal(false)} className="absolute top-12 right-12 text-slate-300 hover:text-slate-900 transition-all hover:rotate-90"><X className="h-8 w-8" /></button>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-xl p-4 md:p-8">
+                    <motion.div initial={{ opacity: 0, scale: 0.9, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="w-full max-w-xl rounded-[2.5rem] md:rounded-[3.5rem] border border-slate-100 bg-white p-8 md:p-14 shadow-[0_40px_100px_rgba(0,0,0,0.1)] relative max-h-[90vh] overflow-y-auto">
+                        <button onClick={() => setShowApplyModal(false)} className="absolute top-6 right-6 md:top-12 md:right-12 text-slate-300 hover:text-slate-900 transition-all hover:rotate-90"><X className="h-7 w-7 md:h-8 md:w-8" /></button>
                         <div className="mb-12">
                             <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight">Sync New Request</h2>
                             <p className="mt-3 text-xs font-black uppercase tracking-[0.3em] text-blue-600">Placement Authorization</p>
@@ -800,9 +803,9 @@ const StudentDashboard = () => {
             )}
 
             {submitTarget && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-xl p-8" onClick={() => setSubmitTarget(null)}>
-                    <motion.div initial={{ opacity: 0, scale: 0.9, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="w-full max-w-xl rounded-[3.5rem] border border-slate-100 bg-white p-14 shadow-[0_40px_100px_rgba(0,0,0,0.1)] relative" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => setSubmitTarget(null)} className="absolute top-12 right-12 text-slate-300 hover:text-slate-900 transition-all hover:rotate-90"><X className="h-8 w-8" /></button>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-xl p-4 md:p-8" onClick={() => setSubmitTarget(null)}>
+                    <motion.div initial={{ opacity: 0, scale: 0.9, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="w-full max-w-xl rounded-[2.5rem] md:rounded-[3.5rem] border border-slate-100 bg-white p-8 md:p-14 shadow-[0_40px_100px_rgba(0,0,0,0.1)] relative max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => setSubmitTarget(null)} className="absolute top-6 right-6 md:top-12 md:right-12 text-slate-300 hover:text-slate-900 transition-all hover:rotate-90"><X className="h-7 w-7 md:h-8 md:w-8" /></button>
                         <div className="mb-10">
                             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-3">{submitTarget.company}</p>
                             <h2 className="text-2xl font-black text-slate-900 tracking-tight">{submitTarget.title}</h2>
