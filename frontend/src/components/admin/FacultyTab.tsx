@@ -4,7 +4,7 @@ import axios from 'axios';
 import {
     UserPlus, Pencil, Trash2, Mail, ShieldCheck, RefreshCw,
     Search, ChevronLeft, ChevronRight, ArrowUpDown,
-    Briefcase, AlertCircle
+    Briefcase, AlertCircle, Users
 } from 'lucide-react';
 import API from '../../config/api';
 import StatusPill from '../StatusPill';
@@ -188,8 +188,7 @@ const FacultyTab = ({
                         {admins.map((admin: any) => (
                             <div
                                 key={admin._id}
-                                onClick={() => setViewAdminStudents(admin)}
-                                className="group relative rounded-[2.5rem] border border-slate-100 bg-white p-8 shadow-sm hover:border-blue-100 transition-all hover:shadow-2xl hover:shadow-blue-500/10 cursor-pointer overflow-hidden"
+                                className="group relative rounded-[2.5rem] border border-slate-100 bg-white p-8 shadow-sm hover:border-blue-100 transition-all hover:shadow-2xl hover:shadow-blue-500/10 overflow-hidden"
                             >
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-full -mr-16 -mt-16 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
 
@@ -200,10 +199,7 @@ const FacultyTab = ({
                                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
                                         {!admin.isActive && (
                                             <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleResendInvitation(admin._id);
-                                                }}
+                                                onClick={() => handleResendInvitation(admin._id)}
                                                 className="h-10 w-10 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-emerald-600 hover:border-emerald-100 transition-all shadow-sm active:scale-90"
                                                 title="Resend Invitation"
                                             >
@@ -211,8 +207,7 @@ const FacultyTab = ({
                                             </button>
                                         )}
                                         <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
+                                            onClick={() => {
                                                 setEditFaculty(admin);
                                                 setEditFacultyForm({ name: admin.name, email: admin.email });
                                             }}
@@ -222,10 +217,7 @@ const FacultyTab = ({
                                             <Pencil className="h-4 w-4" />
                                         </button>
                                         <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setDeleteFaculty(admin);
-                                            }}
+                                            onClick={() => setDeleteFaculty(admin)}
                                             className="h-10 w-10 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-red-600 hover:border-red-100 transition-all shadow-sm active:scale-90"
                                             title="Terminate Access"
                                         >
@@ -250,9 +242,15 @@ const FacultyTab = ({
                                             <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest leading-none">Designated Role</span>
                                             <StatusPill status={admin.role === 'company_admin' ? (admin.company || 'Enterprise Staff') : 'Faculty Supervisor'} />
                                         </div>
-                                        <div className="h-10 w-10 rounded-full border-2 border-slate-50 flex items-center justify-center text-[10px] font-black text-blue-500 group-hover:bg-blue-50 group-hover:border-blue-100 transition-all">
-                                            →
-                                        </div>
+                                        {/* Explicit button — replaces unreliable whole-card click */}
+                                        <button
+                                            onClick={() => setViewAdminStudents(admin)}
+                                            className="flex items-center gap-2 h-10 px-4 rounded-2xl bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all active:scale-90 shadow-sm"
+                                            title="View assigned students"
+                                        >
+                                            <Users className="h-3.5 w-3.5" />
+                                            <span>Students</span>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
