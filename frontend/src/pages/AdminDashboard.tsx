@@ -16,6 +16,7 @@ import StudentProfileModal from '../components/admin/StudentProfileModal';
 import ReportDetailsModal from '../components/admin/ReportDetailsModal';
 import EditReportModal from '../components/admin/EditReportModal';
 import AdminDashboardModals from '../components/admin/AdminDashboardModals';
+import PlacementSyncTab from '../components/admin/PlacementSyncTab';
 
 type AdminTab = 'overview' | 'students' | 'reports' | 'faculty' | 'companies' | 'approvals' | 'agreements' | 'settings';
 
@@ -59,6 +60,8 @@ const AdminDashboard = () => {
 
     const [deleteStudentTarget, setDeleteStudentTarget] = useState<any | null>(null);
     const [deleteStudentLoading, setDeleteStudentLoading] = useState(false);
+
+    const [syncingStudent, setSyncingStudent] = useState<any | null>(null);
 
 
 
@@ -426,7 +429,7 @@ const AdminDashboard = () => {
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-[60vh] items-center justify-center">
                                 <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
                             </motion.div>
-                        ) : (
+                        ) : !syncingStudent ? (
                             <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
                                 {activeTab === 'overview' && <OverviewTab stats={stats} recentActivity={recentActivity} />}
                                 {activeTab === 'students' && (
@@ -438,6 +441,7 @@ const AdminDashboard = () => {
                                         setChangeSupervisorId={setChangeSupervisorId}
                                         setDeleteStudentTarget={setDeleteStudentTarget}
                                         handleResendStudentEmail={handleResendStudentEmail}
+                                        onSyncPlacement={(stu) => setSyncingStudent(stu)}
                                     />
                                 )}
                                 {activeTab === 'reports' && <ReportsTab reports={reports} handleDeleteReport={handleDeleteReport} setSelectedReport={setSelectedReport} setEditReport={(r) => { setEditReport(r); setEditReportForm({ summary: r.summary, overallRating: r.overallRating, recommendation: r.recommendation, completionStatus: r.completionStatus, scores: r.scores || {} }); }} />}
@@ -454,6 +458,24 @@ const AdminDashboard = () => {
                                         </div>
                                     </div>
                                 )}
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="placement-sync"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                className="min-h-[60vh]"
+                            >
+                                <PlacementSyncTab
+                                    student={syncingStudent}
+                                    token={token}
+                                    onClose={() => setSyncingStudent(null)}
+                                    onSuccess={() => {
+                                        setSyncingStudent(null);
+                                        fetchData();
+                                    }}
+                                />
                             </motion.div>
                         )}
                     </AnimatePresence>

@@ -10,7 +10,7 @@ import InternshipRequestForm from './pages/InternshipRequestForm';
 import StudentAgreementPage from './pages/StudentAgreementPage';
 import ResetPassword from './pages/ResetPassword';
 import AdminOnboarding from './pages/AdminOnboarding';
-import PlacementSync from './pages/PlacementSync';
+
 
 const App = () => {
   return (
@@ -50,14 +50,7 @@ const App = () => {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/admin/placement-sync/:studentId"
-            element={
-              <ProtectedRoute allowedRoles={['super_admin']}>
-                <PlacementSync />
-              </ProtectedRoute>
-            }
-          />
+
           <Route
             path="/faculty-portal"
             element={
