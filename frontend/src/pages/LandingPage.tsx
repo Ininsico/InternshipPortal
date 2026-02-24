@@ -68,7 +68,7 @@ const LandingPage = () => {
             else if (user.role === 'company_admin') navigate('/company-portal', { replace: true });
             else if (user.role === 'admin') navigate('/faculty-portal', { replace: true });
             else if (user.role === 'super_admin') navigate('/admin', { replace: true });
-            else navigate('/', { replace: true }); 
+            else navigate('/', { replace: true });
         }
     }, [user, navigate]);
 
@@ -187,10 +187,7 @@ const LandingPage = () => {
     const isAdmin = mode === 'admin';
 
     return (
-        <div className="relative min-h-screen text-white selection:bg-blue-600 selection:text-white overflow-hidden">
-            <div className="fixed inset-0 -z-10 bg-black">
-                <img src="/landingpagebg.png" className="h-full w-full object-cover blur-[2px]" alt="Background" />
-            </div>
+        <div className="relative min-h-screen bg-[#FDFBF7] text-slate-900 selection:bg-blue-600 selection:text-white overflow-hidden">
 
             <header className="fixed top-0 left-0 right-0 z-50 px-12 py-10">
                 <nav className="mx-auto flex max-w-[1400px] items-center justify-between bg-transparent">
@@ -205,7 +202,7 @@ const LandingPage = () => {
                     <div className="hidden items-center gap-10 md:flex">
                         <button
                             onClick={() => switchMode(isAdmin ? 'student' : 'admin')}
-                            className="px-8 py-3.5 rounded-2xl bg-white text-blue-600 text-[11px] font-black uppercase tracking-[0.3em] transition-all hover:bg-slate-50 hover:shadow-[0_10px_30px_-5px_rgba(255,255,255,0.2)] active:scale-95"
+                            className="px-8 py-3.5 rounded-2xl bg-white text-blue-600 text-[11px] font-black uppercase tracking-[0.3em] transition-all hover:bg-slate-50 hover:shadow-[0_10px_30px_-5px_rgba(37,99,235,0.15)] active:scale-95"
                         >
                             {isAdmin ? 'Student Entry' : 'Faculty Access'}
                         </button>
@@ -214,8 +211,6 @@ const LandingPage = () => {
             </header>
 
             <main className="relative flex min-h-screen items-center justify-center px-6 pt-20">
-                <div className="absolute top-1/4 -left-20 -z-10 h-[600px] w-[600px] rounded-full bg-blue-600/[0.15] blur-[120px] animate-pulse" />
-                <div className="absolute bottom-1/4 -right-20 -z-10 h-[600px] w-[600px] rounded-full bg-indigo-600/[0.1] blur-[120px]" />
 
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
