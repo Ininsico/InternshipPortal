@@ -1,12 +1,19 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
+
+// In serverless environments like Vercel, we must write to /tmp
+const isVercel = process.env.VERCEL || process.env.NODE_ENV === 'production';
+const UPLOAD_BASE = isVercel ? os.tmpdir() : process.cwd();
 
 // Function to ensure directory exists
 const ensureDir = (dir) => {
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+    const fullPath = path.isAbsolute(dir) ? dir : path.join(UPLOAD_BASE, dir);
+    if (!fs.existsSync(fullPath)) {
+        fs.mkdirSync(fullPath, { recursive: true });
     }
+    return fullPath;
 };
 
 const storage = multer.diskStorage({
@@ -15,8 +22,12 @@ const storage = multer.diskStorage({
         if (file.fieldname === 'profilePicture') {
             dir = 'uploads/profile';
         }
-        ensureDir(dir);
-        cb(null, dir);
+        try {
+            const finalDir = ensureDir(dir);
+            cb(null, finalDir);
+        } catch (err) {
+            cb(err);
+        }
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -25,7 +36,6 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-    // Allow images, pdfs, and common document types
     const allowedTypes = /jpeg|jpg|png|pdf|doc|docx|zip/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);

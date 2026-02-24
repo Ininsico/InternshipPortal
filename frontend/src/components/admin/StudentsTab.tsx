@@ -1,4 +1,4 @@
-import { Briefcase, Trash2, Building2, User, Mail, ShieldCheck, FileText, Star, Phone } from 'lucide-react';
+import { Briefcase, Trash2, Building2, User, Mail, ShieldCheck, FileText, Star, Phone, Search } from 'lucide-react';
 import StatusPill from '../StatusPill';
 
 interface StudentsTabProps {
@@ -55,7 +55,7 @@ const StudentsTab = ({
                                         {stu.name[0]}
                                     </div>
                                     <div>
-                                        <h4 className="text-lg font-black text-slate-900 group-hover:text-blue-600 transition-colors cursor-pointer leading-tight mb-1" onClick={() => setSelectedStudent(stu)}>
+                                        <h4 className="text-lg font-black text-slate-900 leading-tight mb-1">
                                             {stu.name}
                                         </h4>
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{stu.rollNumber} · {stu.degree}</p>
@@ -69,43 +69,53 @@ const StudentsTab = ({
                                     </div>
                                 </div>
 
-                                {isSuperAdmin && (
-                                    <div className="flex gap-2">
-                                        {!stu.isEmailVerified && (
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setSelectedStudent(stu)}
+                                        className="h-10 px-4 flex items-center gap-2 rounded-xl bg-blue-600 text-white hover:bg-black transition-all shadow-lg shadow-blue-200"
+                                        title="View Full Profile"
+                                    >
+                                        <Search className="h-4 w-4" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Details</span>
+                                    </button>
+                                    {!stu.isEmailVerified && isSuperAdmin && (
+                                        <button
+                                            onClick={() => handleResendStudentEmail(stu.email)}
+                                            className="h-10 w-10 flex items-center justify-center rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white transition-all shadow-sm"
+                                            title="Resend Verification Email"
+                                        >
+                                            <Mail className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                    {isSuperAdmin && (
+                                        <>
                                             <button
-                                                onClick={() => handleResendStudentEmail(stu.email)}
-                                                className="h-10 w-10 flex items-center justify-center rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white transition-all shadow-sm"
-                                                title="Resend Verification Email"
+                                                onClick={() => onSyncPlacement(stu)}
+                                                className="h-10 w-10 flex items-center justify-center rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                                                title="Edit Records"
                                             >
-                                                <Mail className="h-4 w-4" />
+                                                <FileText className="h-4 w-4" />
                                             </button>
-                                        )}
-                                        <button
-                                            onClick={() => onSyncPlacement(stu)}
-                                            className="h-10 w-10 flex items-center justify-center rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-sm"
-                                            title="Edit Records"
-                                        >
-                                            <FileText className="h-4 w-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                setChangeSupervisorTarget(stu);
-                                                setChangeSupervisorId(stu.supervisorId?._id || '');
-                                            }}
-                                            className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all shadow-sm"
-                                            title="Manage Supervisor"
-                                        >
-                                            <Briefcase className="h-4 w-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => setDeleteStudentTarget(stu)}
-                                            className="h-10 w-10 flex items-center justify-center rounded-xl bg-red-50 text-red-400 hover:bg-red-600 hover:text-white transition-all shadow-sm"
-                                            title="Delete Student"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                )}
+                                            <button
+                                                onClick={() => {
+                                                    setChangeSupervisorTarget(stu);
+                                                    setChangeSupervisorId(stu.supervisorId?._id || '');
+                                                }}
+                                                className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all shadow-sm"
+                                                title="Manage Supervisor"
+                                            >
+                                                <Briefcase className="h-4 w-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => setDeleteStudentTarget(stu)}
+                                                className="h-10 w-10 flex items-center justify-center rounded-xl bg-red-50 text-red-400 hover:bg-red-600 hover:text-white transition-all shadow-sm"
+                                                title="Delete Student"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
