@@ -31,12 +31,22 @@ app.use(express.urlencoded({ extended: true }));
 
 const path = require('path');
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+// Force Download Route
 app.get('/uploads/submissions/:file', (req, res) => {
-    const filePath = path.join(process.cwd(), 'uploads', 'submissions', req.params.file);
-    if (fs.existsSync(filePath)) return res.sendFile(filePath);
-    if (process.env.VERCEL) {
-        const tmpPath = path.join(os.tmpdir(), 'uploads', 'submissions', req.params.file);
-        if (fs.existsSync(tmpPath)) return res.sendFile(tmpPath);
+    const fileName = req.params.file;
+    const localPath = path.join(process.cwd(), 'uploads', 'submissions', fileName);
+    const tmpPath = path.join(os.tmpdir(), 'uploads', 'submissions', fileName);
+
+    const targetPath = fs.existsSync(localPath) ? localPath : (fs.existsSync(tmpPath) ? tmpPath : null);
+
+    if (targetPath) {
+        // Force download with a clean headers
+        return res.download(targetPath, fileName, (err) => {
+            if (err && !res.headersSent) {
+                res.status(500).json({ success: false, message: "Error downloading file" });
+            }
+        });
     }
     res.status(404).json({ success: false, message: 'File not found' });
 });

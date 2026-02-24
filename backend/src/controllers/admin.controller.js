@@ -242,6 +242,88 @@ const assignStudentToSupervisor = async (req, res) => {
     }
 };
 
+// GET /api/admin/dashboard-state — Consolidated state for Admin/SuperAdmin
+const getAdminDashboardState = async (req, res) => {
+    try {
+        const isSuper = req.user.role === 'super_admin';
+
+        // Basic Stats (Running in parallel)
+        const [totalStudents, completedPlacements, pendingAgreements, activeAppsCount] = await Promise.all([
+            Student.countDocuments({ degree: { $in: ALLOWED_DEGREES } }),
+            Student.countDocuments({ degree: { $in: ALLOWED_DEGREES }, internshipStatus: 'internship_assigned' }),
+            Student.countDocuments({ degree: { $in: ALLOWED_DEGREES }, internshipStatus: 'agreement_submitted' }),
+            Application.countDocuments({ status: 'pending' })
+        ]);
+
+        const stats = {
+            totalStudents: totalStudents || 0,
+            activeApplications: activeAppsCount,
+            completedPlacements: completedPlacements || 0,
+            pendingAgreements: pendingAgreements || 0
+        };
+
+        // Parallel fetch for Overview data
+        const [recentApps, recentAgreements, recentSubmissions] = await Promise.all([
+            Application.find().populate('studentId', 'name').sort({ createdAt: -1 }).limit(10).lean(),
+            Agreement.find().populate('studentId', 'name').sort({ createdAt: -1 }).limit(10).lean(),
+            Submission.find().populate('student', 'name').sort({ createdAt: -1 }).limit(10).lean()
+        ]);
+
+        const activities = [
+            ...recentApps.map(a => ({ message: `${a.studentId?.name || 'Student'} applied for ${a.position} at ${a.companyName}`, timestamp: a.createdAt, type: 'app' })),
+            ...recentAgreements.map(a => ({ message: `${a.studentId?.name || 'Student'} submitted agreement`, timestamp: a.createdAt, type: 'agreement' })),
+            ...recentSubmissions.map(s => ({ message: `${s.student?.name || 'Student'} logged new submission`, timestamp: s.createdAt, type: 'submission' }))
+        ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 10);
+
+        // For Super Admin, we pre-fetch the students list to make the FIRST tab switch instant
+        let students = [];
+        if (isSuper) {
+            // Re-using the logic from getAllStudents but optimized
+            const rawStudents = await Student.find({ degree: { $in: ALLOWED_DEGREES } })
+                .select('name rollNumber degree email internshipStatus assignedCompany assignedPosition supervisorId createdAt')
+                .populate('supervisorId', 'name email')
+                .sort({ createdAt: -1 })
+                .limit(100) // Initial chunk
+                .lean();
+
+            const studentIds = rawStudents.map(s => s._id);
+            const [apps, agrees, reps] = await Promise.all([
+                Application.find({ studentId: { $in: studentIds } }).sort({ createdAt: -1 }).lean(),
+                Agreement.find({ studentId: { $in: studentIds } }).sort({ createdAt: -1 }).lean(),
+                Report.find({ student: { $in: studentIds } }).sort({ createdAt: -1 }).lean()
+            ]);
+
+            const appMap = {}; apps.forEach(a => { if (!appMap[a.studentId]) appMap[a.studentId.toString()] = a; });
+            const agreeMap = {}; agrees.forEach(a => { if (!agreeMap[a.studentId]) agreeMap[a.studentId.toString()] = a; });
+            const reportMap = {}; reps.forEach(r => { if (!reportMap[r.student]) reportMap[r.student.toString()] = r; });
+
+            students = rawStudents.map(stu => ({
+                ...stu,
+                supervisorId: stu.supervisorId ? { _id: stu.supervisorId._id, name: stu.supervisorId.name, email: stu.supervisorId.email } : null,
+                pipeline: {
+                    hasApplication: !!appMap[stu._id.toString()],
+                    applicationStatus: appMap[stu._id.toString()]?.status || 'none',
+                    hasAgreement: !!agreeMap[stu._id.toString()],
+                    agreementStatus: agreeMap[stu._id.toString()]?.status || 'none',
+                    hasReport: !!reportMap[stu._id.toString()],
+                    reportStatus: reportMap[stu._id.toString()]?.completionStatus || 'none',
+                    reportRating: reportMap[stu._id.toString()]?.overallRating || null
+                }
+            }));
+        }
+
+        res.json({
+            success: true,
+            stats,
+            recentActivity: activities,
+            initialStudents: students
+        });
+    } catch (err) {
+        console.error('Admin Dashboard State Error:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 const getDashboardStats = async (req, res) => {
     try {
         const [totalStudents, completedPlacements, pendingAgreements] = await Promise.all([
@@ -840,6 +922,7 @@ module.exports = {
     getCompanyAdmins,
     getAllStudents,
     assignStudentToSupervisor,
+    getAdminDashboardState,
     getDashboardStats,
     approveInternship,
     getPendingAgreements,

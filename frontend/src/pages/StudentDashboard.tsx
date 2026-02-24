@@ -685,6 +685,7 @@ const StudentDashboard = () => {
                                                                                         <a
                                                                                             key={i}
                                                                                             href={`${API.BASE}${file.url}`}
+                                                                                            download={file.originalname}
                                                                                             target="_blank"
                                                                                             rel="noopener noreferrer"
                                                                                             className="inline-flex items-center gap-2 rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-[10px] font-black uppercase text-slate-600 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"

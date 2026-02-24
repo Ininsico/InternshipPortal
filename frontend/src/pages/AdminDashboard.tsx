@@ -102,21 +102,24 @@ const AdminDashboard = () => {
         try {
             switch (tab) {
                 case 'overview':
-                    const statsRes = await axios.get(`${API_BASE}/stats`, config);
-                    if (statsRes.data.success) {
-                        setStats(statsRes.data.stats);
-                        setRecentActivity(statsRes.data.recentActivity);
+                    const stateRes = await axios.get(`${API_BASE}/dashboard-state`, config);
+                    if (stateRes.data.success) {
+                        setStats(stateRes.data.stats);
+                        setRecentActivity(stateRes.data.recentActivity);
+                        // Pre-fill students if it's the first load and we are super admin
+                        if (stateRes.data.initialStudents && stateRes.data.initialStudents.length > 0) {
+                            setStudents(stateRes.data.initialStudents);
+                        }
                     }
                     break;
                 case 'students':
-                case 'approvals': // Both use students data mainly
-                    const [studentsRes, facultyRes] = await Promise.all([
-                        axios.get(`${API_BASE}/students`, config),
-                        user?.role === 'super_admin' ? axios.get(`${API_BASE}/faculty`, config) : Promise.resolve({ data: { success: true, admins: [] } })
-                    ]);
+                case 'approvals':
+                    const studentsRes = await axios.get(`${API_BASE}/students`, config);
                     if (studentsRes.data.success) setStudents(studentsRes.data.students);
-                    if (facultyRes.data.success) {
-                        setFaculty(facultyRes.data.admins);
+
+                    if (user?.role === 'super_admin') {
+                        const facultyRes = await axios.get(`${API_BASE}/faculty`, config);
+                        if (facultyRes.data.success) setFaculty(facultyRes.data.admins);
                     }
                     break;
                 case 'faculty':

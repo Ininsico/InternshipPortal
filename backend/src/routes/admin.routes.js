@@ -10,6 +10,7 @@ const Submission = require('../models/Submission.model');
 
 router.use(protect);
 
+router.get('/dashboard-state', requireRole('admin', 'super_admin'), AdminController.getAdminDashboardState);
 router.post('/resend-invitation/:adminId', requireRole('super_admin'), AdminController.resendAdminInvitation);
 router.put('/students/:studentId/internship', requireRole('super_admin'), AdminController.updateStudentInternship);
 router.get('/students/:studentId/placement-context', requireRole('super_admin'), AdminController.getStudentPlacementContext);
@@ -244,7 +245,8 @@ router.get('/reports', requireRole('super_admin'), async (req, res) => {
                 populate: { path: 'supervisorId', select: 'name email' }
             })
             .populate('createdBy', 'name email')
-            .sort({ updatedAt: -1 });
+            .sort({ updatedAt: -1 })
+            .lean();
         res.json({ success: true, reports });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -304,7 +306,8 @@ router.get('/submissions', requireRole('super_admin'), async (req, res) => {
         const submissions = await Submission.find()
             .populate('student', 'name rollNumber degree')
             .populate('task', 'title')
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
         res.json({ success: true, submissions });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
