@@ -18,10 +18,15 @@ connectDB();
 // Swagger Documentation Route
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// CORS Configuration - Accept from anywhere
+// CORS Configuration
 app.use(cors({
-    origin: '*',
+    origin: (origin, callback) => {
+        // Allow all origins for now as requesting, but in a way that supports credentials
+        callback(null, true);
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
