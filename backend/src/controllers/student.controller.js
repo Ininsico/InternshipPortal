@@ -331,7 +331,7 @@ const updateProfilePicture = async (req, res) => {
         const student = await Student.findById(req.user.id);
         if (!student) return res.status(404).json({ success: false, message: 'Student not found.' });
 
-        const url = `${req.protocol}://${req.get('host')}/uploads/profile/${req.file.filename}`;
+        const url = `/uploads/profile/${req.file.filename}`;
         student.profilePicture = url;
         await student.save();
 

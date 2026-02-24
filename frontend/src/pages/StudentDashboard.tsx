@@ -758,7 +758,7 @@ const StudentDashboard = () => {
                                         <div className="relative inline-block group">
                                             <div className="h-40 w-40 rounded-[3rem] bg-indigo-600 text-white text-5xl font-black shadow-[0_20px_50px_rgba(79,70,229,0.3)] overflow-hidden ring-[12px] ring-indigo-50 flex items-center justify-center relative translate-y-0 hover:-translate-y-2 transition-transform duration-500">
                                                 {profile?.profilePicture ? (
-                                                    <img src={profile.profilePicture} alt="" className="h-full w-full object-cover" />
+                                                    <img src={profile.profilePicture.startsWith('http') ? profile.profilePicture : `${API.BASE}${profile.profilePicture}`} alt="" className="h-full w-full object-cover" />
                                                 ) : (
                                                     profile?.name?.[0]
                                                 )}

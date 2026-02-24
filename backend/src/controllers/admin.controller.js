@@ -264,15 +264,15 @@ const getAdminDashboardState = async (req, res) => {
 
         // Parallel fetch for Overview data
         const [recentApps, recentAgreements, recentSubmissions] = await Promise.all([
-            Application.find().populate('studentId', 'name').sort({ createdAt: -1 }).limit(10).lean(),
-            Agreement.find().populate('studentId', 'name').sort({ createdAt: -1 }).limit(10).lean(),
-            Submission.find().populate('student', 'name').sort({ createdAt: -1 }).limit(10).lean()
+            Application.find().populate('studentId', 'name profilePicture').sort({ createdAt: -1 }).limit(10).lean(),
+            Agreement.find().populate('studentId', 'name profilePicture').sort({ createdAt: -1 }).limit(10).lean(),
+            Submission.find().populate('student', 'name profilePicture').sort({ createdAt: -1 }).limit(10).lean()
         ]);
 
         const activities = [
-            ...recentApps.map(a => ({ message: `${a.studentId?.name || 'Student'} applied for ${a.position} at ${a.companyName}`, timestamp: a.createdAt, type: 'app' })),
-            ...recentAgreements.map(a => ({ message: `${a.studentId?.name || 'Student'} submitted agreement`, timestamp: a.createdAt, type: 'agreement' })),
-            ...recentSubmissions.map(s => ({ message: `${s.student?.name || 'Student'} logged new submission`, timestamp: s.createdAt, type: 'submission' }))
+            ...recentApps.map(a => ({ message: `${a.studentId?.name || 'Student'} applied for ${a.position} at ${a.companyName}`, timestamp: a.createdAt, type: 'app', profilePicture: a.studentId?.profilePicture })),
+            ...recentAgreements.map(a => ({ message: `${a.studentId?.name || 'Student'} submitted agreement`, timestamp: a.createdAt, type: 'agreement', profilePicture: a.studentId?.profilePicture })),
+            ...recentSubmissions.map(s => ({ message: `${s.student?.name || 'Student'} logged new submission`, timestamp: s.createdAt, type: 'submission', profilePicture: s.student?.profilePicture }))
         ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 10);
 
         // For Super Admin, we pre-fetch the students list to make the FIRST tab switch instant
@@ -280,7 +280,7 @@ const getAdminDashboardState = async (req, res) => {
         if (isSuper) {
             // Re-using the logic from getAllStudents but optimized
             const rawStudents = await Student.find({ degree: { $in: ALLOWED_DEGREES } })
-                .select('name rollNumber degree email internshipStatus assignedCompany assignedPosition supervisorId createdAt')
+                .select('name rollNumber degree email internshipStatus assignedCompany assignedPosition supervisorId createdAt profilePicture')
                 .populate('supervisorId', 'name email')
                 .sort({ createdAt: -1 })
                 .limit(100) // Initial chunk

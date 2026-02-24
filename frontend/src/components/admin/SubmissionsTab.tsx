@@ -1,4 +1,5 @@
 import { Pencil } from 'lucide-react';
+import API from '../../config/api';
 
 interface SubmissionsTabProps {
     submissions: any[];
@@ -29,8 +30,19 @@ const SubmissionsTab = ({ submissions, setEditSubmission }: SubmissionsTabProps)
                         {submissions.map((sub) => (
                             <tr key={sub._id} className="hover:bg-slate-50/50 transition-colors group">
                                 <td className="px-10 py-6">
-                                    <p className="text-sm font-black text-slate-900 leading-tight">{sub.student?.name}</p>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">{sub.student?.rollNumber}</p>
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden border border-slate-100">
+                                            {sub.student?.profilePicture ? (
+                                                <img src={sub.student.profilePicture.startsWith('http') ? sub.student.profilePicture : `${API.BASE}${sub.student.profilePicture}`} alt="" className="h-full w-full object-cover" />
+                                            ) : (
+                                                <span className="text-xs font-black text-slate-400">{sub.student?.name?.[0]}</span>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black text-slate-900 leading-tight">{sub.student?.name}</p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">{sub.student?.rollNumber}</p>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td className="px-10 py-6 text-sm font-bold text-slate-600">
                                     {sub.task?.title}

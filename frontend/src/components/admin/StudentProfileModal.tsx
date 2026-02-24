@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Briefcase, FileText } from 'lucide-react';
 import StatusPill from '../StatusPill';
+import API from '../../config/api';
 
 interface StudentProfileModalProps {
     selectedStudent: any;
@@ -33,8 +34,12 @@ const StudentProfileModal = ({
                                 </button>
                             </div>
                             <div className="flex items-center gap-6">
-                                <div className="h-20 w-20 rounded-[2rem] bg-white text-blue-600 text-3xl font-black flex items-center justify-center shadow-xl">
-                                    {selectedStudent.name[0]}
+                                <div className="h-20 w-20 rounded-[2rem] bg-white text-blue-600 text-3xl font-black flex items-center justify-center shadow-xl overflow-hidden">
+                                    {selectedStudent.profilePicture ? (
+                                        <img src={selectedStudent.profilePicture.startsWith('http') ? selectedStudent.profilePicture : `${API.BASE}${selectedStudent.profilePicture}`} alt="" className="h-full w-full object-cover" />
+                                    ) : (
+                                        selectedStudent.name[0]
+                                    )}
                                 </div>
                                 <div>
                                     <h2 className="text-2xl font-black text-white leading-none">{selectedStudent.name}</h2>

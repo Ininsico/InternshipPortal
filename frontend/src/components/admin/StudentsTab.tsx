@@ -1,5 +1,6 @@
 import { Briefcase, Trash2, Building2, User, Mail, ShieldCheck, FileText, Star, Phone, Search } from 'lucide-react';
 import StatusPill from '../StatusPill';
+import API from '../../config/api';
 
 interface StudentsTabProps {
     students: any[];
@@ -51,8 +52,12 @@ const StudentsTab = ({
                             {/* Student Header */}
                             <div className="flex items-start justify-between mb-8">
                                 <div className="flex items-center gap-5">
-                                    <div className="h-16 w-16 rounded-3xl bg-slate-900 text-white flex items-center justify-center font-black text-xl shadow-xl shadow-slate-200 group-hover:bg-blue-600 group-hover:shadow-blue-200 transition-all duration-500">
-                                        {stu.name[0]}
+                                    <div className="h-16 w-16 rounded-3xl bg-slate-900 text-white flex items-center justify-center font-black text-xl shadow-xl shadow-slate-200 group-hover:bg-blue-600 group-hover:shadow-blue-200 transition-all duration-500 overflow-hidden">
+                                        {stu.profilePicture ? (
+                                            <img src={stu.profilePicture.startsWith('http') ? stu.profilePicture : `${API.BASE}${stu.profilePicture}`} alt="" className="h-full w-full object-cover" />
+                                        ) : (
+                                            stu.name[0]
+                                        )}
                                     </div>
                                     <div>
                                         <h4 className="text-lg font-black text-slate-900 leading-tight mb-1">

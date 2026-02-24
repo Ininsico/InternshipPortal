@@ -333,7 +333,13 @@ const FacultyDashboard = () => {
                                                         <tr key={s._id} className="hover:bg-slate-50 transition-colors">
                                                             <td className="px-8 py-4">
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className="h-9 w-9 rounded-xl bg-teal-50 flex items-center justify-center text-xs font-black text-teal-600">{s.name[0]}</div>
+                                                                    <div className="h-9 w-9 rounded-xl bg-teal-50 flex items-center justify-center text-xs font-black text-teal-600 overflow-hidden">
+                                                                        {s.profilePicture ? (
+                                                                            <img src={s.profilePicture.startsWith('http') ? s.profilePicture : `${API.BASE}${s.profilePicture}`} alt="" className="h-full w-full object-cover" />
+                                                                        ) : (
+                                                                            s.name[0]
+                                                                        )}
+                                                                    </div>
                                                                     <div>
                                                                         <p className="text-sm font-bold text-slate-900">{s.name}</p>
                                                                         <p className="text-[10px] font-bold text-slate-400 uppercase">{s.rollNumber}</p>
@@ -432,7 +438,13 @@ const FacultyDashboard = () => {
                                             <div className="flex items-start justify-between gap-4 mb-4">
                                                 <div>
                                                     <div className="flex items-center gap-3 mb-1">
-                                                        <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center text-sm font-black text-teal-600">{r.student?.name?.[0]}</div>
+                                                        <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center text-sm font-black text-teal-600 overflow-hidden">
+                                                            {r.student?.profilePicture ? (
+                                                                <img src={r.student.profilePicture.startsWith('http') ? r.student.profilePicture : `${API.BASE}${r.student.profilePicture}`} alt="" className="h-full w-full object-cover" />
+                                                            ) : (
+                                                                r.student?.name?.[0]
+                                                            )}
+                                                        </div>
                                                         <div>
                                                             <h4 className="text-base font-black text-slate-900">{r.student?.name}</h4>
                                                             <p className="text-[10px] font-bold text-slate-400 uppercase">{r.student?.rollNumber} · {r.student?.assignedCompany}</p>
