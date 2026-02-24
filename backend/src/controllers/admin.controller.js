@@ -129,31 +129,74 @@ const ALLOWED_DEGREES = ['BSE', 'BCS', 'BBA'];
 
 const getAllStudents = async (req, res) => {
     try {
-        const students = await Student.find({ degree: { $in: ALLOWED_DEGREES } })
-            .populate('supervisorId', 'name email')
-            .select('-passwordHash')
-            .lean();
-
-        const enhancedStudents = await Promise.all(students.map(async (stu) => {
-            const [application, agreement, report] = await Promise.all([
-                Application.findOne({ studentId: stu._id }).sort({ createdAt: -1 }),
-                Agreement.findOne({ studentId: stu._id }).sort({ createdAt: -1 }),
-                Report.findOne({ student: stu._id })
-            ]);
-
-            return {
-                ...stu,
-                isEmailVerified: stu.isEmailVerified, // Explicitly include
-                pipeline: {
-                    hasApplication: !!application,
-                    applicationStatus: application?.status || 'none',
-                    hasAgreement: !!agreement,
-                    agreementStatus: agreement?.status || 'none',
-                    hasReport: !!report,
-                    reportStatus: report?.completionStatus || 'none',
-                    reportRating: report?.overallRating || null
+        const students = await Student.aggregate([
+            { $match: { degree: { $in: ALLOWED_DEGREES } } },
+            {
+                $lookup: {
+                    from: 'admins',
+                    localField: 'supervisorId',
+                    foreignField: '_id',
+                    as: 'supervisor'
                 }
-            };
+            },
+            { $unwind: { path: '$supervisor', preserveNullAndEmptyArrays: true } },
+            {
+                $lookup: {
+                    from: 'applications',
+                    let: { studentId: '$_id' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$studentId', '$$studentId'] } } },
+                        { $sort: { createdAt: -1 } },
+                        { $limit: 1 }
+                    ],
+                    as: 'latestApp'
+                }
+            },
+            { $unwind: { path: '$latestApp', preserveNullAndEmptyArrays: true } },
+            {
+                $lookup: {
+                    from: 'agreements',
+                    let: { studentId: '$_id' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$studentId', '$$studentId'] } } },
+                        { $sort: { createdAt: -1 } },
+                        { $limit: 1 }
+                    ],
+                    as: 'latestAgreement'
+                }
+            },
+            { $unwind: { path: '$latestAgreement', preserveNullAndEmptyArrays: true } },
+            {
+                $lookup: {
+                    from: 'reports',
+                    localField: '_id',
+                    foreignField: 'student',
+                    as: 'report'
+                }
+            },
+            { $unwind: { path: '$report', preserveNullAndEmptyArrays: true } },
+            {
+                $project: {
+                    passwordHash: 0,
+                    'supervisor.passwordHash': 0,
+                    'supervisor.resetPasswordToken': 0,
+                    'supervisor.resetPasswordExpire': 0
+                }
+            }
+        ]);
+
+        const enhancedStudents = students.map(stu => ({
+            ...stu,
+            supervisorId: stu.supervisor ? { _id: stu.supervisor._id, name: stu.supervisor.name, email: stu.supervisor.email } : null,
+            pipeline: {
+                hasApplication: !!stu.latestApp,
+                applicationStatus: stu.latestApp?.status || 'none',
+                hasAgreement: !!stu.latestAgreement,
+                agreementStatus: stu.latestAgreement?.status || 'none',
+                hasReport: !!stu.report,
+                reportStatus: stu.report?.completionStatus || 'none',
+                reportRating: stu.report?.overallRating || null
+            }
         }));
 
         res.json({ success: true, students: enhancedStudents });
@@ -188,85 +231,47 @@ const assignStudentToSupervisor = async (req, res) => {
 
 const getDashboardStats = async (req, res) => {
     try {
-        const totalStudents = await Student.countDocuments({ degree: { $in: ALLOWED_DEGREES } });
-        const activeAggregation = await Application.aggregate([
-            { $match: { status: 'pending' } },
+        const statsAggregation = await Student.aggregate([
+            { $match: { degree: { $in: ALLOWED_DEGREES } } },
             {
-                $lookup: {
-                    from: 'students',
-                    localField: 'studentId',
-                    foreignField: '_id',
-                    as: 'student'
+                $facet: {
+                    totalStudents: [{ $count: 'count' }],
+                    completedPlacements: [
+                        { $match: { internshipStatus: 'internship_assigned' } },
+                        { $count: 'count' }
+                    ],
+                    pendingAgreements: [
+                        { $match: { internshipStatus: 'agreement_submitted' } },
+                        { $count: 'count' }
+                    ]
                 }
-            },
-            { $unwind: '$student' },
-            { $match: { 'student.degree': { $in: ALLOWED_DEGREES } } },
-            { $group: { _id: '$student.rollNumber' } },
-            { $count: 'count' }
+            }
         ]);
 
-        const assignedPlacementsCount = await Student.countDocuments({
-            degree: { $in: ALLOWED_DEGREES },
-            internshipStatus: 'internship_assigned'
-        });
+        const activeAppsCount = await Application.countDocuments({ status: 'pending' });
 
-        const activeCount = activeAggregation[0]?.count || 0;
+        const stats = {
+            totalStudents: statsAggregation[0]?.totalStudents[0]?.count || 0,
+            activeApplications: activeAppsCount,
+            completedPlacements: statsAggregation[0]?.completedPlacements[0]?.count || 0,
+            pendingAgreements: statsAggregation[0]?.pendingAgreements[0]?.count || 0
+        };
 
-        const pendingAgreementsCount = await Student.countDocuments({
-            internshipStatus: 'agreement_submitted',
-            degree: { $in: ALLOWED_DEGREES }
-        });
-
-        // Get unique recent activities from multiple sources for a "Live" feel
-        // We populate and filter by ALLOWED_DEGREES to stay consistent
-        const [recentAppsRaw, recentAgreementsRaw, recentSubmissionsRaw] = await Promise.all([
-            Application.find()
-                .populate({ path: 'studentId', select: 'name degree' })
-                .sort({ createdAt: -1 })
-                .limit(20)
-                .lean(),
-            Agreement.find()
-                .populate({ path: 'studentId', select: 'name degree' })
-                .sort({ createdAt: -1 })
-                .limit(20)
-                .lean(),
-            Submission.find()
-                .populate({ path: 'student', select: 'name degree' })
-                .sort({ createdAt: -1 })
-                .limit(20)
-                .lean()
+        const [recentApps, recentAgreements, recentSubmissions] = await Promise.all([
+            Application.find().populate('studentId', 'name').sort({ createdAt: -1 }).limit(5).lean(),
+            Agreement.find().populate('studentId', 'name').sort({ createdAt: -1 }).limit(5).lean(),
+            Submission.find().populate('student', 'name').sort({ createdAt: -1 }).limit(5).lean()
         ]);
-
-        const filteredApps = recentAppsRaw.filter(a => a.studentId && ALLOWED_DEGREES.includes(a.studentId.degree)).slice(0, 5);
-        const filteredAgreements = recentAgreementsRaw.filter(a => a.studentId && ALLOWED_DEGREES.includes(a.studentId.degree)).slice(0, 5);
-        const filteredSubmissions = recentSubmissionsRaw.filter(s => s.student && ALLOWED_DEGREES.includes(s.student.degree)).slice(0, 5);
 
         const activities = [
-            ...filteredApps.map(a => ({
-                message: `${a.studentId?.name || 'Student'} applied for ${a.position} at ${a.companyName}`,
-                timestamp: a.createdAt
-            })),
-            ...filteredAgreements.map(a => ({
-                message: `${a.studentId?.name || 'Student'} submitted placement agreement`,
-                timestamp: a.createdAt
-            })),
-            ...filteredSubmissions.map(s => ({
-                message: `${s.student?.name || 'Student'} logged new task submission`,
-                timestamp: s.createdAt
-            }))
+            ...recentApps.map(a => ({ message: `${a.studentId?.name || 'Student'} applied for ${a.position} at ${a.companyName}`, timestamp: a.createdAt })),
+            ...recentAgreements.map(a => ({ message: `${a.studentId?.name || 'Student'} submitted agreement`, timestamp: a.createdAt })),
+            ...recentSubmissions.map(s => ({ message: `${s.student?.name || 'Student'} logged new submission`, timestamp: s.createdAt }))
         ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5);
 
-        res.json({
-            success: true,
-            stats: {
-                totalStudents,
-                activeApplications: activeCount,
-                completedPlacements: assignedPlacementsCount,
-                pendingAgreements: pendingAgreementsCount
-            },
-            recentActivity: activities
-        });
+        res.json({ success: true, stats, recentActivity: activities });
     } catch (err) {
+        console.error('Error in getDashboardStats:', err);
         res.status(500).json({ success: false, message: err.message });
     }
 };
