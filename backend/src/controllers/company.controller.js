@@ -9,12 +9,24 @@ const getMyStudents = async (req, res) => {
         if (!companyName) {
             return res.status(400).json({ success: false, message: 'No company associated with this account.' });
         }
-        const students = await Student.find({
-            assignedCompany: { $regex: new RegExp(`^${companyName.trim()}$`, 'i') },
+        const cleanStr = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '').replace(/\s+/g, '');
+        const targetClean = cleanStr(companyName);
+
+        // Fetch all students who might belong to this company, then filter them in memory for higher accuracy
+        const potentialStudents = await Student.find({
             internshipStatus: 'internship_assigned'
         })
             .populate('supervisorId', 'name email')
             .select('-passwordHash');
+
+        const students = potentialStudents.filter(s => {
+            if (!s.assignedCompany) return false;
+            const stuClean = cleanStr(s.assignedCompany);
+
+            // Match if one contains the other (e.g. "Systems Ltd" and "Systems") 
+            // or if they match after normalization
+            return stuClean.includes(targetClean) || targetClean.includes(stuClean);
+        });
         res.json({ success: true, students });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });

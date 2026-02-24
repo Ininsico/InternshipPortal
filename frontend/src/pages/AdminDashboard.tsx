@@ -17,6 +17,7 @@ import ReportDetailsModal from '../components/admin/ReportDetailsModal';
 import EditReportModal from '../components/admin/EditReportModal';
 import AdminDashboardModals from '../components/admin/AdminDashboardModals';
 import PlacementSyncTab from '../components/admin/PlacementSyncTab';
+import AdminStudentsModal from '../components/admin/AdminStudentsModal';
 
 type AdminTab = 'overview' | 'students' | 'reports' | 'faculty' | 'companies' | 'approvals' | 'agreements' | 'settings';
 
@@ -62,6 +63,7 @@ const AdminDashboard = () => {
     const [deleteStudentLoading, setDeleteStudentLoading] = useState(false);
 
     const [syncingStudent, setSyncingStudent] = useState<any | null>(null);
+    const [viewAdminStudents, setViewAdminStudents] = useState<any | null>(null);
 
 
 
@@ -112,12 +114,14 @@ const AdminDashboard = () => {
                     break;
                 case 'faculty':
                     if (user?.role === 'super_admin') {
-                        const [fRes, cRes] = await Promise.all([
+                        const [fRes, cRes, sRes] = await Promise.all([
                             axios.get(`${API_BASE}/faculty`, config),
-                            axios.get(`${API_BASE}/company-admins`, config)
+                            axios.get(`${API_BASE}/company-admins`, config),
+                            axios.get(`${API_BASE}/students`, config)
                         ]);
                         if (fRes.data.success) setFaculty(fRes.data.admins);
                         if (cRes.data.success) setCompanyAdmins(cRes.data.admins);
+                        if (sRes.data.success) setStudents(sRes.data.students);
                     }
                     break;
                 case 'agreements':
@@ -449,7 +453,7 @@ const AdminDashboard = () => {
                                     />
                                 )}
                                 {activeTab === 'reports' && <ReportsTab reports={reports} handleDeleteReport={handleDeleteReport} setSelectedReport={setSelectedReport} setEditReport={(r) => { setEditReport(r); setEditReportForm({ summary: r.summary, overallRating: r.overallRating, recommendation: r.recommendation, completionStatus: r.completionStatus, scores: r.scores || {} }); }} />}
-                                {activeTab === 'faculty' && isSuperAdmin && <FacultyTab faculty={faculty} companyAdmins={companyAdmins} setShowAddAdminModal={setShowAddAdminModal} setEditFaculty={setEditFaculty} setEditFacultyForm={setEditFacultyForm} setDeleteFaculty={setDeleteFaculty} handleResendInvitation={handleResendInvitation} fetchData={fetchData} />}
+                                {activeTab === 'faculty' && isSuperAdmin && <FacultyTab faculty={faculty} companyAdmins={companyAdmins} setShowAddAdminModal={setShowAddAdminModal} setEditFaculty={setEditFaculty} setEditFacultyForm={setEditFacultyForm} setDeleteFaculty={setDeleteFaculty} handleResendInvitation={handleResendInvitation} fetchData={fetchData} setViewAdminStudents={setViewAdminStudents} />}
                                 {activeTab === 'companies' && isSuperAdmin && <CompaniesTab companies={partneredCompanies} setShowAddCompanyModal={setShowAddCompanyModal} handleDeleteCompany={handleDeleteCompany} />}
                                 {activeTab === 'approvals' && isSuperAdmin && <ApprovalsTab students={students} handleViewApp={handleViewApp} viewAppLoading={viewAppLoading} handleApprove={handleApprove} />}
                                 {activeTab === 'agreements' && isSuperAdmin && <AgreementsTab agreements={agreements} handleVerifyAgreement={handleVerifyAgreement} />}
@@ -502,6 +506,13 @@ const AdminDashboard = () => {
                 editReportLoading={editReportLoading}
                 editReportError={editReportError}
             />
+            <AdminStudentsModal
+                isOpen={!!viewAdminStudents}
+                onClose={() => setViewAdminStudents(null)}
+                admin={viewAdminStudents}
+                students={students}
+            />
+
             <AdminDashboardModals
                 {...{
                     showAddAdminModal, setShowAddAdminModal, newAdmin, setNewAdmin, partneredCompanies, handleCreateAdmin,
