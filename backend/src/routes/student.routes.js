@@ -12,6 +12,8 @@ const {
     getMySubmissions,
     getMyReport,
     updateProfilePicture,
+    submitWeeklyUpdate,
+    getMyWeeklyUpdates,
 } = require('../controllers/student.controller');
 const { protect, requireRole } = require('../middleware/auth.middleware');
 const { upload } = require('../config/cloudinary.config');
@@ -183,5 +185,9 @@ router.get('/submissions', getMySubmissions);
  *         description: Success
  */
 router.get('/report', getMyReport);
+
+// Weekly updates (freelancer interns only)
+router.post('/weekly-update', submitWeeklyUpdate);
+router.get('/weekly-updates', getMyWeeklyUpdates);
 
 module.exports = router;

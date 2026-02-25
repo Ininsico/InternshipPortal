@@ -134,8 +134,7 @@ const CompaniesTab = ({
         <div className="space-y-8">
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                    <h3 className="text-xl font-bold text-slate-900 tracking-tight">Partnered Companies</h3>
-                    <p className="text-xs font-medium text-slate-400 mt-1">Official industry partners for student placements</p>
+                    <h3 className="text-xl font-normal text-slate-900 tracking-tight">Partnered Companies</h3>
                 </div>
                 <button
                     onClick={() => setShowInlineAddCompany?.(!showInlineAddCompany)}
@@ -153,7 +152,6 @@ const CompaniesTab = ({
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">Register New Partner</h4>
-                            <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mt-1">Add a new industry partner company</p>
                         </div>
                         <button
                             onClick={() => setShowInlineAddCompany?.(false)}

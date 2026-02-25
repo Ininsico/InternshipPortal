@@ -152,4 +152,56 @@ router.delete('/reports/:reportId', async (req, res) => {
     }
 });
 
+// ─── Weekly Updates (for freelancer students) ─────────────────────────────────
+const WeeklyUpdate = require('../models/WeeklyUpdate.model');
+const Student = require('../models/Student.model');
+
+// GET /api/faculty/weekly-updates — get all weekly updates from my assigned freelance students
+router.get('/weekly-updates', async (req, res) => {
+    try {
+        // Get IDs of all freelance students assigned to this faculty member
+        const freelanceStudents = await Student.find({
+            supervisorId: req.admin._id,
+            internshipCategory: 'freelancer',
+            internshipStatus: 'internship_assigned',
+        }).select('_id name rollNumber').lean();
+
+        const studentIds = freelanceStudents.map(s => s._id);
+        if (!studentIds.length) return res.json({ success: true, updates: [] });
+
+        const updates = await WeeklyUpdate.find({ studentId: { $in: studentIds } })
+            .populate('studentId', 'name rollNumber degree')
+            .sort({ createdAt: -1 })
+            .lean();
+
+        res.json({ success: true, updates });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// PUT /api/faculty/weekly-updates/:updateId/review — leave remarks on a weekly update
+router.put('/weekly-updates/:updateId/review', async (req, res) => {
+    try {
+        const { remarks } = req.body;
+        if (!remarks) return res.status(400).json({ success: false, message: 'Remarks are required.' });
+
+        const update = await WeeklyUpdate.findByIdAndUpdate(
+            req.params.updateId,
+            {
+                facultyRemarks: remarks,
+                facultyReviewedAt: new Date(),
+                facultyReviewedBy: req.admin._id,
+                status: 'reviewed',
+            },
+            { new: true }
+        ).populate('studentId', 'name rollNumber');
+
+        if (!update) return res.status(404).json({ success: false, message: 'Weekly update not found.' });
+        res.json({ success: true, update });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 module.exports = router;

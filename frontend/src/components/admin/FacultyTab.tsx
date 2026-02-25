@@ -15,7 +15,6 @@ interface FacultyTabProps {
     setEditFacultyForm: (form: any) => void;
     setDeleteFaculty: (faculty: any) => void;
     handleResendInvitation: (adminId: string) => void;
-    setViewAdminStudents: (admin: any) => void;
     token: string;
     // Inline "add staff" form state passed from parent
     showInlineAddStaff?: boolean;
@@ -26,7 +25,62 @@ interface FacultyTabProps {
     handleCreateAdmin?: (e: React.FormEvent) => void;
 }
 
-import { useAdminStore } from '../../store/adminStore';
+import { GraduationCap } from 'lucide-react';
+
+const AdminStudentsList = ({ adminId, token }: { adminId: string; token: string }) => {
+    const { data: students, isLoading } = useQuery({
+        queryKey: ['admin-students', adminId],
+        queryFn: async () => {
+            const { data } = await axios.get(`${API.ADMIN}/faculty/${adminId}/students`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            return data.success ? data.students : [];
+        },
+    });
+
+    if (isLoading) {
+        return (
+            <div className="py-8 flex flex-col items-center justify-center gap-3">
+                <RefreshCw className="h-6 w-6 animate-spin text-blue-500" />
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest" style={{ fontFamily: 'Montserrat, sans-serif' }}>Loading Students...</p>
+            </div>
+        );
+    }
+
+    if (!students || students.length === 0) {
+        return (
+            <div className="py-8 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-100 mt-4">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest" style={{ fontFamily: 'Montserrat, sans-serif' }}>No students assigned yet</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="mt-6 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+            <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-3 px-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>Assigned Students ({students.length})</p>
+            {students.map((s: any) => (
+                <div key={s._id} className="flex items-center justify-between p-4 bg-slate-50/50 border border-slate-100 rounded-2xl group/item">
+                    <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-hover/item:text-blue-600 transition-colors shadow-sm">
+                            <GraduationCap className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold text-slate-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>{s.name}</p>
+                            <p className="text-[9px] font-medium text-slate-500 uppercase tracking-wider" style={{ fontFamily: 'Montserrat, sans-serif' }}>{s.rollNumber} · {s.degree}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="flex flex-col items-end">
+                            <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter ${s.internshipStatus === 'internship_assigned' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-500'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                                {s.internshipStatus?.replace('_', ' ') || 'Registered'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
 
 const FacultyTab = ({
     // setShowAddAdminModal kept for backward compatibility
@@ -41,8 +95,8 @@ const FacultyTab = ({
     setNewAdmin,
     partneredCompanies,
     handleCreateAdmin,
-}: Omit<FacultyTabProps, 'setViewAdminStudents'>) => {
-    const { setViewAdminStudents } = useAdminStore();
+}: FacultyTabProps) => {
+    const [expandedAdminId, setExpandedAdminId] = useState<string | null>(null);
     const queryClient = useQueryClient();
     const [page, setPage] = useState(1);
     const [search, setSearch] = useState('');
@@ -85,6 +139,7 @@ const FacultyTab = ({
     const totalPages = response?.pages || 0;
     const totalItems = admins.length;
 
+
     if (isError) {
         return (
             <div className="h-[60vh] flex flex-col items-center justify-center text-center p-8 bg-red-50 rounded-[3rem] border border-red-100">
@@ -104,11 +159,14 @@ const FacultyTab = ({
     }
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div
+            className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700"
+            style={{ fontFamily: 'Montserrat, sans-serif' }}
+        >
             {/* Header section */}
             <div className="flex flex-wrap items-center justify-between gap-6">
                 <h3
-                    className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic leading-none"
+                    className="text-xl font-normal text-slate-900 tracking-tight"
                     style={{ fontFamily: 'Montserrat, sans-serif' }}
                 >
                     User Management
@@ -139,7 +197,6 @@ const FacultyTab = ({
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">Add Personnel</h4>
-                            <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mt-1">Register a new staff member or industry partner</p>
                         </div>
                         <button
                             onClick={() => setShowInlineAddStaff?.(false)}
@@ -327,18 +384,23 @@ const FacultyTab = ({
 
                                     <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-between">
                                         <div className="flex flex-col gap-1">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">Designated Role</span>
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none" style={{ fontFamily: 'Montserrat, sans-serif' }}>Designated Role</span>
                                             <StatusPill status={admin.role === 'company_admin' ? (admin.company || 'Enterprise Staff') : 'Faculty Supervisor'} />
                                         </div>
                                         <button
-                                            onClick={() => setViewAdminStudents(admin)}
-                                            className="flex items-center gap-2 h-10 px-4 rounded-xl bg-blue-50 text-blue-600 text-xs font-bold hover:bg-blue-600 hover:text-white transition-all active:scale-95 shadow-sm"
+                                            onClick={() => setExpandedAdminId(expandedAdminId === admin._id ? null : admin._id)}
+                                            className={`flex items-center gap-2 h-10 px-4 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-sm ${expandedAdminId === admin._id ? 'bg-black text-white' : 'bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white'}`}
                                             title="View assigned students"
                                         >
                                             <Users className="h-3.5 w-3.5" />
-                                            <span>Students</span>
+                                            <span style={{ fontFamily: 'Montserrat, sans-serif' }}>Students</span>
                                         </button>
                                     </div>
+
+                                    {/* Inline Students List */}
+                                    {expandedAdminId === admin._id && (
+                                        <AdminStudentsList adminId={admin._id} token={token} />
+                                    )}
                                 </div>
                             </div>
                         ))}

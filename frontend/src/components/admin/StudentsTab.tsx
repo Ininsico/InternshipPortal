@@ -1,11 +1,10 @@
-import { Briefcase, Trash2, Building2, User, Mail, ShieldCheck, FileText, Star, Phone, Search } from 'lucide-react';
+import { Briefcase, Trash2, Building2, User, Mail, ShieldCheck, FileText, Star, Phone } from 'lucide-react';
 import StatusPill from '../StatusPill';
 import API from '../../config/api';
 
 interface StudentsTabProps {
     students: any[];
     isSuperAdmin: boolean;
-    setSelectedStudent: (student: any) => void;
     setChangeSupervisorTarget: (student: any) => void;
     setChangeSupervisorId: (id: string) => void;
     setDeleteStudentTarget: (student: any) => void;
@@ -16,7 +15,6 @@ interface StudentsTabProps {
 const StudentsTab = ({
     students,
     isSuperAdmin,
-    setSelectedStudent,
     setChangeSupervisorTarget,
     setChangeSupervisorId,
     setDeleteStudentTarget,
@@ -27,8 +25,7 @@ const StudentsTab = ({
         <div className="space-y-8">
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                    <h3 className="text-xl font-bold text-slate-900 tracking-tight">Student Records</h3>
-                    <p className="text-xs font-medium text-slate-500 mt-1">Single source of truth for internship pipeline</p>
+                    <h3 className="text-xl font-normal text-slate-900 tracking-tight">Student Records</h3>
                 </div>
                 <div className="flex flex-wrap gap-2 md:gap-4">
                     <div className="flex items-center gap-2 px-3 md:px-4 py-2 bg-amber-50 rounded-xl border border-amber-100">
@@ -75,14 +72,6 @@ const StudentsTab = ({
                                 </div>
 
                                 <div className="flex gap-2">
-                                    <button
-                                        onClick={() => setSelectedStudent(stu)}
-                                        className="h-10 px-4 flex items-center gap-2 rounded-xl bg-blue-600 text-white hover:bg-black transition-all shadow-lg shadow-blue-200"
-                                        title="View Full Profile"
-                                    >
-                                        <Search className="h-4 w-4" />
-                                        <span className="text-xs font-bold hidden sm:inline">Details</span>
-                                    </button>
                                     {!stu.isEmailVerified && isSuperAdmin && (
                                         <button
                                             onClick={() => handleResendStudentEmail(stu.email)}

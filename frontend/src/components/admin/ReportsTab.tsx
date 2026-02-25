@@ -17,7 +17,6 @@ const ReportsTab = ({ reports, handleDeleteReport, setSelectedReport, setEditRep
                         <FileText className="h-8 w-8 sm:h-10 sm:h-10 text-slate-200" />
                     </div>
                     <h3 className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-widest">No reports archived</h3>
-                    <p className="text-[10px] sm:text-xs text-slate-400 font-bold mt-2">Faculty evaluations will appear here once submitted.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

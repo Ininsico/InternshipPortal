@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-import { Loader2, RefreshCw, Menu } from 'lucide-react';
+import { Loader2, Menu } from 'lucide-react';
 
 import AdminSidebar from '../components/admin/AdminSidebar';
 import OverviewTab from '../components/admin/OverviewTab';
@@ -18,7 +18,6 @@ import ReportDetailsModal from '../components/admin/ReportDetailsModal';
 import EditReportModal from '../components/admin/EditReportModal';
 import AdminDashboardModals from '../components/admin/AdminDashboardModals';
 import PlacementSyncTab from '../components/admin/PlacementSyncTab';
-import AdminStudentsModal from '../components/admin/AdminStudentsModal';
 import { useAdminStore, type AdminTab } from '../store/adminStore';
 
 
@@ -31,7 +30,6 @@ const AdminDashboard = () => {
     const { user, token, logout } = useAuth();
     const {
         activeTab, setActiveTab,
-        viewAdminStudents, setViewAdminStudents,
         students, setStudents,
         faculty, setFaculty,
         reports, setReports,
@@ -41,13 +39,6 @@ const AdminDashboard = () => {
     const isSuperAdmin = user?.role === 'super_admin';
     const [loading, setLoading] = useState(true);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-    const [stats, setStats] = useState({
-        totalStudents: 0,
-        activeApplications: 0,
-        completedPlacements: 0,
-        pendingAgreements: 0,
-        placementRate: 0
-    });
     const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
     const [showAddAdminModal, setShowAddAdminModal] = useState(false);
@@ -92,21 +83,18 @@ const AdminDashboard = () => {
     const [editReportLoading, setEditReportLoading] = useState(false);
     const [editReportError, setEditReportError] = useState('');
 
-    const [refreshing, setRefreshing] = useState(false);
     const [fetchedTabs, setFetchedTabs] = useState<Set<string>>(new Set());
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
     const fetchTabData = async (tab: AdminTab, silent = false) => {
         if (!token) return;
         if (!silent && !fetchedTabs.has(tab)) setLoading(true);
-        else setRefreshing(true);
 
         try {
             switch (tab) {
                 case 'overview':
                     const stateRes = await axios.get(`${API_BASE}/dashboard-state`, config);
                     if (stateRes.data.success) {
-                        setStats(stateRes.data.stats);
                         setRecentActivity(stateRes.data.recentActivity);
                         // Pre-fill students if it's the first load and we are super admin
                         if (stateRes.data.initialStudents && stateRes.data.initialStudents.length > 0) {
@@ -151,7 +139,6 @@ const AdminDashboard = () => {
             console.error(`Error fetching ${tab} data:`, err);
         } finally {
             setLoading(false);
-            setRefreshing(false);
         }
     };
 
@@ -402,49 +389,34 @@ const AdminDashboard = () => {
                     activeTab={activeTab}
                     setActiveTab={(tab) => { setActiveTab(tab as AdminTab); setMobileSidebarOpen(false); }}
                     isSuperAdmin={isSuperAdmin}
-                    user={user}
-                    logout={logout}
                 />
             </div>
 
-            <main className="flex-1 overflow-y-auto min-w-0">
-                <header className="sticky top-0 z-30 flex h-14 items-center justify-between bg-white/90 px-4 md:px-8 backdrop-blur-xl border-b border-blue-50 shadow-sm">
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => setMobileSidebarOpen(true)}
-                            className="lg:hidden h-8 w-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all"
-                        >
-                            <Menu className="h-4 w-4" />
+            <main className="flex-1 flex flex-col min-w-0 bg-slate-50/50 relative overflow-y-auto">
+                <header className="sticky top-0 z-30 flex h-24 w-full items-center justify-between border-b border-blue-50/50 bg-white/80 px-8 backdrop-blur-xl shrink-0">
+                    <div className="flex items-center gap-6">
+                        <button onClick={() => setMobileSidebarOpen(true)} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white border border-slate-100 text-slate-600 shadow-sm lg:hidden hover:bg-slate-50 transition-colors">
+                            <Menu className="h-6 w-6" />
                         </button>
-                        <div className="h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                        <h2 className="text-xs font-bold uppercase tracking-wider text-blue-500 hidden sm:block">
-                            HOD / {activeTab}
-                        </h2>
-                    </div>
-                    <div className="flex items-center gap-2 md:gap-3">
-                        <button
-                            onClick={() => fetchData(true)}
-                            disabled={refreshing}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs font-bold hover:bg-blue-100 transition-all disabled:opacity-50"
-                        >
-                            {refreshing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                            <span className="hidden sm:inline">{refreshing ? 'Syncing...' : 'Refresh'}</span>
-                        </button>
-                        <div className="flex items-center gap-2 md:gap-3 bg-blue-50 px-2 md:px-4 py-2 rounded-xl border border-blue-100">
-                            <div className="text-right hidden sm:block">
-                                <p className="text-xs font-bold text-slate-900 leading-none">{user?.name}</p>
-                                <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-500 mt-1">
-                                    {user?.role === 'super_admin' ? 'HOD' : user?.role?.replace('_', ' ')}
-                                </p>
-                            </div>
-                            <div className="h-8 w-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-lg shadow-blue-500/20">
-                                {user?.name?.[0]}
-                            </div>
+                        <div>
+                            <h1 className="text-2xl font-normal text-slate-900 capitalize tracking-tight leading-none">
+                                {activeTab.replace('_', ' ')}
+                            </h1>
                         </div>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                        <button
+                            onClick={logout}
+                            className="h-12 px-6 rounded-2xl bg-red-50 text-red-600 text-[11px] font-normal uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all shadow-sm active:scale-95"
+                        >
+                            Sign Out
+                        </button>
                     </div>
                 </header>
 
-                <div className="p-4 md:p-8 pb-20">
+
+                <div className="p-8 pb-32 max-w-7xl mx-auto w-full">
                     <AnimatePresence mode="wait">
                         {loading ? (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-[60vh] items-center justify-center">
@@ -452,12 +424,11 @@ const AdminDashboard = () => {
                             </motion.div>
                         ) : !syncingStudent ? (
                             <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
-                                {activeTab === 'overview' && <OverviewTab stats={stats} recentActivity={recentActivity} />}
+                                {activeTab === 'overview' && <OverviewTab recentActivity={recentActivity} />}
                                 {activeTab === 'students' && (
                                     <StudentsTab
                                         students={students}
                                         isSuperAdmin={isSuperAdmin}
-                                        setSelectedStudent={setSelectedStudent}
                                         setChangeSupervisorTarget={setChangeSupervisorTarget}
                                         setChangeSupervisorId={setChangeSupervisorId}
                                         setDeleteStudentTarget={setDeleteStudentTarget}
@@ -538,12 +509,6 @@ const AdminDashboard = () => {
                 handleUpdateReport={handleUpdateReport}
                 editReportLoading={editReportLoading}
                 editReportError={editReportError}
-            />
-            <AdminStudentsModal
-                isOpen={!!viewAdminStudents}
-                onClose={() => setViewAdminStudents(null)}
-                admin={viewAdminStudents}
-                token={token || ''}
             />
 
             <AdminDashboardModals

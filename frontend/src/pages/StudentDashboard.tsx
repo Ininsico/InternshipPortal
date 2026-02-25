@@ -25,7 +25,16 @@ import {
     Mail,
     Calendar,
     Hash,
-    FileCheck
+    FileCheck,
+    ClipboardList,
+    Globe,
+    ChevronLeft,
+    ChevronRight,
+    Trash2,
+    Link,
+    LayoutDashboard,
+    Files,
+    ChevronDown
 } from 'lucide-react';
 
 import API from '../config/api';
@@ -44,25 +53,55 @@ const STATUS_PIPELINE = [
 
 const StudentDashboard = () => {
     const { user, token, logout } = useAuth();
-    const [activeTab, setActiveTab] = useState<'overview' | 'applications' | 'pending_assignments' | 'assignment_summary' | 'results' | 'profile'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'applications' | 'pending_assignments' | 'assignment_summary' | 'results' | 'weekly_updates' | 'profile'>('overview');
     const [loading, setLoading] = useState(true);
     const [profile, setProfile] = useState<any>(null);
     const [applications, setApplications] = useState<any[]>([]);
     const [tasks, setTasks] = useState<any[]>([]);
     const [submissions, setSubmissions] = useState<any[]>([]);
     const [myReport, setMyReport] = useState<any>(null);
+    const [weeklyUpdates, setWeeklyUpdates] = useState<any[]>([]);
+    const [isFreelancer, setIsFreelancer] = useState(false);
     const [submitTarget, setSubmitTarget] = useState<any | null>(null);
     const [submitContent, setSubmitContent] = useState('');
     const [submitFiles, setSubmitFiles] = useState<File[]>([]);
     const [submitLoading, setSubmitLoading] = useState(false);
     const [showApplyModal, setShowApplyModal] = useState(false);
     const [showMobileSidebar, setShowMobileSidebar] = useState(false);
-    const [newApp, setNewApp] = useState({ companyName: '', position: '', description: '' });
     const [profileImageLoading, setProfileImageLoading] = useState(false);
     const [assignmentsOpen, setAssignmentsOpen] = useState(false);
+    const [applyError, setApplyError] = useState('');
+    const [applyLoading, setApplyLoading] = useState(false);
+
+    // Multi-step application form state
+    const [applyStep, setApplyStep] = useState(0);
+    const [internshipCategory, setInternshipCategory] = useState<'university_assigned' | 'self_found' | 'freelancer'>('university_assigned');
+    const [newApp, setNewApp] = useState({
+        companyName: '',
+        position: '',
+        description: '',
+        internshipType: 'Full-time',
+        duration: '8 weeks',
+        workMode: 'onsite' as 'onsite' | 'remote',
+        internshipField: '',
+    });
+    const [selfFoundSupervisor, setSelfFoundSupervisor] = useState({
+        name: '', email: '', phone: '', designation: '', companyAddress: ''
+    });
+    const [freelancerAccounts, setFreelancerAccounts] = useState([
+        { platform: '', profileUrl: '', username: '' }
+    ]);
+
+    // Weekly updates state
+    const [showWeeklyModal, setShowWeeklyModal] = useState(false);
+    const [weeklyForm, setWeeklyForm] = useState({
+        weekNumber: 1, workSummary: '', hoursWorked: 0, technologiesUsed: '', challenges: ''
+    });
+    const [weeklyPlatformLinks, setWeeklyPlatformLinks] = useState<{ platform: string; url: string; description: string }[]>([]);
+    const [weeklySubmitLoading, setWeeklySubmitLoading] = useState(false);
 
     const internshipStatus = profile?.internshipStatus || user?.internshipStatus || 'none';
-    const isAssigned = internshipStatus === 'internship_assigned' && !!profile?.assignedCompany;
+    const isAssigned = internshipStatus === 'internship_assigned';
     const canApply = internshipStatus === 'none' || internshipStatus === 'rejected';
 
     useEffect(() => {
@@ -79,6 +118,8 @@ const StudentDashboard = () => {
                     setTasks(data.tasks);
                     setSubmissions(data.submissions);
                     setMyReport(data.report);
+                    setWeeklyUpdates(data.weeklyUpdates || []);
+                    setIsFreelancer(data.isFreelancer || false);
                 }
             } catch (err) {
                 console.error('Failed to fetch dashboard state:', err);
@@ -89,25 +130,49 @@ const StudentDashboard = () => {
         fetchData();
     }, [token]);
 
-    // Auto-redirect tabs based on internship state
-    useEffect(() => {
-        if (isAssigned && activeTab === 'applications') setActiveTab('overview');
-        if (!isAssigned && (activeTab === 'pending_assignments' || activeTab === 'assignment_summary' || activeTab === 'results')) setActiveTab('overview');
-    }, [isAssigned, activeTab]);
-
     const handleApply = async (e: React.FormEvent) => {
         e.preventDefault();
+        setApplyError('');
+        setApplyLoading(true);
         try {
             const config = { headers: { Authorization: `Bearer ${token}` } };
-            const { data } = await axios.post(`${API_BASE}/apply`, newApp, config);
+
+            // Build the payload based on internship category
+            const payload: any = {
+                ...newApp,
+                internshipCategory,
+            };
+
+            if (internshipCategory === 'self_found') {
+                payload.selfFoundSupervisor = selfFoundSupervisor;
+                payload.companyName = payload.companyName || selfFoundSupervisor.companyAddress;
+            } else if (internshipCategory === 'freelancer') {
+                payload.freelancerAccounts = freelancerAccounts.filter(a => a.platform && a.profileUrl);
+                payload.companyName = 'Freelance';
+                payload.position = payload.position || 'Freelance Developer';
+                delete payload.workMode;
+            }
+
+            const { data } = await axios.post(`${API_BASE}/apply`, payload, config);
             if (data.success) {
                 setApplications([data.application, ...applications]);
                 setShowApplyModal(false);
-                setNewApp({ companyName: '', position: '', description: '' });
-                setActiveTab('applications');
+                setApplyStep(0);
+                setNewApp({ companyName: '', position: '', description: '', internshipType: 'Full-time', duration: '8 weeks', workMode: 'onsite', internshipField: '' });
+                setSelfFoundSupervisor({ name: '', email: '', phone: '', designation: '', companyAddress: '' });
+                setFreelancerAccounts([{ platform: '', profileUrl: '', username: '' }]);
+                setInternshipCategory('university_assigned');
+                // Refresh the profile to get updated internship status
+                const { data: dash } = await axios.get(`${API_BASE}/dashboard-state`, config);
+                if (dash.success) {
+                    setProfile(dash.student);
+                    setIsFreelancer(dash.isFreelancer || false);
+                }
             }
-        } catch (err) {
-            console.error(err);
+        } catch (err: any) {
+            setApplyError(err?.response?.data?.message || 'Failed to submit application.');
+        } finally {
+            setApplyLoading(false);
         }
     };
 
@@ -311,45 +376,75 @@ const StudentDashboard = () => {
                         <span className="text-sm font-extrabold tracking-tight text-blue-900 leading-none">CUI ATD Portal</span>
                     </div>
                 </div>
-                <nav className="flex-1 space-y-1 px-4">
-                    <button
-                        onClick={() => { setActiveTab('overview'); setAssignmentsOpen(false); setShowMobileSidebar(false); }}
-                        className={`flex w-full items-center rounded-2xl px-6 py-4 transition-all duration-300 ${activeTab === 'overview' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-blue-500/70 hover:bg-blue-100/50 hover:text-blue-700'}`}
-                    >
-                        <span className="text-[11px] font-bold uppercase tracking-wider">Dashboard</span>
-                    </button>
+                <nav className="flex-1 space-y-2 px-6">
+                    <div className="pb-4">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4 px-2 font-display">Main Portal</p>
+                        <button
+                            onClick={() => { setActiveTab('overview'); setAssignmentsOpen(false); setShowMobileSidebar(false); }}
+                            className={`group flex w-full items-center gap-4 rounded-2xl px-5 py-3.5 transition-all duration-300 ${activeTab === 'overview' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/30' : 'text-slate-500 hover:bg-white hover:text-blue-600 hover:shadow-sm'}`}
+                        >
+                            <LayoutDashboard className={`h-5 w-5 ${activeTab === 'overview' ? 'text-white' : 'text-slate-400 group-hover:text-blue-600'}`} />
+                            <span className="text-[13px] font-bold tracking-tight font-display">Dashboard</span>
+                        </button>
+                    </div>
 
                     {!isAssigned && (
-                        <button
-                            onClick={() => { setActiveTab('applications'); setAssignmentsOpen(false); setShowMobileSidebar(false); }}
-                            className={`flex w-full items-center rounded-2xl px-6 py-4 transition-all duration-300 ${activeTab === 'applications' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-blue-500/70 hover:bg-blue-100/50 hover:text-blue-700'}`}
-                        >
-                            <span className="text-[11px] font-bold uppercase tracking-wider">My Applications</span>
-                        </button>
+                        <div className="pb-4">
+                            <button
+                                onClick={() => { setActiveTab('applications'); setAssignmentsOpen(false); setShowMobileSidebar(false); }}
+                                className={`group flex w-full items-center gap-4 rounded-2xl px-5 py-3.5 transition-all duration-300 ${activeTab === 'applications' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/30' : 'text-slate-500 hover:bg-white hover:text-blue-600 hover:shadow-sm'}`}
+                            >
+                                <Files className={`h-5 w-5 ${activeTab === 'applications' ? 'text-white' : 'text-slate-400 group-hover:text-blue-600'}`} />
+                                <span className="text-[13px] font-bold tracking-tight font-display">Applications</span>
+                            </button>
+                        </div>
                     )}
 
-                    {isAssigned && (
-                        <div className="space-y-1">
+                    {isAssigned && isFreelancer && (
+                        <div className="pb-4">
+                            <button
+                                onClick={() => { setActiveTab('weekly_updates'); setAssignmentsOpen(false); setShowMobileSidebar(false); }}
+                                className={`group flex w-full items-center gap-4 rounded-2xl px-5 py-3.5 transition-all duration-300 ${activeTab === 'weekly_updates' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/30' : 'text-slate-500 hover:bg-white hover:text-blue-600 hover:shadow-sm'}`}
+                            >
+                                <ClipboardList className={`h-5 w-5 ${activeTab === 'weekly_updates' ? 'text-white' : 'text-slate-400 group-hover:text-blue-600'}`} />
+                                <span className="text-[13px] font-bold tracking-tight font-display">Weekly Updates</span>
+                            </button>
+                        </div>
+                    )}
+
+                    {isAssigned && !isFreelancer && (
+                        <div className="space-y-2 pb-4">
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4 px-2 font-display">Academic Work</p>
                             <button
                                 onClick={() => setAssignmentsOpen(!assignmentsOpen)}
-                                className={`flex w-full items-center justify-between rounded-2xl px-6 py-4 transition-all duration-300 ${activeTab === 'pending_assignments' || activeTab === 'assignment_summary' ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-blue-500/70 hover:bg-blue-100/50 hover:text-blue-700'}`}
+                                className={`group flex w-full items-center justify-between rounded-2xl px-5 py-3.5 transition-all duration-300 ${activeTab === 'pending_assignments' || activeTab === 'assignment_summary' ? 'bg-blue-50/80 text-blue-700 ring-1 ring-blue-100/50' : 'text-slate-500 hover:bg-white hover:text-blue-600 hover:shadow-sm'}`}
                             >
-                                <span className="text-[11px] font-bold uppercase tracking-wider">Assignments</span>
+                                <div className="flex items-center gap-4">
+                                    <Briefcase className={`h-5 w-5 ${activeTab === 'pending_assignments' || activeTab === 'assignment_summary' ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-600'}`} />
+                                    <span className="text-[13px] font-bold tracking-tight font-display">Assignments</span>
+                                </div>
+                                <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${assignmentsOpen ? 'rotate-180' : ''}`} />
                             </button>
+
                             <AnimatePresence>
                                 {assignmentsOpen && (
-                                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden bg-blue-100/20 rounded-2xl ml-2 mt-1">
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        className="overflow-hidden space-y-1 ml-4 border-l-2 border-blue-50/50 pl-4 mt-2"
+                                    >
                                         <button
                                             onClick={() => { setActiveTab('pending_assignments'); setShowMobileSidebar(false); }}
-                                            className={`flex w-full items-center rounded-2xl px-8 py-3.5 transition-all outline-none ${activeTab === 'pending_assignments' ? 'text-blue-700 bg-white shadow-sm font-bold' : 'text-blue-400 hover:text-blue-600 hover:bg-white/40'}`}
+                                            className={`flex w-full items-center rounded-xl px-4 py-2.5 transition-all ${activeTab === 'pending_assignments' ? 'text-blue-700 bg-blue-50/50 font-bold' : 'text-slate-400 hover:text-blue-600 hover:bg-white'}`}
                                         >
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-left">Pending Tasks</span>
+                                            <span className="text-[12px] font-bold font-display">Tasks Queue</span>
                                         </button>
                                         <button
                                             onClick={() => { setActiveTab('assignment_summary'); setShowMobileSidebar(false); }}
-                                            className={`flex w-full items-center rounded-2xl px-8 py-3.5 transition-all outline-none ${activeTab === 'assignment_summary' ? 'text-blue-700 bg-white shadow-sm font-bold' : 'text-blue-400 hover:text-blue-600 hover:bg-white/40'}`}
+                                            className={`flex w-full items-center rounded-xl px-4 py-2.5 transition-all ${activeTab === 'assignment_summary' ? 'text-blue-700 bg-blue-50/50 font-bold' : 'text-slate-400 hover:text-blue-600 hover:bg-white'}`}
                                         >
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-left">Summary</span>
+                                            <span className="text-[12px] font-bold font-display">Performance</span>
                                         </button>
                                     </motion.div>
                                 )}
@@ -357,21 +452,28 @@ const StudentDashboard = () => {
 
                             <button
                                 onClick={() => { setActiveTab('results'); setAssignmentsOpen(false); setShowMobileSidebar(false); }}
-                                className={`flex w-full items-center rounded-2xl px-6 py-4 transition-all duration-300 ${activeTab === 'results' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-blue-500/70 hover:bg-blue-100/50 hover:text-blue-700'}`}
+                                className={`group flex w-full items-center gap-4 rounded-2xl px-5 py-3.5 transition-all duration-300 ${activeTab === 'results' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/30' : 'text-slate-500 hover:bg-white hover:text-blue-600 hover:shadow-sm'}`}
                             >
-                                <span className="text-[11px] font-bold uppercase tracking-wider">Results</span>
+                                <GraduationCap className={`h-5 w-5 ${activeTab === 'results' ? 'text-white' : 'text-slate-400 group-hover:text-blue-600'}`} />
+                                <span className="text-[13px] font-bold tracking-tight font-display">Results</span>
                             </button>
                         </div>
                     )}
 
-                    <button
-                        onClick={() => { setActiveTab('profile'); setAssignmentsOpen(false); setShowMobileSidebar(false); }}
-                        className={`flex w-full items-center rounded-2xl px-6 py-4 transition-all duration-300 ${activeTab === 'profile' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-blue-500/70 hover:bg-blue-100/50 hover:text-blue-700'}`}
-                    >
-                        <span className="text-[11px] font-bold uppercase tracking-wider">Profile</span>
-                    </button>
+                    <div className="pt-4 border-t border-slate-100">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4 px-2 font-display">Account</p>
+                        <button
+                            onClick={() => { setActiveTab('profile'); setAssignmentsOpen(false); setShowMobileSidebar(false); }}
+                            className={`group flex w-full items-center gap-4 rounded-2xl px-5 py-3.5 transition-all duration-300 ${activeTab === 'profile' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/30' : 'text-slate-500 hover:bg-white hover:text-blue-600 hover:shadow-sm'}`}
+                        >
+                            <User className={`h-5 w-5 ${activeTab === 'profile' ? 'text-white' : 'text-slate-400 group-hover:text-blue-600'}`} />
+                            <span className="text-[13px] font-bold tracking-tight font-display">My Profile</span>
+                        </button>
+                    </div>
                 </nav>
+
             </aside>
+
 
             <main className="flex-1 transition-all min-w-0 h-full overflow-y-auto">
                 <header className="sticky top-0 z-30 flex h-16 md:h-24 items-center justify-between border-b border-slate-100 bg-white/80 px-4 md:px-10 backdrop-blur-xl">
@@ -1034,6 +1136,87 @@ const StudentDashboard = () => {
                                     )
                                 }
 
+                                {activeTab === 'weekly_updates' && isAssigned && isFreelancer && (
+                                    <div className="space-y-8">
+                                        <div className="flex flex-wrap items-center justify-between gap-4">
+                                            <div>
+                                                <h3 className="text-xl font-bold uppercase tracking-tight text-slate-900 font-display">Weekly Updates</h3>
+                                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Freelancer Progress Log</p>
+                                            </div>
+                                            <button
+                                                onClick={() => setShowWeeklyModal(true)}
+                                                className="flex items-center gap-3 rounded-2xl px-6 h-12 text-[11px] font-bold uppercase tracking-wider text-white bg-blue-600 shadow-lg shadow-blue-500/30 hover:bg-blue-700 active:scale-95 transition-all"
+                                            >
+                                                <Plus className="h-4 w-4" /> Submit Update
+                                            </button>
+                                        </div>
+
+                                        {weeklyUpdates.length === 0 ? (
+                                            <div className="rounded-3xl border border-slate-100 bg-white py-32 text-center shadow-sm">
+                                                <ClipboardList className="w-12 h-12 text-slate-200 mx-auto mb-6" />
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No updates submitted yet</p>
+                                                <p className="text-xs text-slate-300 mt-2">Submit your first weekly progress update above</p>
+                                            </div>
+                                        ) : (
+                                            <div className="grid gap-6">
+                                                {weeklyUpdates.map((update: any) => (
+                                                    <div key={update._id} className="rounded-3xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+                                                        <div className={`h-1 w-full ${update.status === 'reviewed' ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+                                                        <div className="p-8">
+                                                            <div className="flex items-start justify-between gap-4 mb-6">
+                                                                <div>
+                                                                    <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg">Week {update.weekNumber}</span>
+                                                                    <p className="text-sm font-bold text-slate-900 mt-3">{update.workSummary}</p>
+                                                                </div>
+                                                                <span className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider ${update.status === 'reviewed' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                                                                    {update.status === 'reviewed' ? '✓ Reviewed' : 'Pending Review'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                                                {update.hoursWorked > 0 && (
+                                                                    <div className="p-4 rounded-2xl bg-slate-50">
+                                                                        <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Hours</p>
+                                                                        <p className="text-sm font-bold text-slate-900">{update.hoursWorked}h</p>
+                                                                    </div>
+                                                                )}
+                                                                {update.technologiesUsed && (
+                                                                    <div className="p-4 rounded-2xl bg-slate-50 col-span-2">
+                                                                        <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Technologies</p>
+                                                                        <p className="text-sm font-bold text-slate-900">{update.technologiesUsed}</p>
+                                                                    </div>
+                                                                )}
+                                                                <div className="p-4 rounded-2xl bg-slate-50">
+                                                                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Submitted</p>
+                                                                    <p className="text-sm font-bold text-slate-900">{new Date(update.createdAt).toLocaleDateString()}</p>
+                                                                </div>
+                                                            </div>
+                                                            {update.facultyRemarks && (
+                                                                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100">
+                                                                    <p className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 mb-1">Faculty Remarks</p>
+                                                                    <p className="text-sm text-emerald-800">{update.facultyRemarks}</p>
+                                                                </div>
+                                                            )}
+                                                            {update.platformLinks && update.platformLinks.length > 0 && (
+                                                                <div className="mt-4">
+                                                                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-3">Platform Links</p>
+                                                                    <div className="flex flex-wrap gap-2">
+                                                                        {update.platformLinks.map((link: any, i: number) => (
+                                                                            <a key={i} href={link.url} target="_blank" rel="noreferrer"
+                                                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-[10px] font-bold hover:bg-blue-100 transition-colors">
+                                                                                <Link className="h-3 w-3" /> {link.platform}
+                                                                            </a>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
 
 
 
@@ -1117,26 +1300,344 @@ const StudentDashboard = () => {
                 </div >
             </main >
 
-            {showApplyModal && (
+            {/* Weekly Update Submit Modal */}
+
+            {showWeeklyModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-xl p-4 md:p-8">
-                    <motion.div initial={{ opacity: 0, scale: 0.9, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="w-full max-w-xl rounded-[2.5rem] md:rounded-[3.5rem] border border-slate-100 bg-white p-8 md:p-14 shadow-[0_40px_100px_rgba(0,0,0,0.1)] relative max-h-[90vh] overflow-y-auto">
-                        <button onClick={() => setShowApplyModal(false)} className="absolute top-6 right-6 md:top-12 md:right-12 text-slate-300 hover:text-slate-900 transition-all hover:rotate-90"><X className="h-7 w-7 md:h-8 md:w-8" /></button>
-                        <div className="mb-12">
-                            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Submit New Application</h2>
-                            <p className="mt-3 text-xs font-bold uppercase tracking-wider text-blue-600">Internship Verification</p>
-                        </div>
-                        <form onSubmit={handleApply} className="space-y-8">
-                            <InputField label="Hiring Organization" value={newApp.companyName} onChange={e => setNewApp({ ...newApp, companyName: e.target.value })} placeholder="e.g. Arfa Software Park" />
-                            <InputField label="Hiring Designation" value={newApp.position} onChange={e => setNewApp({ ...newApp, position: e.target.value })} placeholder="e.g. Associate Engineer" />
+                    <motion.div initial={{ opacity: 0, scale: 0.92, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+                        className="w-full max-w-2xl rounded-[2.5rem] border border-slate-100 bg-white shadow-[0_40px_100px_rgba(0,0,0,0.12)] max-h-[90vh] overflow-y-auto">
+                        <div className="p-8 md:p-12 border-b border-slate-100 flex items-center justify-between">
                             <div>
-                                <label className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 block">Internship Description</label>
-                                <textarea rows={5} value={newApp.description} onChange={e => setNewApp({ ...newApp, description: e.target.value })} className="w-full rounded-3xl bg-slate-50 border-none p-8 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-50 transition-all placeholder:text-slate-300 resize-none shadow-inner" placeholder="Provide a granular overview of the proposed internship role..." />
+                                <h2 className="text-xl font-bold text-slate-900">Weekly Progress Update</h2>
+                                <p className="text-xs font-bold uppercase tracking-wider text-blue-600 mt-1">Freelancer Update Log</p>
                             </div>
-                            <button type="submit" className="w-full h-20 rounded-[2rem] bg-blue-600 text-white text-[12px] font-bold uppercase tracking-wider shadow-2xl shadow-blue-500/40 hover:bg-blue-700 transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-4">
-                                <span>Authorize Submission</span>
-                                <Plus className="w-5 h-5" />
+                            <button onClick={() => setShowWeeklyModal(false)} className="h-10 w-10 flex items-center justify-center rounded-2xl text-slate-300 hover:text-slate-900 hover:bg-slate-50 transition-all">
+                                <X className="h-5 w-5" />
                             </button>
+                        </div>
+                        <form onSubmit={async (e) => {
+                            e.preventDefault();
+                            setWeeklySubmitLoading(true);
+                            try {
+                                const config = { headers: { Authorization: `Bearer ${token}` } };
+                                const { data } = await axios.post(`${API_BASE}/weekly-update`, {
+                                    ...weeklyForm,
+                                    technologiesUsed: weeklyForm.technologiesUsed.split(',').map((t: string) => t.trim()).filter(Boolean),
+                                    platformLinks: weeklyPlatformLinks.filter(l => l.platform && l.url)
+                                }, config);
+                                if (data.success) {
+                                    setWeeklyUpdates(prev => [data.update, ...prev]);
+                                    setShowWeeklyModal(false);
+                                    setWeeklyForm({ weekNumber: weeklyUpdates.length + 2, workSummary: '', hoursWorked: 0, technologiesUsed: '', challenges: '' });
+                                    setWeeklyPlatformLinks([]);
+                                }
+                            } catch (err: any) {
+                                alert(err?.response?.data?.message || 'Failed to submit update.');
+                            } finally {
+                                setWeeklySubmitLoading(false);
+                            }
+                        }} className="p-8 md:p-12 space-y-6">
+                            <div className="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">Week Number</label>
+                                    <input type="number" min={1} value={weeklyForm.weekNumber}
+                                        onChange={e => setWeeklyForm(f => ({ ...f, weekNumber: +e.target.value }))}
+                                        className="w-full h-14 rounded-2xl bg-slate-50 px-5 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-50 transition-all" required />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">Hours Worked</label>
+                                    <input type="number" min={0} max={168} value={weeklyForm.hoursWorked}
+                                        onChange={e => setWeeklyForm(f => ({ ...f, hoursWorked: +e.target.value }))}
+                                        className="w-full h-14 rounded-2xl bg-slate-50 px-5 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-50 transition-all" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">Work Summary *</label>
+                                <textarea rows={5} value={weeklyForm.workSummary} onChange={e => setWeeklyForm(f => ({ ...f, workSummary: e.target.value }))}
+                                    className="w-full rounded-2xl bg-slate-50 p-5 text-sm font-medium text-slate-800 outline-none focus:ring-4 focus:ring-blue-50 transition-all resize-none" required
+                                    placeholder="Describe the work done this week, deliverables completed, meetings attended..." />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">Technologies / Tools Used</label>
+                                <input type="text" value={weeklyForm.technologiesUsed} onChange={e => setWeeklyForm(f => ({ ...f, technologiesUsed: e.target.value }))}
+                                    className="w-full h-14 rounded-2xl bg-slate-50 px-5 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-50 transition-all"
+                                    placeholder="React, Node.js, Python... (comma-separated)" />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">Challenges / Blockers</label>
+                                <textarea rows={3} value={weeklyForm.challenges} onChange={e => setWeeklyForm(f => ({ ...f, challenges: e.target.value }))}
+                                    className="w-full rounded-2xl bg-slate-50 p-5 text-sm font-medium text-slate-800 outline-none focus:ring-4 focus:ring-blue-50 transition-all resize-none"
+                                    placeholder="Any blockers or challenges you faced this week..." />
+                            </div>
+
+                            {/* Platform links */}
+                            <div>
+                                <div className="flex items-center justify-between mb-3">
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Platform / Delivery Links</label>
+                                    <button type="button" onClick={() => setWeeklyPlatformLinks(l => [...l, { platform: '', url: '', description: '' }])}
+                                        className="text-[10px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                                        <Plus className="h-3 w-3" /> Add Link
+                                    </button>
+                                </div>
+                                {weeklyPlatformLinks.map((link, i) => (
+                                    <div key={i} className="flex items-center gap-3 mb-3">
+                                        <input type="text" placeholder="Platform (e.g. Fiverr)" value={link.platform}
+                                            onChange={e => setWeeklyPlatformLinks(l => l.map((ll, idx) => idx === i ? { ...ll, platform: e.target.value } : ll))}
+                                            className="w-32 h-12 rounded-xl bg-slate-50 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-100" />
+                                        <input type="url" placeholder="https://..." value={link.url}
+                                            onChange={e => setWeeklyPlatformLinks(l => l.map((ll, idx) => idx === i ? { ...ll, url: e.target.value } : ll))}
+                                            className="flex-1 h-12 rounded-xl bg-slate-50 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-100" />
+                                        <button type="button" onClick={() => setWeeklyPlatformLinks(l => l.filter((_, idx) => idx !== i))}
+                                            className="h-10 w-10 flex items-center justify-center text-slate-300 hover:text-red-500 rounded-xl transition-colors">
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="pt-4 flex items-center justify-end gap-4 border-t border-slate-100">
+                                <button type="button" onClick={() => setShowWeeklyModal(false)}
+                                    className="px-6 py-3 rounded-2xl text-[11px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all">
+                                    Cancel
+                                </button>
+                                <button type="submit" disabled={weeklySubmitLoading}
+                                    className="px-8 py-3 rounded-2xl bg-blue-600 text-white text-[11px] font-bold uppercase tracking-widest shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50">
+                                    {weeklySubmitLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                    Submit Update
+                                </button>
+                            </div>
                         </form>
+                    </motion.div>
+                </div>
+            )}
+
+            {/* Multi-step Apply Modal */}
+            {showApplyModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xl p-4 md:p-8">
+                    <motion.div initial={{ opacity: 0, scale: 0.92, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+                        className="w-full max-w-2xl rounded-[2.5rem] border border-slate-100 bg-white shadow-[0_40px_100px_rgba(0,0,0,0.15)] max-h-[90vh] overflow-y-auto">
+
+                        {/* Modal Header */}
+                        <div className="px-8 md:px-12 py-8 border-b border-slate-100 flex items-center justify-between">
+                            <div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600 mb-1">Step {applyStep + 1} of {internshipCategory === 'university_assigned' ? 2 : 3}</p>
+                                <h2 className="text-xl font-bold text-slate-900">
+                                    {applyStep === 0 ? 'Select Internship Type' :
+                                        applyStep === 1 ? 'Internship Details' :
+                                            internshipCategory === 'self_found' ? 'Supervisor Information' : 'Freelancer Accounts'}
+                                </h2>
+                            </div>
+                            <button onClick={() => { setShowApplyModal(false); setApplyStep(0); }}
+                                className="h-10 w-10 flex items-center justify-center rounded-2xl text-slate-300 hover:text-slate-900 hover:bg-slate-50 transition-all">
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <div className="px-8 md:px-12 py-8">
+                            {/* Step 0: Category selection */}
+                            {applyStep === 0 && (
+                                <div className="space-y-4">
+                                    <p className="text-sm font-medium text-slate-500 mb-6">Choose the type of internship you are registering for:</p>
+                                    {[
+                                        { key: 'university_assigned', title: 'University Assigned', desc: 'Placed by COMSATS at a partner company. Company and supervisor set by admin.', icon: GraduationCap, color: 'blue' },
+                                        { key: 'self_found', title: 'Self-Found Internship', desc: 'You independently found an internship. Provide company & supervisor details.', icon: Building2, color: 'indigo' },
+                                        { key: 'freelancer', title: 'Freelancer / Remote', desc: 'Working independently on freelance platforms (Fiverr, Upwork, etc.).', icon: Globe, color: 'emerald' },
+                                    ].map(opt => (
+                                        <button key={opt.key} type="button"
+                                            onClick={() => setInternshipCategory(opt.key as any)}
+                                            className={`w-full flex items-start gap-5 p-6 rounded-2xl border-2 text-left transition-all ${internshipCategory === opt.key
+                                                ? 'border-blue-500 bg-blue-50'
+                                                : 'border-slate-100 hover:border-slate-200 bg-white'
+                                                }`}>
+                                            <div className={`h-12 w-12 shrink-0 rounded-xl flex items-center justify-center ${opt.color === 'blue' ? 'bg-blue-100 text-blue-600' :
+                                                opt.color === 'indigo' ? 'bg-indigo-100 text-indigo-600' : 'bg-emerald-100 text-emerald-600'
+                                                }`}>
+                                                <opt.icon className="h-6 w-6" />
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-slate-900">{opt.title}</p>
+                                                <p className="text-xs text-slate-500 mt-1">{opt.desc}</p>
+                                            </div>
+                                            {internshipCategory === opt.key && (
+                                                <CheckCircle2 className="h-5 w-5 text-blue-600 ml-auto shrink-0 mt-1" />
+                                            )}
+                                        </button>
+                                    ))}
+                                    <div className="pt-4">
+                                        <button type="button" onClick={() => setApplyStep(1)}
+                                            className="w-full h-14 rounded-2xl bg-blue-600 text-white text-[12px] font-bold uppercase tracking-wider shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all flex items-center justify-center gap-3">
+                                            Continue <ChevronRight className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Step 1: Details */}
+                            {applyStep === 1 && (
+                                <form onSubmit={internshipCategory === 'university_assigned' ? handleApply : (e) => { e.preventDefault(); setApplyStep(2); }} className="space-y-5">
+                                    {internshipCategory !== 'freelancer' && (
+                                        <>
+                                            <div>
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">Company / Organisation Name *</label>
+                                                <input type="text" required value={newApp.companyName} onChange={e => setNewApp(a => ({ ...a, companyName: e.target.value }))}
+                                                    className="w-full h-14 rounded-2xl bg-slate-50 px-5 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-50" placeholder="e.g. Systems Limited" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">Work Mode</label>
+                                                    <select value={newApp.workMode} onChange={e => setNewApp(a => ({ ...a, workMode: e.target.value as any }))}
+                                                        className="w-full h-14 rounded-2xl bg-slate-50 px-5 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-50">
+                                                        <option value="onsite">Onsite</option>
+                                                        <option value="remote">Remote</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">Duration</label>
+                                                    <select value={newApp.duration} onChange={e => setNewApp(a => ({ ...a, duration: e.target.value }))}
+                                                        className="w-full h-14 rounded-2xl bg-slate-50 px-5 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-50">
+                                                        {['6 weeks', '8 weeks', '10 weeks', '12 weeks', '6 months'].map(d => <option key={d} value={d}>{d}</option>)}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">Position / Role *</label>
+                                        <input type="text" required value={newApp.position} onChange={e => setNewApp(a => ({ ...a, position: e.target.value }))}
+                                            className="w-full h-14 rounded-2xl bg-slate-50 px-5 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-50" placeholder="e.g. Software Engineer Intern" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">Internship Field</label>
+                                        <input type="text" value={newApp.internshipField} onChange={e => setNewApp(a => ({ ...a, internshipField: e.target.value }))}
+                                            className="w-full h-14 rounded-2xl bg-slate-50 px-5 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-50" placeholder="e.g. Web Development, Data Science" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">Description</label>
+                                        <textarea rows={4} value={newApp.description} onChange={e => setNewApp(a => ({ ...a, description: e.target.value }))}
+                                            className="w-full rounded-2xl bg-slate-50 p-5 text-sm font-medium text-slate-800 outline-none focus:ring-4 focus:ring-blue-50 resize-none"
+                                            placeholder="Brief description of your internship role and responsibilities..." />
+                                    </div>
+
+                                    {applyError && <p className="text-xs font-bold text-red-500 bg-red-50 px-4 py-3 rounded-xl">{applyError}</p>}
+
+                                    <div className="flex items-center justify-between gap-4 pt-2">
+                                        <button type="button" onClick={() => setApplyStep(0)}
+                                            className="flex items-center gap-2 px-6 py-3 rounded-2xl text-[11px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all">
+                                            <ChevronLeft className="h-4 w-4" /> Back
+                                        </button>
+                                        <button type="submit" disabled={applyLoading}
+                                            className="flex-1 h-14 rounded-2xl bg-blue-600 text-white text-[12px] font-bold uppercase tracking-wider shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
+                                            {applyLoading ? <Loader2 className="h-4 w-4 animate-spin" /> :
+                                                internshipCategory === 'university_assigned' ? 'Submit Application' : <><span>Next</span><ChevronRight className="h-4 w-4" /></>}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+
+                            {/* Step 2: Self-found supervisor info */}
+                            {applyStep === 2 && internshipCategory === 'self_found' && (
+                                <form onSubmit={handleApply} className="space-y-5">
+                                    <p className="text-sm font-medium text-slate-500 mb-2">Provide details of your on-site supervisor at the company:</p>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">Supervisor Name *</label>
+                                            <input type="text" required value={selfFoundSupervisor.name} onChange={e => setSelfFoundSupervisor(s => ({ ...s, name: e.target.value }))}
+                                                className="w-full h-14 rounded-2xl bg-slate-50 px-5 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-50" placeholder="Mr. Ahmed Khan" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">Designation</label>
+                                            <input type="text" value={selfFoundSupervisor.designation} onChange={e => setSelfFoundSupervisor(s => ({ ...s, designation: e.target.value }))}
+                                                className="w-full h-14 rounded-2xl bg-slate-50 px-5 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-50" placeholder="Team Lead" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">Supervisor Email *</label>
+                                        <input type="email" required value={selfFoundSupervisor.email} onChange={e => setSelfFoundSupervisor(s => ({ ...s, email: e.target.value }))}
+                                            className="w-full h-14 rounded-2xl bg-slate-50 px-5 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-50" placeholder="supervisor@company.com" />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">Phone</label>
+                                            <input type="tel" value={selfFoundSupervisor.phone} onChange={e => setSelfFoundSupervisor(s => ({ ...s, phone: e.target.value }))}
+                                                className="w-full h-14 rounded-2xl bg-slate-50 px-5 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-50" placeholder="+92 xxx xxxxxxx" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">Company Address</label>
+                                            <input type="text" value={selfFoundSupervisor.companyAddress} onChange={e => setSelfFoundSupervisor(s => ({ ...s, companyAddress: e.target.value }))}
+                                                className="w-full h-14 rounded-2xl bg-slate-50 px-5 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-50" placeholder="Plot 12, Tech Park" />
+                                        </div>
+                                    </div>
+
+                                    {applyError && <p className="text-xs font-bold text-red-500 bg-red-50 px-4 py-3 rounded-xl">{applyError}</p>}
+
+                                    <div className="flex items-center justify-between gap-4 pt-2">
+                                        <button type="button" onClick={() => setApplyStep(1)}
+                                            className="flex items-center gap-2 px-6 py-3 rounded-2xl text-[11px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all">
+                                            <ChevronLeft className="h-4 w-4" /> Back
+                                        </button>
+                                        <button type="submit" disabled={applyLoading}
+                                            className="flex-1 h-14 rounded-2xl bg-blue-600 text-white text-[12px] font-bold uppercase tracking-wider shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                                            {applyLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Submit Application'}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+
+                            {/* Step 2: Freelancer accounts */}
+                            {applyStep === 2 && internshipCategory === 'freelancer' && (
+                                <form onSubmit={handleApply} className="space-y-5">
+                                    <p className="text-sm font-medium text-slate-500 mb-2">Add links to your freelancing profiles or active projects:</p>
+                                    {freelancerAccounts.map((acc, i) => (
+                                        <div key={i} className="p-5 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Account {i + 1}</span>
+                                                {freelancerAccounts.length > 1 && (
+                                                    <button type="button" onClick={() => setFreelancerAccounts(a => a.filter((_, idx) => idx !== i))}
+                                                        className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 className="h-4 w-4" /></button>
+                                                )}
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Platform *</label>
+                                                    <input type="text" required value={acc.platform}
+                                                        onChange={e => setFreelancerAccounts(a => a.map((aa, idx) => idx === i ? { ...aa, platform: e.target.value } : aa))}
+                                                        className="w-full h-12 rounded-xl bg-white px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 border border-slate-100" placeholder="Fiverr, Upwork..." />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Username</label>
+                                                    <input type="text" value={acc.username}
+                                                        onChange={e => setFreelancerAccounts(a => a.map((aa, idx) => idx === i ? { ...aa, username: e.target.value } : aa))}
+                                                        className="w-full h-12 rounded-xl bg-white px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 border border-slate-100" placeholder="@username" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Profile URL *</label>
+                                                <input type="url" required value={acc.profileUrl}
+                                                    onChange={e => setFreelancerAccounts(a => a.map((aa, idx) => idx === i ? { ...aa, profileUrl: e.target.value } : aa))}
+                                                    className="w-full h-12 rounded-xl bg-white px-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 border border-slate-100" placeholder="https://www.fiverr.com/..." />
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <button type="button" onClick={() => setFreelancerAccounts(a => [...a, { platform: '', profileUrl: '', username: '' }])}
+                                        className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-blue-600 hover:text-blue-800 transition-colors">
+                                        <Plus className="h-4 w-4" /> Add Another Platform
+                                    </button>
+
+                                    {applyError && <p className="text-xs font-bold text-red-500 bg-red-50 px-4 py-3 rounded-xl">{applyError}</p>}
+
+                                    <div className="flex items-center justify-between gap-4 pt-2">
+                                        <button type="button" onClick={() => setApplyStep(1)}
+                                            className="flex items-center gap-2 px-6 py-3 rounded-2xl text-[11px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all">
+                                            <ChevronLeft className="h-4 w-4" /> Back
+                                        </button>
+                                        <button type="submit" disabled={applyLoading}
+                                            className="flex-1 h-14 rounded-2xl bg-blue-600 text-white text-[12px] font-bold uppercase tracking-wider shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                                            {applyLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Submit Application'}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
                     </motion.div>
                 </div>
             )}
@@ -1164,11 +1665,5 @@ const ProfileCard = ({ icon: Icon, label, value, color, isHighlight }: { icon: a
     );
 };
 
-const InputField = ({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) => (
-    <div className="space-y-3">
-        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-2 block">{label}</label>
-        <input {...props} required className="w-full h-18 rounded-3xl bg-slate-50 border-none px-8 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-50 transition-all placeholder:text-slate-300 shadow-inner" />
-    </div>
-);
 
 export default StudentDashboard;

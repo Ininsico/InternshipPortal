@@ -1,7 +1,7 @@
 const Student = require('../models/Student.model');
 const Application = require('../models/Application.model');
-
 const Agreement = require('../models/Agreement.model');
+const WeeklyUpdate = require('../models/WeeklyUpdate.model');
 
 const getStudentProfile = async (req, res) => {
     try {
@@ -30,7 +30,12 @@ const getStudentApplications = async (req, res) => {
 
 const createApplication = async (req, res) => {
     try {
-        const { companyName, position, description, internshipType, duration } = req.body;
+        const {
+            companyName, position, description, internshipType, duration,
+            internshipCategory, workMode, internshipField,
+            selfFoundSupervisor, freelancerAccounts,
+            companyDomain, professionalSummary
+        } = req.body;
 
         // Process uploaded files if any
         let documents = [];
@@ -41,6 +46,27 @@ const createApplication = async (req, res) => {
                 type: file.mimetype,
                 uploadedAt: new Date()
             }));
+        }
+
+        // Validate category-specific fields
+        const cat = internshipCategory || 'university_assigned';
+        if (cat === 'self_found') {
+            const sup = selfFoundSupervisor || {};
+            if (!sup.name || !sup.email) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Supervisor name and email are required for self-found internships.'
+                });
+            }
+        }
+        if (cat === 'freelancer') {
+            const accs = freelancerAccounts || [];
+            if (!accs.length || !accs[0].platform || !accs[0].profileUrl) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'At least one freelancer platform/profile URL is required for freelancer internships.'
+                });
+            }
         }
 
         // Check if application already exists for this student
@@ -60,7 +86,13 @@ const createApplication = async (req, res) => {
             existingApp.internshipType = internshipType;
             existingApp.duration = duration;
             existingApp.description = description;
-            // Merge or replace documents
+            existingApp.internshipCategory = cat;
+            existingApp.workMode = cat === 'freelancer' ? null : (workMode || null);
+            existingApp.internshipField = internshipField || null;
+            existingApp.selfFoundSupervisor = cat === 'self_found' ? selfFoundSupervisor : {};
+            existingApp.freelancerAccounts = cat === 'freelancer' ? (freelancerAccounts || []) : [];
+            existingApp.companyDomain = companyDomain || null;
+            existingApp.professionalSummary = professionalSummary || null;
             if (documents.length > 0) {
                 existingApp.documents = documents;
             }
@@ -78,6 +110,13 @@ const createApplication = async (req, res) => {
             internshipType,
             duration,
             description,
+            internshipCategory: cat,
+            workMode: cat === 'freelancer' ? null : (workMode || null),
+            internshipField: internshipField || null,
+            selfFoundSupervisor: cat === 'self_found' ? selfFoundSupervisor : {},
+            freelancerAccounts: cat === 'freelancer' ? (freelancerAccounts || []) : [],
+            companyDomain: companyDomain || null,
+            professionalSummary: professionalSummary || null,
             documents
         });
 
@@ -155,28 +194,34 @@ const getDashboardState = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Student not found' });
         }
 
-        const stats = {
-            internshipStatus: student.internshipStatus,
-            assignedCompany: student.assignedCompany,
-            assignedPosition: student.assignedPosition,
-        };
+        const isFreelancer = student.internshipCategory === 'freelancer';
+        const isAssigned = student.internshipStatus === 'internship_assigned';
 
-        // Fetch applications, tasks, submissions and report in parallel
-        const [applications, tasks, allSubmissions, report] = await Promise.all([
+        // Fetch data in parallel based on internship type
+        const [applications, tasks, allSubmissions, report, weeklyUpdates] = await Promise.all([
             Application.find({ studentId: req.user.id }).sort({ createdAt: -1 }).lean(),
-            student.internshipStatus === 'internship_assigned' && student.assignedCompany
+
+            // Freelancers get NO tasks
+            isAssigned && !isFreelancer && student.assignedCompany
                 ? Task.find({
                     company: { $regex: new RegExp(`^${student.assignedCompany.trim()}$`, 'i') },
                     status: 'active',
                     $or: [{ assignedTo: req.user.id }, { assignedTo: null }]
                 }).populate('createdBy', 'name company').sort({ deadline: 1 }).lean()
                 : Promise.resolve([]),
-            student.internshipStatus === 'internship_assigned'
+
+            isAssigned && !isFreelancer
                 ? Submission.find({ student: req.user.id }).select('task status companyGrade facultyGrade submittedAt content attachments').lean()
                 : Promise.resolve([]),
-            student.internshipStatus === 'internship_assigned'
+
+            isAssigned
                 ? Report.findOne({ student: req.user.id }).populate('createdBy', 'name email').lean()
-                : Promise.resolve(null)
+                : Promise.resolve(null),
+
+            // Freelancers get weekly updates instead
+            isAssigned && isFreelancer
+                ? WeeklyUpdate.find({ studentId: req.user.id }).sort({ weekNumber: 1 }).lean()
+                : Promise.resolve([]),
         ]);
 
         const submissionMap = {};
@@ -193,7 +238,9 @@ const getDashboardState = async (req, res) => {
             applications,
             tasks: tasksWithStatus,
             submissions: allSubmissions,
-            report
+            report,
+            weeklyUpdates,
+            isFreelancer,
         });
     } catch (err) {
         console.error('Dashboard State Error:', err);
@@ -205,12 +252,11 @@ const getDashboardState = async (req, res) => {
 const getMyTasks = async (req, res) => {
     try {
         const student = await Student.findById(req.user.id);
-        // Only students with internship fully assigned can see tasks
-        if (!student || student.internshipStatus !== 'internship_assigned' || !student.assignedCompany) {
+        // Freelancers never see tasks
+        if (!student || student.internshipStatus !== 'internship_assigned' || !student.assignedCompany || student.internshipCategory === 'freelancer') {
             return res.json({ success: true, tasks: [] });
         }
 
-        // Use case-insensitive regex so company name mismatches don't block tasks
         const companyRegex = new RegExp(`^${student.assignedCompany.trim()}$`, 'i');
 
         const tasks = await Task.find({
@@ -248,11 +294,17 @@ const submitTask = async (req, res) => {
         }
 
         const student = await Student.findById(req.user.id);
+
+        // Freelancers cannot submit tasks
+        if (student.internshipCategory === 'freelancer') {
+            return res.status(403).json({ success: false, message: 'Freelance interns submit weekly updates, not task submissions.' });
+        }
+
         const task = await Task.findById(taskId);
         if (!task) return res.status(404).json({ success: false, message: 'Task not found.' });
         if (task.status === 'closed') return res.status(400).json({ success: false, message: 'This task is closed.' });
-        const studentCompany = (student.assignedCompany || "").toLowerCase().trim();
-        const taskCompany = (task.company || "").toLowerCase().trim();
+        const studentCompany = (student.assignedCompany || '').toLowerCase().trim();
+        const taskCompany = (task.company || '').toLowerCase().trim();
 
         if (taskCompany !== studentCompany) {
             return res.status(403).json({
@@ -261,7 +313,6 @@ const submitTask = async (req, res) => {
             });
         }
 
-        // Process uploaded files
         let attachments = [];
         if (req.files && req.files.length > 0) {
             attachments = req.files.map(file => ({
@@ -270,7 +321,7 @@ const submitTask = async (req, res) => {
                 path: file.path,
                 mimetype: file.mimetype,
                 size: file.size,
-                url: file.path // Cloudinary URL
+                url: file.path
             }));
         }
 
@@ -322,6 +373,54 @@ const getMyReport = async (req, res) => {
     }
 };
 
+// POST /api/student/weekly-update — submit a weekly update (freelancers only)
+const submitWeeklyUpdate = async (req, res) => {
+    try {
+        const student = await Student.findById(req.user.id);
+        if (!student || student.internshipCategory !== 'freelancer' || student.internshipStatus !== 'internship_assigned') {
+            return res.status(403).json({ success: false, message: 'Only assigned freelance interns can submit weekly updates.' });
+        }
+
+        const { weekNumber, workSummary, platformLinks, hoursWorked, technologiesUsed, challenges } = req.body;
+
+        if (!weekNumber || !workSummary) {
+            return res.status(400).json({ success: false, message: 'weekNumber and workSummary are required.' });
+        }
+
+        // Upsert: one update per week per student
+        const update = await WeeklyUpdate.findOneAndUpdate(
+            { studentId: req.user.id, weekNumber: Number(weekNumber) },
+            {
+                workSummary,
+                platformLinks: platformLinks || [],
+                hoursWorked: hoursWorked || 0,
+                technologiesUsed: technologiesUsed || '',
+                challenges: challenges || '',
+                status: 'submitted',
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+
+        res.json({ success: true, message: 'Weekly update submitted successfully.', update });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// GET /api/student/weekly-updates — fetch student's weekly updates
+const getMyWeeklyUpdates = async (req, res) => {
+    try {
+        const student = await Student.findById(req.user.id);
+        if (!student || student.internshipCategory !== 'freelancer') {
+            return res.json({ success: true, updates: [] });
+        }
+        const updates = await WeeklyUpdate.find({ studentId: req.user.id }).sort({ weekNumber: 1 });
+        res.json({ success: true, updates });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 const updateProfilePicture = async (req, res) => {
     try {
         if (!req.file) {
@@ -353,5 +452,6 @@ module.exports = {
     getMySubmissions,
     getMyReport,
     updateProfilePicture,
+    submitWeeklyUpdate,
+    getMyWeeklyUpdates,
 };
-

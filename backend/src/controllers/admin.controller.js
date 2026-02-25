@@ -248,18 +248,22 @@ const getAdminDashboardState = async (req, res) => {
         const isSuper = req.user.role === 'super_admin';
 
         // Basic Stats (Running in parallel)
-        const [totalStudents, completedPlacements, pendingAgreements, activeAppsCount] = await Promise.all([
+        const [totalStudents, completedPlacements, pendingAgreements, activeAppsCount, totalFaculty, totalCompanies] = await Promise.all([
             Student.countDocuments({ degree: { $in: ALLOWED_DEGREES } }),
             Student.countDocuments({ degree: { $in: ALLOWED_DEGREES }, internshipStatus: 'internship_assigned' }),
             Student.countDocuments({ degree: { $in: ALLOWED_DEGREES }, internshipStatus: 'agreement_submitted' }),
-            Application.countDocuments({ status: 'pending' })
+            Application.countDocuments({ status: 'pending' }),
+            Admin.countDocuments({ role: { $in: ['admin', 'super_admin'] } }),
+            Company.countDocuments()
         ]);
 
         const stats = {
             totalStudents: totalStudents || 0,
             activeApplications: activeAppsCount,
             completedPlacements: completedPlacements || 0,
-            pendingAgreements: pendingAgreements || 0
+            pendingAgreements: pendingAgreements || 0,
+            totalFaculty: totalFaculty || 0,
+            totalCompanies: totalCompanies || 0
         };
 
         // Parallel fetch for Overview data
@@ -326,10 +330,12 @@ const getAdminDashboardState = async (req, res) => {
 
 const getDashboardStats = async (req, res) => {
     try {
-        const [totalStudents, completedPlacements, pendingAgreements] = await Promise.all([
+        const [totalStudents, completedPlacements, pendingAgreements, totalFaculty, totalCompanies] = await Promise.all([
             Student.countDocuments({ degree: { $in: ALLOWED_DEGREES } }),
             Student.countDocuments({ degree: { $in: ALLOWED_DEGREES }, internshipStatus: 'internship_assigned' }),
-            Student.countDocuments({ degree: { $in: ALLOWED_DEGREES }, internshipStatus: 'agreement_submitted' })
+            Student.countDocuments({ degree: { $in: ALLOWED_DEGREES }, internshipStatus: 'agreement_submitted' }),
+            Admin.countDocuments({ role: { $in: ['admin', 'super_admin'] } }),
+            Company.countDocuments()
         ]);
 
         const activeAppsCount = await Application.countDocuments({ status: 'pending' });
@@ -338,7 +344,9 @@ const getDashboardStats = async (req, res) => {
             totalStudents: totalStudents || 0,
             activeApplications: activeAppsCount,
             completedPlacements: completedPlacements || 0,
-            pendingAgreements: pendingAgreements || 0
+            pendingAgreements: pendingAgreements || 0,
+            totalFaculty: totalFaculty || 0,
+            totalCompanies: totalCompanies || 0
         };
 
         const [recentApps, recentAgreements, recentSubmissions] = await Promise.all([
@@ -545,8 +553,8 @@ const assignInternship = async (req, res) => {
             siteSupervisorPhone
         } = req.body;
 
-        if (!studentId || !facultySupervisorId || !assignedCompany || !assignedPosition) {
-            return res.status(400).json({ success: false, message: 'studentId, facultySupervisorId, assignedCompany, and assignedPosition are required.' });
+        if (!studentId || !facultySupervisorId || !assignedPosition) {
+            return res.status(400).json({ success: false, message: 'studentId, facultySupervisorId, and assignedPosition are required.' });
         }
 
         const student = await Student.findById(studentId);
@@ -562,23 +570,67 @@ const assignInternship = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Faculty supervisor not found.' });
         }
 
+        // ── Pull category info from the approved application ──────────────────
+        const application = await Application.findOne({ studentId, status: 'approved' })
+            .sort({ createdAt: -1 });
+
+        const category = application?.internshipCategory || 'university_assigned';
+        const workMode = application?.workMode || null;
+        const internshipField = application?.internshipField || null;
+
+        // ── Determine which company to link for non-freelancers ───────────────
         let companyIdToLink = assignedCompanyId || null;
-        if (!companyIdToLink && assignedCompany) {
-            const companyDoc = await Company.findOne({ name: new RegExp(`^${assignedCompany.trim()}$`, 'i') });
-            if (companyDoc) {
-                companyIdToLink = companyDoc._id;
+        let finalCompanyName = assignedCompany || null;
+
+        if (category === 'freelancer') {
+            // Freelancers don't have a company
+            finalCompanyName = 'Freelance';
+            companyIdToLink = null;
+        } else {
+            if (!assignedCompany) {
+                return res.status(400).json({ success: false, message: 'assignedCompany is required for non-freelancer internships.' });
+            }
+            if (!companyIdToLink) {
+                const companyDoc = await Company.findOne({ name: new RegExp(`^${assignedCompany.trim()}$`, 'i') });
+                if (companyDoc) companyIdToLink = companyDoc._id;
             }
         }
 
+        // ── Auto-email site supervisor for self-found internships ─────────────
+        if (category === 'self_found' && application?.selfFoundSupervisor?.email) {
+            const sup = application.selfFoundSupervisor;
+            // Send notification email (best-effort, don't fail if email fails)
+            try {
+                const { sendEmail } = require('../utils/email.util');
+                const html = `
+                    <div style="font-family:'Segoe UI',sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#fff;border-radius:16px;border:1px solid #e2e8f0">
+                        <h1 style="color:#1e293b;font-size:22px;margin-bottom:8px">Internship Supervisor Notification</h1>
+                        <p style="color:#64748b;margin-bottom:24px">Dear ${sup.name},</p>
+                        <p style="color:#475569">You have been listed as the company supervisor for <strong>${student.name}</strong> (${student.rollNumber}) for their internship at <strong>${finalCompanyName || sup.companyAddress || 'your organisation'}</strong>.</p>
+                        <p style="color:#475569">The student's faculty advisor at COMSATS University will coordinate periodically. If you have any queries, please reply to this email.</p>
+                        <hr style="margin:24px 0;border:none;border-top:1px solid #e2e8f0">
+                        <p style="color:#94a3b8;font-size:12px">This is an automated message from the CUI Internship Management Portal.</p>
+                    </div>`;
+                await sendEmail(sup.email, 'Internship Supervisor Notification – CUI Portal', html);
+            } catch (emailErr) {
+                console.warn('[assignInternship] Supervisor email failed (non-fatal):', emailErr.message);
+            }
+        }
+
+        // ── Update the student record ─────────────────────────────────────────
         student.supervisorId = facultySupervisorId;
-        student.assignedCompany = assignedCompany;
+        student.assignedCompany = finalCompanyName;
         student.assignedCompanyId = companyIdToLink;
         student.assignedPosition = assignedPosition;
-        student.siteSupervisorName = siteSupervisorName || null;
-        student.siteSupervisorEmail = siteSupervisorEmail || null;
-        student.siteSupervisorPhone = siteSupervisorPhone || null;
+        student.siteSupervisorName = siteSupervisorName || application?.selfFoundSupervisor?.name || null;
+        student.siteSupervisorEmail = siteSupervisorEmail || application?.selfFoundSupervisor?.email || null;
+        student.siteSupervisorPhone = siteSupervisorPhone || application?.selfFoundSupervisor?.phone || null;
         student.internshipStatus = 'internship_assigned';
         student.internshipAssignedAt = new Date();
+        // Denormalize for fast filtering
+        student.internshipCategory = category;
+        student.workMode = workMode;
+        student.internshipField = internshipField;
         await student.save();
 
         // Mark the student's application as in_progress
@@ -683,29 +735,23 @@ const deleteStudent = async (req, res) => {
 
         console.log(`[WIPEOUT] Starting complete wipeout for student: ${student.name} (${studentId})`);
 
-        // 1. Delete all applications
-        const appDelete = await Application.deleteMany({ studentId });
-        console.log(`[WIPEOUT] Deleted ${appDelete.deletedCount} applications.`);
+        // Load WeeklyUpdate lazily (handles the new model)
+        const WeeklyUpdate = require('../models/WeeklyUpdate.model');
 
-        // 2. Delete all agreements
-        const agreementDelete = await Agreement.deleteMany({ studentId });
-        console.log(`[WIPEOUT] Deleted ${agreementDelete.deletedCount} agreements.`);
+        await Promise.all([
+            Application.deleteMany({ studentId }),
+            Agreement.deleteMany({ studentId }),
+            Submission.deleteMany({ student: studentId }),
+            Report.deleteMany({ student: studentId }),
+            WeeklyUpdate.deleteMany({ studentId }),
+        ]);
 
-        // 3. Delete all submissions
-        const submissionDelete = await Submission.deleteMany({ student: studentId });
-        console.log(`[WIPEOUT] Deleted ${submissionDelete.deletedCount} submissions.`);
-
-        // 4. Delete all faculty reports regarding this student
-        const reportDelete = await Report.deleteMany({ student: studentId });
-        console.log(`[WIPEOUT] Deleted ${reportDelete.deletedCount} reports.`);
-
-        // 5. Finally delete the student record
         await Student.findByIdAndDelete(studentId);
         console.log(`[WIPEOUT] Student ${studentId} permanently removed.`);
 
         res.json({
             success: true,
-            message: `Student "${student.name}" (${student.rollNumber}) and all their relative records (applications, agreements, submissions, evaluations) have been permanently wiped out.`
+            message: `Student "${student.name}" (${student.rollNumber}) and all their relative records have been permanently wiped out.`
         });
     } catch (err) {
         console.error('[WIPEOUT ERROR] deleteStudent:', err);
