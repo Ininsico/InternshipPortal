@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, GraduationCap, Loader2, AlertCircle, X, CheckCircle2, Mail, RefreshCw, Menu } from 'lucide-react';
+import { Eye, EyeOff, Loader2, AlertCircle, X, CheckCircle2, Mail, RefreshCw, Menu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -191,12 +191,13 @@ const LandingPage = () => {
 
             <header className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-12 py-6 sm:py-10">
                 <nav className="mx-auto flex max-w-[1400px] items-center justify-between">
-                    <div className="flex items-center gap-3 sm:gap-6">
-                        <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-slate-900 text-white shadow-xl shadow-slate-900/10">
-                            <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6" />
+                    <div className="flex items-center gap-4 sm:gap-8">
+                        <div className="flex h-24 w-24 sm:h-36 sm:w-36 items-center justify-center rounded-[2rem] bg-white shadow-2xl shadow-slate-200/50 overflow-hidden ring-1 ring-slate-100">
+                            <img src="/comsatslogo.png" alt="COMSATS University" className="h-full w-full object-contain p-2" />
                         </div>
                         <div className="flex flex-col">
-                            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 uppercase leading-none font-display">COMSATS</h1>
+                            <h1 className="text-2xl sm:text-4xl font-black tracking-tighter text-slate-900 uppercase leading-none font-display">COMSATS</h1>
+                            <p className="text-[10px] sm:text-xs font-bold text-blue-600 mt-2 tracking-[0.2em] uppercase">University Islamabad</p>
                         </div>
                     </div>
 
