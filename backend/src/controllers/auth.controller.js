@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const Admin = require('../models/Admin.model');
 const Student = require('../models/Student.model');
+const Application = require('../models/Application.model');
 const { studentLoginSchema, adminLoginSchema, forgotPasswordSchema, resetPasswordSchema } = require('../schemas/auth.schema');
 const { sendEmail, passwordResetTemplate, otpVerificationTemplate } = require('../utils/email.util');
 
@@ -290,6 +291,20 @@ const getMe = async (req, res) => {
             if (!student) {
                 return res.status(404).json({ success: false, message: 'Student not found.' });
             }
+            let category = student.internshipCategory || null;
+            const agreementStage = ['approved', 'agreement_submitted'].includes(student.internshipStatus);
+            if (!category && agreementStage) {
+                const app = await Application.findOne({
+                    studentId: id,
+                    status: { $in: ['approved', 'in_progress'] }
+                }).sort({ createdAt: -1 }).lean();
+                if (app?.internshipCategory) {
+                    category = app.internshipCategory;
+                    // Persist so future calls are instant
+                    await Student.findByIdAndUpdate(id, { internshipCategory: category });
+                }
+            }
+
             return res.json({
                 success: true,
                 user: {
@@ -301,6 +316,7 @@ const getMe = async (req, res) => {
                     degree: student.degree,
                     role: 'student',
                     internshipStatus: student.internshipStatus,
+                    internshipCategory: category,
                 },
             });
         }

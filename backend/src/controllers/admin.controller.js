@@ -284,7 +284,7 @@ const getAdminDashboardState = async (req, res) => {
         if (isSuper) {
             // Re-using the logic from getAllStudents but optimized
             const rawStudents = await Student.find({ degree: { $in: ALLOWED_DEGREES } })
-                .select('name rollNumber degree email internshipStatus assignedCompany assignedPosition supervisorId createdAt profilePicture')
+                .select('name rollNumber degree email internshipStatus internshipCategory assignedCompany assignedPosition supervisorId createdAt profilePicture')
                 .populate('supervisorId', 'name email')
                 .sort({ createdAt: -1 })
                 .limit(100) // Initial chunk
@@ -381,7 +381,17 @@ const approveInternship = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Student not found' });
         }
 
+        // Pull internshipCategory from the pending application so ProtectedRoute knows whether
+        // to send this student to the agreement page or straight to the dashboard
+        const pendingApp = await Application.findOne({ studentId, status: 'pending' }).sort({ createdAt: -1 });
+        const category = pendingApp?.internshipCategory || null;
+
         student.internshipStatus = status;
+        if (status === 'approved' && category) {
+            student.internshipCategory = category;
+        } else if (status === 'rejected') {
+            student.internshipCategory = null; // Reset on rejection
+        }
         await student.save();
 
         // Update all pending applications for this student to prevent dangling 'pending' records
@@ -520,6 +530,45 @@ const getPartneredCompanies = async (req, res) => {
         });
 
         res.json({ success: true, companies: Array.from(companiesMap.values()) });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+const getCompanyAdminsById = async (req, res) => {
+    try {
+        const { companyId } = req.params;
+        let companyName = "";
+
+        // Attempt as Company ID (Manual/Verified)
+        const companyObj = await Company.findById(companyId).lean();
+        if (companyObj) {
+            companyName = companyObj.name;
+        } else {
+            // Attempt as Admin ID (Unverified/Virtual)
+            const adminRep = await Admin.findById(companyId).select('company').lean();
+            if (adminRep) companyName = adminRep.company;
+        }
+
+        if (!companyName) {
+            return res.status(404).json({ success: false, message: 'Company not found.' });
+        }
+
+        // Find all admins for this company
+        const admins = await Admin.find({
+            role: 'company_admin',
+            company: { $regex: new RegExp(`^${companyName}$`, 'i') }
+        }).select('-passwordHash').lean();
+
+        const adminsWithStats = await Promise.all(admins.map(async (admin) => {
+            const assignedStudents = await Student.countDocuments({ supervisorId: admin._id });
+            return {
+                ...admin,
+                assignedStudents
+            };
+        }));
+
+        res.json({ success: true, admins: adminsWithStats });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -985,6 +1034,7 @@ module.exports = {
     deleteCompany,
     updateStudentInternship,
     getStudentPlacementContext,
-    resendAdminInvitation
+    resendAdminInvitation,
+    getCompanyAdminsById
 };
 

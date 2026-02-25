@@ -217,6 +217,7 @@ router.get('/verified-students', requireRole('super_admin'), AdminController.get
  *     tags: [Admin]
  */
 router.get('/partnered-companies', requireRole('super_admin'), AdminController.getPartneredCompanies);
+router.get('/companies/:companyId/admins', requireRole('super_admin'), AdminController.getCompanyAdminsById);
 router.post('/companies', requireRole('admin', 'super_admin'), AdminController.createCompany);
 router.delete('/companies/:companyId', requireRole('super_admin'), AdminController.deleteCompany);
 

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Trash2, Paperclip, User, ShieldCheck, Loader2 } from 'lucide-react';
+import { X, Trash2, User, ShieldCheck, Loader2 } from 'lucide-react';
 
 interface ModalsProps {
     showAddAdminModal: boolean;
@@ -27,8 +27,6 @@ interface ModalsProps {
     handleDeleteStudent: () => void;
     deleteStudentLoading: boolean;
 
-    viewApp: any;
-    setViewApp: (v: any) => void;
 
     faculty: any[];
 
@@ -189,89 +187,6 @@ const AdminDashboardModals = (props: ModalsProps) => {
                                 <button onClick={props.handleDeleteStudent} disabled={props.deleteStudentLoading} className="flex-1 h-14 rounded-2xl bg-red-600 text-white text-[10px] font-black uppercase tracking-[.2em] hover:bg-red-700 transition-all shadow-lg shadow-red-500/20 font-display">
                                     {props.deleteStudentLoading ? 'Wiping Dossier...' : 'Confirm Deletion'}
                                 </button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            {/* ── View Application ── */}
-            <AnimatePresence>
-                {props.viewApp && (
-                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4" onClick={() => props.setViewApp(null)}>
-                        <motion.div initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="w-full max-w-2xl rounded-[3rem] bg-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col ring-1 ring-slate-100" onClick={e => e.stopPropagation()}>
-                            <div className="border-b border-slate-50 px-8 sm:px-12 py-8 flex items-center justify-between bg-slate-50/50 shrink-0">
-                                <div className="min-w-0">
-                                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-blue-600 mb-2 font-display italic">Internship Placement Dossier</p>
-                                    <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tighter truncate font-display uppercase">{props.viewApp.companyName}</h3>
-                                </div>
-                                <button onClick={() => props.setViewApp(null)} className="h-12 w-12 flex items-center justify-center rounded-[1.25rem] bg-white text-slate-400 shadow-sm border border-slate-100 hover:text-slate-900 transition-all shrink-0 ml-6"><X className="h-6 w-6" /></button>
-                            </div>
-                            <div className="p-8 sm:p-12 space-y-10 sm:space-y-14 overflow-y-auto custom-scrollbar">
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 sm:gap-12">
-                                    <div className="col-span-2 sm:col-span-1">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 font-display">Designation</p>
-                                        <p className="text-sm font-bold text-slate-900 font-display uppercase tracking-tight">{props.viewApp.position || 'N/A'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 font-display">Environment</p>
-                                        <p className="text-sm font-bold text-slate-900 font-display uppercase tracking-tight">{props.viewApp.internshipType || 'N/A'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 font-display">Tenure</p>
-                                        <p className="text-sm font-bold text-slate-900 font-display uppercase tracking-tight">{props.viewApp.duration || 'N/A'}</p>
-                                    </div>
-                                </div>
-                                <div className="space-y-4">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-display">Professional Scope</p>
-                                    <div className="p-6 sm:p-8 rounded-[2rem] bg-slate-50 border border-slate-100 relative overflow-hidden">
-                                        <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500" />
-                                        <p className="text-[13px] font-bold text-slate-600 leading-relaxed font-display italic">"{props.viewApp.description || 'Electronic dossier contains no descriptive content.'}"</p>
-                                    </div>
-                                </div>
-                                <div className="space-y-6 pt-10 sm:pt-14 border-t border-slate-50">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-display">Verified Attachments</p>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        {props.viewApp.documents && props.viewApp.documents.length > 0 ? (
-                                            props.viewApp.documents.map((doc: any, i: number) => (
-                                                <a
-                                                    key={i}
-                                                    href={doc.url.startsWith('http') ? doc.url : `${props.apiBase}${doc.url}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-slate-100 hover:border-blue-500/20 hover:bg-blue-50/30 transition-all group shadow-sm"
-                                                >
-                                                    <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shrink-0">
-                                                        <Paperclip className="w-5 h-5" />
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <p className="text-[11px] font-black text-slate-900 truncate uppercase tracking-widest font-display leading-none mb-2">{doc.name || 'Supporting Document'}</p>
-                                                        <p className="text-[9px] font-black text-blue-500 uppercase tracking-[0.2em] font-display leading-none">Download File →</p>
-                                                    </div>
-                                                </a>
-                                            ))
-                                        ) : (
-                                            <div className="col-span-2 py-12 bg-slate-50/50 rounded-[2.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center">
-                                                <Paperclip className="w-10 h-10 text-slate-200 mb-4" />
-                                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest font-display">No supporting documents found</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="pt-10 border-t border-slate-100">
-                                        <div className="flex flex-wrap items-center justify-between gap-6 px-2">
-                                            <div>
-                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 font-display">Submission Timestamp</p>
-                                                <p className="text-[11px] font-black text-slate-900 font-display uppercase">{new Date(props.viewApp.createdAt).toLocaleString(undefined, { dateStyle: 'long' })}</p>
-                                            </div>
-                                            <div className="sm:text-right">
-                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 font-display">Validation Status</p>
-                                                <div className="px-4 py-1.5 rounded-full bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.2em] font-display shadow-lg shadow-blue-500/20">
-                                                    {props.viewApp.status}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </motion.div>
                     </div>

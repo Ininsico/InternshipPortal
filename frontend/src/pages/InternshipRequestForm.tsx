@@ -1,27 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
+import '@fontsource/montserrat/400.css';
+import '@fontsource/montserrat/700.css';
+import '@fontsource/montserrat/900.css';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
     Building2,
-    Briefcase,
-    Calendar,
     Clock,
     Send,
-    CheckCircle2,
     AlertCircle,
     Loader2,
     LogOut,
     Edit3,
-    Paperclip,
-    FilePlus,
-    X as XIcon,
-    FileText,
-    Image as ImageIcon
+    Globe,
+    Laptop,
+    UserCheck,
+    PlusCircle,
+    MinusCircle
 } from 'lucide-react';
 
 import API from '../config/api';
-import StatusTracker from '../components/StatusTracker';
+// Removed StatusTracker import as requested
 
 const API_BASE = API.STUDENT;
 
@@ -34,13 +34,27 @@ const InternshipRequestForm = () => {
     const [application, setApplication] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
 
-    const [files, setFiles] = useState<File[]>([]);
     const [formData, setFormData] = useState({
         companyName: '',
         position: '',
-        internshipType: 'On-site',
+        internshipType: 'onsite',
         duration: '',
-        description: ''
+        description: '',
+        semester: '',
+        contactNumber: '',
+        internshipField: '',
+        internshipCategory: 'university_assigned',
+        workMode: 'onsite',
+        selfFoundSupervisor: {
+            name: '',
+            email: '',
+            phone: '',
+            designation: '',
+            companyAddress: ''
+        },
+        freelancerAccounts: [
+            { platform: 'Upwork', profileUrl: '', username: '' }
+        ]
     });
 
     const fetchApplication = useCallback(async () => {
@@ -56,9 +70,20 @@ const InternshipRequestForm = () => {
                 setFormData({
                     companyName: latest.companyName || '',
                     position: latest.position || '',
-                    internshipType: latest.internshipType || 'On-site',
+                    internshipType: latest.internshipType || 'onsite',
                     duration: latest.duration || '',
-                    description: latest.description || ''
+                    description: latest.description || '',
+                    semester: latest.semester || '',
+                    contactNumber: latest.contactNumber || '',
+                    internshipField: latest.internshipField || '',
+                    internshipCategory: latest.internshipCategory || 'university_assigned',
+                    workMode: latest.workMode || 'onsite',
+                    selfFoundSupervisor: latest.selfFoundSupervisor || {
+                        name: '', email: '', phone: '', designation: '', companyAddress: ''
+                    },
+                    freelancerAccounts: latest.freelancerAccounts?.length ? latest.freelancerAccounts : [
+                        { platform: 'Upwork', profileUrl: '', username: '' }
+                    ]
                 });
                 return latest;
             }
@@ -83,16 +108,6 @@ const InternshipRequestForm = () => {
         init();
     }, [user?.internshipStatus, navigate, fetchApplication]);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            const newFiles = Array.from(e.target.files);
-            setFiles(prev => [...prev, ...newFiles]);
-        }
-    };
-
-    const removeFile = (index: number) => {
-        setFiles(prev => prev.filter((_, i) => i !== index));
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -102,15 +117,40 @@ const InternshipRequestForm = () => {
         try {
             const token = localStorage.getItem('token');
             const data = new FormData();
-            data.append('companyName', formData.companyName);
-            data.append('position', formData.position);
+
+            // Core common fields
+            data.append('semester', formData.semester);
+            data.append('contactNumber', formData.contactNumber);
+            data.append('internshipField', formData.internshipField);
+            data.append('internshipCategory', formData.internshipCategory);
             data.append('internshipType', formData.internshipType);
             data.append('duration', formData.duration);
             data.append('description', formData.description);
 
-            files.forEach(file => {
-                data.append('files', file);
-            });
+            // Category specific fields — send as flat keys to avoid JSON parse issues
+            if (formData.internshipCategory === 'university_assigned') {
+                data.append('companyName', 'To be assigned by University');
+                data.append('position', 'Intern');
+            } else if (formData.internshipCategory === 'self_found') {
+                data.append('companyName', formData.companyName);
+                data.append('position', formData.position);
+                // Send supervisor as flat fields
+                data.append('sup_name', formData.selfFoundSupervisor.name);
+                data.append('sup_email', formData.selfFoundSupervisor.email);
+                data.append('sup_phone', formData.selfFoundSupervisor.phone);
+                data.append('sup_designation', formData.selfFoundSupervisor.designation);
+                data.append('sup_address', formData.selfFoundSupervisor.companyAddress);
+            } else if (formData.internshipCategory === 'freelancer') {
+                data.append('companyName', 'Freelancing');
+                data.append('position', 'Freelancer');
+                // Send each account as indexed flat fields
+                formData.freelancerAccounts.forEach((acc, i) => {
+                    data.append(`acc_${i}_platform`, acc.platform);
+                    data.append(`acc_${i}_profileUrl`, acc.profileUrl);
+                    data.append(`acc_${i}_username`, acc.username);
+                });
+                data.append('acc_count', String(formData.freelancerAccounts.length));
+            }
 
             const res = await axios.post(`${API_BASE}/apply`, data, {
                 headers: {
@@ -122,13 +162,32 @@ const InternshipRequestForm = () => {
             if (res.data.success) {
                 await fetchApplication();
                 setIsEditing(false);
-                setFiles([]);
             }
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to submit request');
         } finally {
             setLoading(false);
         }
+    };
+
+    const addFreelanceAccount = () => {
+        setFormData({
+            ...formData,
+            freelancerAccounts: [...formData.freelancerAccounts, { platform: 'Upwork', profileUrl: '', username: '' }]
+        });
+    };
+
+    const removeFreelanceAccount = (index: number) => {
+        setFormData({
+            ...formData,
+            freelancerAccounts: formData.freelancerAccounts.filter((_, i) => i !== index)
+        });
+    };
+
+    const updateFreelanceAccount = (index: number, field: string, value: string) => {
+        const updated = [...formData.freelancerAccounts];
+        updated[index] = { ...updated[index], [field]: value };
+        setFormData({ ...formData, freelancerAccounts: updated });
     };
 
     if (user?.internshipStatus === 'approved') return null;
@@ -150,111 +209,86 @@ const InternshipRequestForm = () => {
         const isRejected = user?.internshipStatus === 'rejected';
 
         return (
-            <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-4 md:p-6">
-                <div className="max-w-2xl w-full">
-                    <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-blue-500/5 border border-slate-100 overflow-hidden">
-                        <div className="p-6 md:p-12">
-                            <div className="flex flex-col items-center text-center mb-10">
-                                <div className={`w-24 h-24 rounded-[2rem] flex items-center justify-center mb-6 ${isRejected ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
+            <div className="min-h-screen bg-[#f0f4ff] flex flex-col items-center justify-center p-4 md:p-6" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                <div className="w-full max-w-lg">
+                    {/* Top accent */}
+                    <div className="h-1 bg-blue-600 rounded-t-2xl" />
+                    <div className="bg-white rounded-b-2xl shadow-xl shadow-blue-100 border border-blue-50 overflow-hidden">
+                        <div className="p-6 sm:p-10">
+                            {/* Icon + Title */}
+                            <div className="flex flex-col items-center text-center mb-8">
+                                <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-5 shadow-lg ${isRejected ? 'bg-red-50 text-red-500 shadow-red-100' : 'bg-blue-50 text-blue-600 shadow-blue-100'
                                     }`}>
-                                    {isRejected ? (
-                                        <AlertCircle className="w-12 h-12" />
-                                    ) : (
-                                        <Clock className="w-12 h-12 animate-pulse" />
-                                    )}
-                                </div>
-                                <h2 className="text-2xl font-bold text-slate-900 tracking-tight mb-3">
-                                    {isRejected ? 'Application Rejected' : 'Approval Pending'}
-                                </h2>
-                                <p className="text-slate-500 font-medium max-w-sm">
                                     {isRejected
-                                        ? 'Your previous request was not approved. Please review the feedback and resubmit.'
-                                        : 'Your internship request is currently being reviewed by the HOD.'}
+                                        ? <AlertCircle className="w-10 h-10" />
+                                        : <Clock className="w-10 h-10 animate-pulse" />}
+                                </div>
+                                <h2 className="text-lg font-black text-slate-900 tracking-tight mb-2">
+                                    {isRejected ? 'Application Rejected' : 'Awaiting Approval'}
+                                </h2>
+                                <p className="text-slate-500 text-[11px] font-bold uppercase tracking-widest leading-relaxed max-w-xs">
+                                    {isRejected
+                                        ? 'Your request was not approved. Review feedback and resubmit.'
+                                        : 'Your internship request is under review by the department.'}
                                 </p>
                             </div>
 
-                            <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-100 mb-8">
-                                <div className="flex items-center justify-between mb-6">
-                                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Application Status</span>
-                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${isRejected ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
-                                        }`}>
-                                        {user?.internshipStatus === 'none' ? 'In Review' : user?.internshipStatus}
+                            {/* Details card */}
+                            <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 mb-6 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Category</span>
+                                    <span className="px-3 py-1 bg-blue-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest">
+                                        {application?.internshipCategory?.replace(/_/g, ' ') || 'Pending'}
                                     </span>
                                 </div>
-
-                                <div className="grid grid-cols-2 gap-8">
+                                <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Company</p>
-                                        <p className="text-sm font-bold text-slate-900">{application?.companyName || 'N/A'}</p>
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Entity</p>
+                                        <p className="text-sm font-bold text-slate-900 leading-snug">{application?.companyName || 'N/A'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Position</p>
-                                        <p className="text-sm font-bold text-slate-900">{application?.position || 'N/A'}</p>
-                                    </div>
-                                </div>
-
-                                <div className="mt-8 pt-6 border-t border-slate-200">
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Internship Description</p>
-                                    <p className="text-sm font-medium text-slate-600 leading-relaxed italic">
-                                        {application?.description || 'No description provided.'}
-                                    </p>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-8 mt-4">
-                                    <div>
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Work Arrangement</p>
-                                        <p className="text-sm font-bold text-slate-900">{application?.internshipType || 'N/A'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Duration</p>
-                                        <p className="text-sm font-bold text-slate-900">{application?.duration || 'N/A'}</p>
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Role</p>
+                                        <p className="text-sm font-bold text-slate-900 leading-snug">{application?.position || 'N/A'}</p>
                                     </div>
                                 </div>
-
-                                {application?.documents && application.documents.length > 0 && (
-                                    <div className="mt-8 pt-6 border-t border-slate-200">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Submitted Attachments</p>
-                                        <div className="grid grid-cols-1 gap-2">
-                                            {application.documents.map((doc: any, i: number) => (
-                                                <a key={i} href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 hover:border-blue-200 transition-all group">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center group-hover:bg-blue-50 transition-all">
-                                                            <Paperclip className="w-4 h-4 text-slate-400 group-hover:text-blue-500" />
-                                                        </div>
-                                                        <p className="text-[10px] font-bold text-slate-600 truncate max-w-[180px]">{doc.name}</p>
-                                                    </div>
-                                                    <span className="text-[8px] font-black uppercase tracking-widest text-blue-500">View →</span>
-                                                </a>
-                                            ))}
+                                <div className="grid grid-cols-2 gap-4 pt-3 border-t border-slate-200">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center text-blue-500">
+                                            <Globe className="w-3.5 h-3.5" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Mode</p>
+                                            <p className="text-xs font-bold text-slate-800 capitalize">{application?.internshipType || 'N/A'}</p>
                                         </div>
                                     </div>
-                                )}
-
-                                {application?.feedback && (
-                                    <div className="mt-8 pt-6 border-t border-slate-200">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-red-500 mb-2">HOD Feedback</p>
-                                        <p className="text-sm font-medium text-slate-600 italic leading-relaxed">
-                                            "{application.feedback}"
-                                        </p>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center text-blue-500">
+                                            <Clock className="w-3.5 h-3.5" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Duration</p>
+                                            <p className="text-xs font-bold text-slate-800">{application?.duration || 'N/A'}</p>
+                                        </div>
                                     </div>
-                                )}
+                                </div>
                             </div>
 
-                            <div className="flex gap-4">
+                            {/* Action buttons */}
+                            <div className="flex gap-3">
                                 {isRejected && (
                                     <button
                                         onClick={() => setIsEditing(true)}
-                                        className="flex-1 h-14 bg-white border-2 border-slate-100 rounded-2xl flex items-center justify-center gap-3 text-xs font-bold uppercase tracking-wider text-slate-600 hover:bg-slate-50 hover:border-slate-200 transition-all"
+                                        className="flex-1 h-11 bg-white border-2 border-blue-100 rounded-xl flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-all active:scale-95"
                                     >
-                                        <Edit3 className="w-4 h-4" />
+                                        <Edit3 className="w-3.5 h-3.5" />
                                         Edit Application
                                     </button>
                                 )}
                                 <button
                                     onClick={() => logout()}
-                                    className="flex-1 h-14 bg-slate-900 rounded-2xl flex items-center justify-center gap-3 text-xs font-bold uppercase tracking-wider text-white hover:bg-slate-800 transition-all"
+                                    className="flex-1 h-11 bg-blue-600 rounded-xl flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest text-white hover:bg-blue-700 transition-all shadow-md shadow-blue-200 active:scale-95"
                                 >
-                                    <LogOut className="w-4 h-4" />
+                                    <LogOut className="w-3.5 h-3.5" />
                                     Sign Out
                                 </button>
                             </div>
@@ -266,215 +300,304 @@ const InternshipRequestForm = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[#f8fafc] flex flex-col">
-            <header className="h-16 md:h-20 bg-white/80 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between px-5 md:px-10 sticky top-0 z-20">
-                <div className="flex items-center gap-3 md:gap-4">
-                    <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                        <Building2 className="w-5 h-5 md:w-6 md:h-6 text-white" />
-                    </div>
-                    <span className="text-lg md:text-xl font-bold text-slate-900 tracking-tight">University Portal</span>
-                </div>
-                <button
-                    onClick={() => logout()}
-                    className="flex items-center gap-3 px-5 py-2.5 rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-500 font-bold text-xs uppercase tracking-widest transition-all"
-                >
-                    <LogOut className="w-4 h-4" />
-                    <span className="hidden sm:inline">Sign Out</span>
-                </button>
-            </header>
+        <div className="h-screen bg-[#f8fafc] flex flex-col lg:flex-row overflow-hidden" style={{ fontFamily: "'Montserrat', sans-serif" }}>
 
-            <main className="flex-1 flex items-start md:items-center justify-center p-4 md:p-8 py-8">
-                <div className="max-w-3xl w-full">
-                    <div className="mb-8 md:mb-12">
-                        <div className="flex items-center gap-2 mb-4">
-                            <span className="h-[2px] w-8 bg-blue-600" />
-                            <span className="text-xs font-bold uppercase tracking-widest text-blue-600">Verification Status</span>
-                        </div>
-                        <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-4 leading-none">
-                            Internship <br /> <span className="text-blue-600 font-bold">Registration</span>
-                        </h1>
-                        <p className="text-slate-500 font-medium max-w-lg leading-relaxed">
-                            {isEditing
-                                ? "Update your internship details below. Make sure all information is accurate to avoid rejection."
-                                : "The system requires an approved internship placement to activate your student dashboard."}
-                        </p>
-                    </div>
+            {/* Left Section: University Branding & Stage — hidden on mobile, shown on lg+ */}
+            <div className="hidden lg:flex w-[38%] bg-slate-50 flex-col items-center text-center justify-center border-r border-slate-200 relative overflow-hidden group shrink-0">
+                <div className="absolute top-0 left-0 w-full h-1 bg-blue-600" />
+                <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-white rounded-full blur-3xl opacity-50" />
 
-                    <div className="mb-8 md:mb-10 bg-white p-4 md:p-6 rounded-3xl border border-slate-100 shadow-sm">
-                        <StatusTracker currentStatus={user?.internshipStatus || 'none'} />
-                    </div>
+                <div className="relative z-10 flex flex-col items-center px-10">
+                    <img
+                        src="/comsatslogo.png"
+                        alt="COMSATS logo"
+                        style={{ width: '160px', height: '160px' }}
+                        className="mb-6 object-contain transition-transform duration-700 group-hover:scale-105"
+                    />
+                    <h2 className="text-lg font-black text-slate-950 tracking-tight border-b-2 border-blue-600 pb-3 mb-3 uppercase leading-tight">
+                        COMSATS UNIVERSITY ISLAMABAD
+                    </h2>
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-6 leading-loose">
+                        Department of Computer Science<br />Abbottabad Campus
+                    </p>
+                    <div className="w-10 h-0.5 bg-slate-200 mb-6" />
+                    <h1 className="text-xl font-black uppercase tracking-tight text-slate-900 leading-snug max-w-xs mb-8">
+                        Internship Placement & Verification
+                    </h1>
 
-                    <form onSubmit={handleSubmit} className="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-2xl shadow-blue-500/5 border border-slate-100 overflow-hidden">
-                        <div className="p-6 md:p-12 space-y-8">
-                            {error && (
-                                <div className="bg-red-50 border border-red-100 text-red-600 px-6 py-4 rounded-2xl flex items-center gap-4 animate-shake">
-                                    <AlertCircle className="w-5 h-5 shrink-0" />
-                                    <p className="text-xs font-black uppercase tracking-widest">{error}</p>
+                    {/* Stage Indicator */}
+                    <div className="w-full max-w-xs space-y-2">
+                        {[
+                            { step: 1, label: 'Student Credentials', active: true },
+                            { step: 2, label: 'Placement Category', active: true },
+                            { step: 3, label: 'Entity Details', active: true },
+                            { step: 4, label: 'Documentation', active: true },
+                        ].map((s) => (
+                            <div key={s.step} className="flex items-center gap-3">
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 ${s.active ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                    {s.step}
                                 </div>
-                            )}
+                                <span className={`text-[10px] font-bold uppercase tracking-wider ${s.active ? 'text-slate-700' : 'text-slate-300'}`}>{s.label}</span>
+                            </div>
+                        ))}
+                    </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Company Name</label>
-                                    <div className="relative group">
-                                        <Building2 className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
+                    <div className="mt-8 pt-6 border-t border-slate-200 w-full max-w-xs">
+                        <button
+                            type="button"
+                            onClick={() => logout()}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-all active:scale-95"
+                        >
+                            <LogOut className="w-3.5 h-3.5" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Sign Out</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Right Section: The Form */}
+            <div className="flex-1 flex flex-col h-screen bg-white overflow-hidden">
+                {/* Form Header */}
+                <div className="bg-blue-600 px-8 py-5 shrink-0 flex items-center justify-between relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-full bg-white/10 skew-x-[-20deg] translate-x-32" />
+                    <div className="relative z-10">
+                        <span className="text-[9px] font-black uppercase tracking-[0.4em] text-white/40 block mb-0.5">University Placement Registry</span>
+                        <span className="text-xs font-black uppercase tracking-[0.2em] text-white">Section I: Official Record Verification</span>
+                    </div>
+                    <div className="relative z-10 flex gap-1.5">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                        ))}
+                    </div>
+                </div>
+
+                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar bg-white">
+                    <div className="p-6 space-y-8">
+                        {error && (
+                            <div className="bg-red-50 border border-red-100 text-red-600 p-4 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                                <AlertCircle className="w-4 h-4 shrink-0" />
+                                <p className="text-[10px] font-black uppercase tracking-widest">{error}</p>
+                            </div>
+                        )}
+
+                        {/* Section 1: Student Credentials */}
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-md bg-slate-50 flex items-center justify-center text-slate-400">
+                                    <UserCheck className="w-3.5 h-3.5" />
+                                </div>
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Student Credentials</h3>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <ReadOnlyField label="Legal Full Name" value={user?.name || ''} />
+                                <ReadOnlyField label="Registration Identity" value={user?.rollNumber || ''} />
+                                <div className="space-y-1.5">
+                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Current Semester</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        placeholder="e.g. 7th"
+                                        className="w-full h-10 bg-white border border-slate-200 rounded-xl px-4 text-xs font-bold text-slate-900 focus:border-slate-900 focus:ring-2 focus:ring-slate-50 transition-all placeholder:text-slate-300"
+                                        value={formData.semester}
+                                        onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Contact Number</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        placeholder="+92 XXX XXXXXXX"
+                                        className="w-full h-10 bg-white border border-slate-200 rounded-xl px-4 text-xs font-bold text-slate-900 focus:border-slate-900 focus:ring-2 focus:ring-slate-50 transition-all placeholder:text-slate-300"
+                                        value={formData.contactNumber}
+                                        onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Section 2: Placement Categorization */}
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-md bg-slate-50 flex items-center justify-center text-slate-400">
+                                    <Building2 className="w-3.5 h-3.5" />
+                                </div>
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Placement Categorization</h3>
+                            </div>
+                            <div className="grid grid-cols-3 gap-3">
+                                {[
+                                    { id: 'university_assigned', label: 'University Assigned', icon: Building2, desc: 'Dept handles placement' },
+                                    { id: 'self_found', label: 'Self Sourced', icon: Globe, desc: 'Student secured company' },
+                                    { id: 'freelancer', label: 'Freelancer', icon: Laptop, desc: 'Independent work' }
+                                ].map((cat) => (
+                                    <button
+                                        key={cat.id}
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, internshipCategory: cat.id })}
+                                        className={`flex flex-col items-center text-center p-4 rounded-xl border-2 transition-all group ${formData.internshipCategory === cat.id
+                                            ? 'bg-blue-600 border-blue-600 text-white shadow-lg'
+                                            : 'bg-white border-slate-100 text-slate-400 hover:border-blue-300'
+                                            }`}
+                                    >
+                                        <cat.icon className={`w-5 h-5 mb-2 transition-colors ${formData.internshipCategory === cat.id ? 'text-white' : 'text-slate-300 group-hover:text-slate-500'}`} />
+                                        <span className="text-[9px] font-black uppercase tracking-widest mb-1">{cat.label}</span>
+                                        <span className={`text-[7px] font-bold uppercase tracking-wider ${formData.internshipCategory === cat.id ? 'text-slate-400' : 'text-slate-300'}`}>{cat.desc}</span>
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Professional Domain</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        placeholder="e.g. Full Stack Development"
+                                        className="w-full h-10 bg-white border border-slate-200 rounded-xl px-4 text-xs font-bold text-slate-900 focus:border-slate-900 focus:ring-2 focus:ring-slate-50 transition-all placeholder:text-slate-300"
+                                        value={formData.internshipField}
+                                        onChange={(e) => setFormData({ ...formData, internshipField: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Proposed Duration</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        placeholder="e.g. 8 Weeks"
+                                        className="w-full h-10 bg-white border border-slate-200 rounded-xl px-4 text-xs font-bold text-slate-900 focus:border-slate-900 focus:ring-2 focus:ring-slate-50 transition-all placeholder:text-slate-300"
+                                        value={formData.duration}
+                                        onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Section 3: Entity Details — only for self_found */}
+                        {formData.internshipCategory === 'self_found' && (
+                            <div className="space-y-4 pt-4 border-t border-slate-100">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-6 h-6 rounded-md bg-blue-50 flex items-center justify-center text-blue-500">
+                                        <Globe className="w-3.5 h-3.5" />
+                                    </div>
+                                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Company Details</h3>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Company / Organization</label>
                                         <input
                                             required
                                             type="text"
-                                            placeholder="e.g. Google Pakistan"
-                                            className="w-full pl-12 pr-6 h-14 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500/10 focus:bg-white text-sm font-bold text-slate-900 transition-all placeholder:text-slate-300"
+                                            placeholder="Legal Company Name"
+                                            className="w-full h-10 bg-white border border-slate-200 rounded-xl px-4 text-xs font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-50 transition-all"
                                             value={formData.companyName}
                                             onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                                         />
                                     </div>
-                                </div>
-
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Job Position</label>
-                                    <div className="relative group">
-                                        <Briefcase className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Internship Title</label>
                                         <input
                                             required
                                             type="text"
-                                            placeholder="e.g. UI/UX Intern"
-                                            className="w-full pl-12 pr-6 h-14 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500/10 focus:bg-white text-sm font-bold text-slate-900 transition-all placeholder:text-slate-300"
+                                            placeholder="e.g. Software Engineer Intern"
+                                            className="w-full h-10 bg-white border border-slate-200 rounded-xl px-4 text-xs font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-50 transition-all"
                                             value={formData.position}
                                             onChange={(e) => setFormData({ ...formData, position: e.target.value })}
                                         />
                                     </div>
-                                </div>
-
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Work Arrangement</label>
-                                    <div className="relative group">
-                                        <Clock className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-blue-500 transition-colors pointer-events-none" />
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Work Modality</label>
                                         <select
                                             required
-                                            className="w-full pl-12 pr-6 h-14 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500/10 focus:bg-white text-sm font-bold text-slate-900 transition-all appearance-none cursor-pointer"
+                                            className="w-full h-10 bg-white border border-slate-200 rounded-xl px-4 text-xs font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-50 transition-all cursor-pointer appearance-none"
                                             value={formData.internshipType}
                                             onChange={(e) => setFormData({ ...formData, internshipType: e.target.value })}
                                         >
-                                            <option value="On-site">On-site</option>
-                                            <option value="Remote">Remote</option>
-                                            <option value="Hybrid">Hybrid</option>
+                                            <option value="onsite">Stationed (On-site)</option>
+                                            <option value="remote">Distributed (Remote)</option>
+                                            <option value="hybrid">Flexible (Hybrid)</option>
                                         </select>
                                     </div>
                                 </div>
 
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Total Duration</label>
-                                    <div className="relative group">
-                                        <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
-                                        <input
-                                            required
-                                            type="text"
-                                            placeholder="e.g. 8 Weeks / 3 Months"
-                                            className="w-full pl-12 pr-6 h-14 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500/10 focus:bg-white text-sm font-bold text-slate-900 transition-all placeholder:text-slate-300"
-                                            value={formData.duration}
-                                            onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Internship Description</label>
-                                <textarea
-                                    required
-                                    rows={4}
-                                    placeholder="Briefly describe your responsibilities and the work your will be doing..."
-                                    className="w-full p-6 bg-slate-50 border-none rounded-3xl focus:ring-2 focus:ring-blue-500/10 focus:bg-white text-sm font-bold text-slate-900 transition-all placeholder:text-slate-300 resize-none"
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Attachments (Offer Letter / Pictures)</label>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <label className="relative flex flex-col items-center justify-center h-40 border-2 border-dashed border-slate-200 rounded-3xl hover:border-blue-400 hover:bg-blue-50/50 transition-all cursor-pointer group">
-                                        <input type="file" multiple onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform mb-3">
-                                            <FilePlus className="w-6 h-6 text-blue-500" />
+                                <div className="space-y-3 p-5 bg-blue-50/50 rounded-2xl border border-blue-100">
+                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-500">Company Supervisor Details</p>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <input required placeholder="Supervisor Full Name" className="w-full h-9 bg-white border border-slate-200 rounded-lg px-4 text-[11px] font-bold focus:border-blue-400 outline-none" value={formData.selfFoundSupervisor.name} onChange={(e) => setFormData({ ...formData, selfFoundSupervisor: { ...formData.selfFoundSupervisor, name: e.target.value } })} />
+                                        <input required type="email" placeholder="Supervisor Official Email" className="w-full h-9 bg-white border border-slate-200 rounded-lg px-4 text-[11px] font-bold focus:border-blue-400 outline-none" value={formData.selfFoundSupervisor.email} onChange={(e) => setFormData({ ...formData, selfFoundSupervisor: { ...formData.selfFoundSupervisor, email: e.target.value } })} />
+                                        <input required placeholder="Contact Number" className="w-full h-9 bg-white border border-slate-200 rounded-lg px-4 text-[11px] font-bold focus:border-blue-400 outline-none" value={formData.selfFoundSupervisor.phone} onChange={(e) => setFormData({ ...formData, selfFoundSupervisor: { ...formData.selfFoundSupervisor, phone: e.target.value } })} />
+                                        <input required placeholder="Corporate Designation" className="w-full h-9 bg-white border border-slate-200 rounded-lg px-4 text-[11px] font-bold focus:border-blue-400 outline-none" value={formData.selfFoundSupervisor.designation} onChange={(e) => setFormData({ ...formData, selfFoundSupervisor: { ...formData.selfFoundSupervisor, designation: e.target.value } })} />
+                                        <div className="col-span-2">
+                                            <input required placeholder="Company Physical Address" className="w-full h-9 bg-white border border-slate-200 rounded-lg px-4 text-[11px] font-bold focus:border-blue-400 outline-none" value={formData.selfFoundSupervisor.companyAddress} onChange={(e) => setFormData({ ...formData, selfFoundSupervisor: { ...formData.selfFoundSupervisor, companyAddress: e.target.value } })} />
                                         </div>
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Click to upload files</p>
-                                    </label>
-
-                                    <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-                                        {files.map((file, i) => (
-                                            <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shrink-0 shadow-sm">
-                                                        {file.type.startsWith('image/') ? <ImageIcon className="w-4 h-4 text-blue-500" /> : <FileText className="w-4 h-4 text-slate-400" />}
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <p className="text-[10px] font-bold text-slate-700 truncate leading-none mb-1">{file.name}</p>
-                                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">{(file.size / 1024).toFixed(0)} KB</p>
-                                                    </div>
-                                                </div>
-                                                <button type="button" onClick={() => removeFile(i)} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
-                                                    <XIcon className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                        {files.length === 0 && (
-                                            <div className="h-full flex flex-col items-center justify-center border border-slate-50 rounded-3xl bg-slate-50/30 p-8">
-                                                <Paperclip className="w-6 h-6 text-slate-200 mb-2" />
-                                                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">No files attached</p>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
-                        <div className="bg-slate-50 p-6 md:p-10 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-6 md:gap-8">
-                            <div className="flex items-start gap-4 max-w-sm">
-                                <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center shrink-0 mt-1">
-                                    <CheckCircle2 className="w-3 h-3 text-blue-600" />
-                                </div>
-                                <p className="text-[10px] font-bold text-slate-400 leading-normal uppercase tracking-wider">
-                                    Your information will be electronically signed and submitted for verification.
-                                </p>
-                            </div>
-                            <div className="flex gap-4 w-full sm:w-auto">
-                                {isEditing && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsEditing(false)}
-                                        className="flex-1 sm:w-32 px-6 h-14 border-2 border-slate-200 text-slate-400 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all active:scale-95"
-                                    >
-                                        Cancel
+                        {/* Section 4: Freelancer Profiles (Conditional) */}
+                        {formData.internshipCategory === 'freelancer' && (
+                            <div className="space-y-4 pt-4 border-t border-slate-100">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-6 h-6 rounded-md bg-slate-50 flex items-center justify-center text-slate-400">
+                                            <Laptop className="w-3.5 h-3.5" />
+                                        </div>
+                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Platform Identities</h3>
+                                    </div>
+                                    <button type="button" onClick={addFreelanceAccount} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-[9px] font-black uppercase tracking-wider text-slate-600 hover:bg-white hover:border-slate-300 transition-all">
+                                        <PlusCircle className="w-3 h-3" /> Add Account
                                     </button>
-                                )}
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="flex-1 sm:w-56 h-14 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-blue-500/30 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
-                                >
-                                    {loading ? (
-                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                    ) : (
-                                        <>
-                                            {isEditing ? 'Update Request' : 'Submit Request'}
-                                            <Send className="w-4 h-4" />
-                                        </>
-                                    )}
-                                </button>
+                                </div>
+                                <div className="space-y-3">
+                                    {formData.freelancerAccounts.map((acc, idx) => (
+                                        <div key={idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 relative">
+                                            {idx > 0 && <button type="button" onClick={() => removeFreelanceAccount(idx)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-all"><MinusCircle className="w-3.5 h-3.5" /></button>}
+                                            <div className="grid grid-cols-3 gap-3">
+                                                <div className="space-y-1"><label className="text-[8px] font-black uppercase tracking-widest text-slate-400 ml-1">Platform</label><select className="w-full h-9 bg-white border border-slate-200 rounded-lg px-3 text-[11px] font-bold" value={acc.platform} onChange={(e) => updateFreelanceAccount(idx, 'platform', e.target.value)}><option value="Upwork">Upwork</option><option value="Fiverr">Fiverr</option><option value="Freelancer">Freelancer.com</option><option value="Toptal">Toptal</option><option value="Other">Other</option></select></div>
+                                                <div className="space-y-1"><label className="text-[8px] font-black uppercase tracking-widest text-slate-400 ml-1">Profile URL</label><input required placeholder="https://..." className="w-full h-9 bg-white border border-slate-200 rounded-lg px-3 text-[11px] font-bold" value={acc.profileUrl} onChange={(e) => updateFreelanceAccount(idx, 'profileUrl', e.target.value)} /></div>
+                                                <div className="space-y-1"><label className="text-[8px] font-black uppercase tracking-widest text-slate-400 ml-1">Username</label><input required placeholder="@username" className="w-full h-9 bg-white border border-slate-200 rounded-lg px-3 text-[11px] font-bold" value={acc.username} onChange={(e) => updateFreelanceAccount(idx, 'username', e.target.value)} /></div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    </form>
-                </div>
-            </main>
+                        )}
 
-            <footer className="py-10 text-center">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-300">
-                    Internship Management System
-                </p>
-            </footer>
+                    </div>
+
+                    {/* Submit Footer */}
+                    <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex items-center justify-between gap-6 shrink-0">
+                        <p className="text-[8px] font-black text-slate-400 leading-relaxed uppercase tracking-wider max-w-xs">
+                            By submitting, I certify that the placement details provided are authentic and subject to departmental verification.
+                        </p>
+                        <div className="flex items-center gap-3">
+                            {isEditing && (
+                                <button type="button" onClick={() => setIsEditing(false)} className="px-6 h-10 border border-slate-200 text-slate-500 rounded-lg font-black text-[9px] uppercase tracking-widest hover:bg-white transition-all shadow-sm active:scale-95">
+                                    Withdraw
+                                </button>
+                            )}
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="px-8 h-10 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white rounded-lg font-black text-[9px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-200 active:scale-95"
+                            >
+                                {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : <Send className="w-3.5 h-3.5" />}
+                                {isEditing ? 'Authorize Records' : 'Authorize Placement'}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 };
+
+const ReadOnlyField = ({ label, value }: { label: string; value: string }) => (
+    <div className="space-y-1.5">
+        <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">{label}</label>
+        <div className="w-full h-10 bg-slate-50 border border-slate-100 rounded-xl px-4 flex items-center">
+            <span className="text-xs font-bold text-slate-700">{value || 'N/A'}</span>
+        </div>
+    </div>
+);
 
 export default InternshipRequestForm;

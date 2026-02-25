@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-import { Loader2, Menu } from 'lucide-react';
+import { Loader2, Menu, LogOut } from 'lucide-react';
 
 import AdminSidebar from '../components/admin/AdminSidebar';
 import OverviewTab from '../components/admin/OverviewTab';
@@ -63,8 +63,7 @@ const AdminDashboard = () => {
 
 
 
-    const [viewApp, setViewApp] = useState<any | null>(null);
-    const [viewAppLoading, setViewAppLoading] = useState(false);
+
 
     const [showInlineAddCompany, setShowInlineAddCompany] = useState(false);
     const [newCompany, setNewCompany] = useState({ name: '', email: '', website: '', phone: '', address: '' });
@@ -287,14 +286,6 @@ const AdminDashboard = () => {
         } finally { setChangeSupervisorLoading(false); }
     };
 
-    const handleViewApp = async (studentId: string) => {
-        setViewAppLoading(true);
-        try {
-            const { data } = await axios.get(`${API_BASE}/application/${studentId}`, config);
-            if (data.success) setViewApp(data.application);
-        } catch (err) { console.error(err); }
-        finally { setViewAppLoading(false); }
-    };
 
     const handleCreateCompany = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -408,9 +399,10 @@ const AdminDashboard = () => {
                     <div className="flex items-center gap-6">
                         <button
                             onClick={logout}
-                            className="h-12 px-6 rounded-2xl bg-red-50 text-red-600 text-[11px] font-normal uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all shadow-sm active:scale-95"
+                            className="flex items-center gap-3 h-12 px-8 rounded-2xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-200"
                         >
-                            Sign Out
+                            <LogOut className="h-4 w-4" />
+                            <span>Sign Out</span>
                         </button>
                     </div>
                 </header>
@@ -467,7 +459,7 @@ const AdminDashboard = () => {
                                         token={token || ''}
                                     />
                                 )}
-                                {activeTab === 'approvals' && isSuperAdmin && <ApprovalsTab students={students} handleViewApp={handleViewApp} viewAppLoading={viewAppLoading} handleApprove={handleApprove} />}
+                                {activeTab === 'approvals' && isSuperAdmin && <ApprovalsTab students={students} handleApprove={handleApprove} />}
                                 {activeTab === 'agreements' && isSuperAdmin && <AgreementsTab agreements={agreements} handleVerifyAgreement={handleVerifyAgreement} />}
 
                             </motion.div>
@@ -516,7 +508,6 @@ const AdminDashboard = () => {
                     showAddAdminModal, setShowAddAdminModal, newAdmin, setNewAdmin, partneredCompanies, handleCreateAdmin,
                     editFaculty, setEditFaculty, editFacultyForm, setEditFacultyForm, handleUpdateFaculty, editFacultyLoading, editFacultyError,
                     deleteFaculty, setDeleteFaculty, handleDeleteFaculty, deleteFacultyLoading,
-                    viewApp, setViewApp,
                     deleteStudent: deleteStudentTarget, setDeleteStudent: setDeleteStudentTarget, handleDeleteStudent, deleteStudentLoading,
                     faculty,
                     changeSupervisorTarget, setChangeSupervisorTarget, changeSupervisorId, setChangeSupervisorId, changeSupervisorLoading, changeSupervisorError, handleChangeSupervisor,

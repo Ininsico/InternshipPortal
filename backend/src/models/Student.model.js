@@ -103,6 +103,8 @@ const StudentSchema = new mongoose.Schema(
         siteSupervisorPhone: { type: String, trim: true, default: null },
         internshipAssignedAt: { type: Date, default: null },
         profilePicture: { type: String, default: null },
+        semester: { type: String, trim: true, default: null },
+        contactNumber: { type: String, trim: true, default: null },
     },
     { timestamps: true }
 );

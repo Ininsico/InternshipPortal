@@ -1,4 +1,4 @@
-import { Briefcase, Trash2, Building2, User, Mail, ShieldCheck, FileText, Star, Phone } from 'lucide-react';
+import { Briefcase, Trash2, Building2, User, Mail, ShieldCheck, FileText, Star, Phone, Sparkles } from 'lucide-react';
 import StatusPill from '../StatusPill';
 import API from '../../config/api';
 
@@ -86,7 +86,7 @@ const StudentsTab = ({
                                             <button
                                                 onClick={() => onSyncPlacement(stu)}
                                                 className="h-10 w-10 flex items-center justify-center rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-sm"
-                                                title="Edit Records"
+                                                title={stu.internshipCategory === 'freelancer' ? 'Activate Freelancer' : 'Edit Records'}
                                             >
                                                 <FileText className="h-4 w-4" />
                                             </button>
@@ -137,6 +137,14 @@ const StudentsTab = ({
                                                     </div>
                                                 </div>
                                             </div>
+                                        ) : stu.internshipCategory === 'freelancer' ? (
+                                            <div className="h-32 rounded-3xl bg-blue-50/30 border-2 border-dashed border-blue-100 flex items-center justify-center text-center p-6">
+                                                <div className="flex flex-col items-center">
+                                                    <Sparkles className="h-6 w-6 text-blue-500 mb-2" />
+                                                    <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">Freelance Workflow Active</p>
+                                                    <p className="text-[10px] font-medium text-blue-400 mt-1">Status: Ready for Assignment Activation</p>
+                                                </div>
+                                            </div>
                                         ) : (
                                             <div className="h-32 rounded-3xl bg-slate-50/50 border-2 border-dashed border-slate-100 flex items-center justify-center text-center p-6">
                                                 <p className="text-xs font-medium text-slate-400">No Internship Assigned Yet</p>
@@ -160,6 +168,16 @@ const StudentsTab = ({
                                                     <div>
                                                         <p className="text-xs font-bold text-slate-900">{stu.supervisorId.name}</p>
                                                         <p className="text-[10px] font-medium text-indigo-500">{stu.supervisorId.email}</p>
+                                                    </div>
+                                                </div>
+                                            ) : stu.internshipCategory === 'freelancer' ? (
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center">
+                                                        <Sparkles className="h-5 w-5" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs font-bold text-slate-900">Freelancer Mode</p>
+                                                        <p className="text-[10px] font-medium text-blue-500 uppercase tracking-tight">Self-Managed Dashboard</p>
                                                     </div>
                                                 </div>
                                             ) : (

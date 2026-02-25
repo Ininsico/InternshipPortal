@@ -231,23 +231,20 @@ const StudentDashboard = () => {
         }
     };
 
-    const renderStatusTracker = () => {
-        const currentIdx = STATUS_PIPELINE.findIndex(s => s.key === internshipStatus);
-        const currentStep = STATUS_PIPELINE[currentIdx] ?? (isAssigned ? STATUS_PIPELINE[STATUS_PIPELINE.length - 1] : null);
-
+    const renderStatusOverview = () => {
         if (internshipStatus === 'none') {
             return (
-                <div className="rounded-3xl border border-slate-100 bg-white p-16 text-center shadow-sm">
-                    <div className="mx-auto w-20 h-20 rounded-2xl bg-slate-50 flex items-center justify-center mb-8 text-slate-400">
-                        <Briefcase className="w-10 h-10" />
+                <div className="rounded-3xl border border-slate-100 bg-white p-12 text-center shadow-sm">
+                    <div className="mx-auto w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-6 text-slate-400">
+                        <Briefcase className="w-8 h-8" />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-950 font-display">Awaiting Application</h3>
-                    <p className="mt-4 text-sm font-medium text-slate-500 max-w-sm mx-auto leading-relaxed">
-                        No active internship records found. Submit your initial placement request to establish your professional record.
+                    <h3 className="text-lg font-bold text-slate-950 font-display">No Active Application</h3>
+                    <p className="mt-2 text-[11px] font-bold uppercase tracking-widest text-slate-400 max-w-sm mx-auto">
+                        Please initialize your internship application to activate the dashboard.
                     </p>
                     <button
                         onClick={() => setShowApplyModal(true)}
-                        className="mt-8 inline-flex items-center gap-3 rounded-xl bg-slate-900 px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-black transition-all active:scale-95"
+                        className="mt-8 inline-flex items-center gap-3 rounded-xl bg-slate-900 px-8 py-4 text-[10px] font-bold uppercase tracking-[0.2em] text-white hover:bg-black transition-all active:scale-95 shadow-lg shadow-slate-200"
                     >
                         <Plus className="h-4 w-4" /> Initialize Application
                     </button>
@@ -257,96 +254,97 @@ const StudentDashboard = () => {
 
         if (internshipStatus === 'rejected') {
             return (
-                <div className="rounded-3xl border border-red-100 bg-white p-16 text-center shadow-sm">
-                    <div className="mx-auto w-20 h-20 rounded-2xl bg-red-50 flex items-center justify-center mb-8 text-red-500">
-                        <AlertCircle className="w-10 h-10" />
+                <div className="rounded-3xl border border-red-100 bg-white p-12 text-center shadow-sm">
+                    <div className="mx-auto w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mb-6 text-red-500">
+                        <AlertCircle className="w-8 h-8" />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-950 font-display">Application Rejected</h3>
-                    <p className="mt-4 text-sm font-medium text-slate-500 max-w-sm mx-auto leading-relaxed">
-                        The registry has identified issues with your current submission. Please review the institutional feedback and resubmit your records.
+                    <h3 className="text-lg font-bold text-slate-950 font-display">Application Rejected</h3>
+                    <p className="mt-2 text-[11px] font-bold uppercase tracking-widest text-slate-400 max-w-sm mx-auto">
+                        Your application was not approved. Please review the feedback and resubmit.
                     </p>
                     <button
                         onClick={() => setShowApplyModal(true)}
-                        className="mt-8 inline-flex items-center gap-3 rounded-xl bg-red-600 px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-red-700 transition-all active:scale-95"
+                        className="mt-8 inline-flex items-center gap-3 rounded-xl bg-red-600 px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-red-700 transition-all active:scale-95 shadow-lg shadow-red-100"
                     >
-                        <Plus className="h-3.5 w-3.5" /> Rectify Records
+                        <Plus className="h-4 w-4" /> Rectify Records
                     </button>
                 </div>
             );
         }
 
+        const currentIdx = STATUS_PIPELINE.findIndex(s => s.key === internshipStatus);
+        const currentStep = STATUS_PIPELINE[currentIdx];
+
         return (
             <div className="rounded-3xl border border-slate-100 bg-white shadow-sm overflow-hidden">
-                <div className="border-b border-slate-100 px-10 py-8 bg-white flex items-center justify-between">
-                    <div>
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-slate-950 font-display">Journey Pipeline</h3>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Application Lifecycle Status</p>
-                    </div>
-                    <div className="bg-slate-100 px-4 py-2 rounded-xl flex items-center gap-2">
-                        <Shield className="w-3 h-3 text-slate-900" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-900">{internshipStatus.replace('_', ' ')}</span>
-                    </div>
-                </div>
-                <div className="px-10 py-10">
-                    <div className="relative space-y-0">
-                        {STATUS_PIPELINE.map((step, idx) => {
-                            const isCompleted = idx < currentIdx || (isAssigned && idx < STATUS_PIPELINE.length);
-                            const isCurrent = !isAssigned && idx === currentIdx;
-                            const isPending = !isAssigned && idx > currentIdx;
-                            const StepIcon = step.icon;
-
-                            return (
-                                <div key={step.key} className="flex gap-8 relative">
-                                    <div className="flex flex-col items-center">
-                                        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-all duration-500 z-10
-                                            ${isCompleted ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-500/20 rotate-12 scale-110'
-                                                : isCurrent ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/30 ring-8 ring-blue-50'
-                                                    : 'bg-slate-100 text-slate-300'}`}
-                                        >
-                                            {isCompleted
-                                                ? <CheckCheck className="h-5 w-5" />
-                                                : <StepIcon className={`h-5 w-5 ${isCurrent ? 'animate-pulse' : ''}`} />
-                                            }
-                                        </div>
-                                        {idx < STATUS_PIPELINE.length - 1 && (
-                                            <div className={`w-1 flex-1 min-h-[40px] transition-colors duration-500 ${isCompleted ? 'bg-emerald-200' : 'bg-slate-100'}`} />
-                                        )}
-                                    </div>
-
-                                    <div className="pb-10 pt-1">
-                                        <p className={`text-[10px] font-bold uppercase tracking-wider leading-none mb-2
-                                            ${isCompleted ? 'text-emerald-600'
-                                                : isCurrent ? 'text-blue-600'
-                                                    : 'text-slate-300'}`}
-                                        >
-                                            {step.label}
-                                        </p>
-                                        {(isCurrent || (isAssigned && idx === STATUS_PIPELINE.length - 1)) && (
-                                            <motion.p initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="text-sm font-medium text-slate-500 max-w-md leading-relaxed">
-                                                {step.desc}
-                                            </motion.p>
-                                        )}
-                                        {isPending && (
-                                            <p className="text-[9px] font-bold text-slate-300 uppercase tracking-wider">Next step in the workflow</p>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {currentStep && (
-                    <div className="px-10 py-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="h-2 w-2 rounded-full bg-blue-500" />
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-900">
-                                Current Phase: {currentStep.label}
-                            </p>
+                <div className="p-10">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-950 font-display">Workflow Status</h3>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Institutional Processing Status</p>
                         </div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Registry Sync Active</div>
+                        <div className="bg-slate-100 px-4 py-2 rounded-xl">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">{internshipStatus.replace('_', ' ')}</span>
+                        </div>
                     </div>
-                )}
+
+                    <div className="space-y-6">
+                        <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Current Activity Phase</p>
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-900 shadow-sm">
+                                    <Shield className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-black uppercase tracking-widest text-slate-900">{currentStep?.label || 'In Progress'}</p>
+                                    <p className="text-[11px] font-bold text-slate-500 mt-1">{currentStep?.desc || 'Your application is being processed by the system registry.'}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {applications.length > 0 && internshipStatus === 'submitted' && (
+                            <div className="pt-6 border-t border-slate-100">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="p-5 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">Categorization</p>
+                                        <p className="text-xs font-bold text-slate-900 uppercase">{applications[0].internshipCategory?.replace('_', ' ')}</p>
+                                    </div>
+                                    <div className="p-5 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">Proposed Duration</p>
+                                        <p className="text-xs font-bold text-slate-900 uppercase">{applications[0].duration}</p>
+                                    </div>
+
+                                    {applications[0].internshipCategory === 'self_found' && (
+                                        <div className="md:col-span-2 p-5 rounded-2xl bg-slate-50 border border-slate-100">
+                                            <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-3">Sourced Supervisor</p>
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-[11px] font-bold text-slate-900 uppercase">{applications[0].selfFoundSupervisor?.name}</p>
+                                                    <p className="text-[10px] text-slate-400">{applications[0].selfFoundSupervisor?.email}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-[10px] font-bold text-slate-900">{applications[0].selfFoundSupervisor?.designation}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {applications[0].internshipCategory === 'freelancer' && (
+                                        <div className="md:col-span-2 space-y-3">
+                                            <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 px-1">Freelance Identities</p>
+                                            {applications[0].freelancerAccounts?.map((acc: any, i: number) => (
+                                                <div key={i} className="p-4 bg-white border border-slate-100 rounded-xl flex items-center justify-between shadow-sm">
+                                                    <span className="text-[10px] font-bold text-slate-900 uppercase tracking-tight">{acc.platform}</span>
+                                                    <span className="text-[10px] text-slate-400 font-mono italic">{acc.username}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
         );
     };
@@ -506,9 +504,12 @@ const StudentDashboard = () => {
                             </div>
                         </div>
                         <div className="h-8 w-[1px] bg-slate-100 mx-2 hidden md:block" />
-                        <button onClick={logout} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-red-500 hover:bg-red-50 transition-all group">
-                            <LogOut className="h-4 w-4 transition-transform group-hover:rotate-12" />
-                            <span className="text-[10px] font-bold uppercase tracking-wider hidden md:block">Sign Out</span>
+                        <button
+                            onClick={logout}
+                            className="flex items-center gap-3 px-5 py-2.5 rounded-xl bg-slate-900 text-white hover:bg-black transition-all shadow-sm active:scale-95"
+                        >
+                            <LogOut className="h-4 w-4" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] hidden md:block">Sign Out</span>
                         </button>
                     </div>
                 </header>
@@ -541,7 +542,7 @@ const StudentDashboard = () => {
                                             {/* Pipeline tracker: only shown while application is in-progress (not yet assigned) */}
                                             {!isAssigned && (
                                                 <div className="lg:col-span-2 space-y-6">
-                                                    {renderStatusTracker()}
+                                                    {renderStatusOverview()}
                                                 </div>
                                             )}
 

@@ -33,8 +33,10 @@ const createApplication = async (req, res) => {
         const {
             companyName, position, description, internshipType, duration,
             internshipCategory, workMode, internshipField,
-            selfFoundSupervisor, freelancerAccounts,
-            companyDomain, professionalSummary
+            companyDomain, professionalSummary,
+            semester, contactNumber,
+            sup_name, sup_email, sup_phone, sup_designation, sup_address,
+            acc_count
         } = req.body;
 
         // Process uploaded files if any
@@ -42,32 +44,35 @@ const createApplication = async (req, res) => {
         if (req.files && req.files.length > 0) {
             documents = req.files.map(file => ({
                 name: file.originalname,
-                url: file.path, // Cloudinary URL
+                url: file.path,
                 type: file.mimetype,
                 uploadedAt: new Date()
             }));
         }
 
-        // Validate category-specific fields
         const cat = internshipCategory || 'university_assigned';
-        if (cat === 'self_found') {
-            const sup = selfFoundSupervisor || {};
-            if (!sup.name || !sup.email) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Supervisor name and email are required for self-found internships.'
-                });
-            }
+
+        // Build supervisor object from flat fields
+        const parsedSupervisor = {
+            name: sup_name || '',
+            email: sup_email || '',
+            phone: sup_phone || '',
+            designation: sup_designation || '',
+            companyAddress: sup_address || ''
+        };
+
+        // Build freelancer accounts from indexed flat fields
+        const accCount = parseInt(acc_count || '0', 10);
+        const parsedAccounts = [];
+        for (let i = 0; i < accCount; i++) {
+            parsedAccounts.push({
+                platform: req.body[`acc_${i}_platform`] || '',
+                profileUrl: req.body[`acc_${i}_profileUrl`] || '',
+                username: req.body[`acc_${i}_username`] || ''
+            });
         }
-        if (cat === 'freelancer') {
-            const accs = freelancerAccounts || [];
-            if (!accs.length || !accs[0].platform || !accs[0].profileUrl) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'At least one freelancer platform/profile URL is required for freelancer internships.'
-                });
-            }
-        }
+
+        // (Frontend required fields enforce this — no server double-check needed)
 
         // Check if application already exists for this student
         const existingApp = await Application.findOne({ studentId: req.user.id });
@@ -89,10 +94,12 @@ const createApplication = async (req, res) => {
             existingApp.internshipCategory = cat;
             existingApp.workMode = cat === 'freelancer' ? null : (workMode || null);
             existingApp.internshipField = internshipField || null;
-            existingApp.selfFoundSupervisor = cat === 'self_found' ? selfFoundSupervisor : {};
-            existingApp.freelancerAccounts = cat === 'freelancer' ? (freelancerAccounts || []) : [];
+            existingApp.selfFoundSupervisor = cat === 'self_found' ? parsedSupervisor : {};
+            existingApp.freelancerAccounts = cat === 'freelancer' ? (Array.isArray(parsedAccounts) ? parsedAccounts : []) : [];
             existingApp.companyDomain = companyDomain || null;
             existingApp.professionalSummary = professionalSummary || null;
+            existingApp.semester = semester || existingApp.semester;
+            existingApp.contactNumber = contactNumber || existingApp.contactNumber;
             if (documents.length > 0) {
                 existingApp.documents = documents;
             }
@@ -113,16 +120,20 @@ const createApplication = async (req, res) => {
             internshipCategory: cat,
             workMode: cat === 'freelancer' ? null : (workMode || null),
             internshipField: internshipField || null,
-            selfFoundSupervisor: cat === 'self_found' ? selfFoundSupervisor : {},
-            freelancerAccounts: cat === 'freelancer' ? (freelancerAccounts || []) : [],
+            selfFoundSupervisor: cat === 'self_found' ? parsedSupervisor : {},
+            freelancerAccounts: cat === 'freelancer' ? (Array.isArray(parsedAccounts) ? parsedAccounts : []) : [],
             companyDomain: companyDomain || null,
             professionalSummary: professionalSummary || null,
+            semester,
+            contactNumber,
             documents
         });
 
-        // Update student's internship status
+        // Update student's internship status and profile info
         await Student.findByIdAndUpdate(req.user.id, {
-            internshipStatus: 'submitted'
+            internshipStatus: 'submitted',
+            semester: semester || null,
+            contactNumber: contactNumber || null
         });
 
         res.status(201).json({ success: true, message: 'Internship request submitted successfully', application });

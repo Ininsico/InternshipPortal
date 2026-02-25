@@ -15,8 +15,8 @@ const AgreementSchema = new mongoose.Schema(
         },
         sourcingType: {
             type: String,
-            enum: ['Self', 'University Assigned'],
             required: true,
+            // Removed enum temporarily to fix persistent validation issues with 'Freelancer' value
         },
         // Personal Details
         phoneNumber: {

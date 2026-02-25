@@ -13,6 +13,7 @@ interface User {
     session?: string;
     degree?: string;
     internshipStatus?: 'none' | 'submitted' | 'approved' | 'rejected' | 'agreement_submitted' | 'verified' | 'internship_assigned';
+    internshipCategory?: 'university_assigned' | 'self_found' | 'freelancer' | null;
 }
 
 interface AuthContextType {

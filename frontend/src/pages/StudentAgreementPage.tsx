@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
     FileText,
@@ -9,64 +9,61 @@ import {
     Phone,
     Mail,
     MapPin,
-    Building2,
-    Building,
-    User,
-    Briefcase,
+    Upload,
     Loader2,
-    UserCircle,
     GraduationCap,
-    Clock
+    Clock,
+    X as XIcon,
+    FilePlus,
+    AlertCircle
 } from 'lucide-react';
-
 import API from '../config/api';
-import StatusTracker from '../components/StatusTracker';
 
 const API_BASE = API.STUDENT;
 
 const StudentAgreementPage = () => {
     const { user, token, logout } = useAuth();
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
     const [application, setApplication] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
+    const [offerFile, setOfferFile] = useState<File | null>(null);
+    const fileRef = useRef<HTMLInputElement>(null);
 
     const [formData, setFormData] = useState({
-        sourcingType: 'Self',
         phoneNumber: '',
         personalEmail: '',
         homeAddress: '',
-        companyAddress: '',
-        supervisorName: '',
-        supervisorDesignation: '',
-        supervisorEmail: '',
-        supervisorPhone: ''
     });
 
     useEffect(() => {
         const loadData = async () => {
             try {
                 const config = { headers: { Authorization: `Bearer ${token}` } };
-
                 const appsRes = await axios.get(`${API_BASE}/applications`, config);
+
                 if (appsRes.data.success) {
                     const approved = appsRes.data.applications.find((a: any) => a.status === 'approved');
-                    if (approved) setApplication(approved);
+                    if (approved) {
+                        setApplication(approved);
+
+                        // University-assigned students skip this page entirely
+                        if (approved.internshipCategory === 'university_assigned') {
+                            navigate('/dashboard', { replace: true });
+                            return;
+                        }
+                    }
                 }
 
+                // Pre-fill from existing agreement if already submitted
                 if (user?.internshipStatus === 'agreement_submitted') {
                     const agreeRes = await axios.get(`${API_BASE}/agreement`, config);
                     if (agreeRes.data.success && agreeRes.data.agreement) {
                         setFormData({
-                            sourcingType: agreeRes.data.agreement.sourcingType || 'Self',
                             phoneNumber: agreeRes.data.agreement.phoneNumber || '',
                             personalEmail: agreeRes.data.agreement.personalEmail || '',
                             homeAddress: agreeRes.data.agreement.homeAddress || '',
-                            companyAddress: agreeRes.data.agreement.companyAddress || '',
-                            supervisorName: agreeRes.data.agreement.supervisorName || '',
-                            supervisorDesignation: agreeRes.data.agreement.supervisorDesignation || '',
-                            supervisorEmail: agreeRes.data.agreement.supervisorEmail || '',
-                            supervisorPhone: agreeRes.data.agreement.supervisorPhone || ''
                         });
                     }
                 }
@@ -78,20 +75,33 @@ const StudentAgreementPage = () => {
         };
 
         if (token) loadData();
-    }, [token, user?.internshipStatus]);
+    }, [token, user?.internshipStatus, navigate]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!application) return;
+
+        if (!offerFile && user?.internshipStatus !== 'agreement_submitted') {
+            setError('Please upload your offer letter before submitting.');
+            return;
+        }
 
         setLoading(true);
         setError(null);
 
         try {
             const config = { headers: { Authorization: `Bearer ${token}` } };
+
             const payload = {
                 applicationId: application._id,
-                ...formData
+                sourcingType: application.internshipCategory === 'freelancer' ? 'Freelancer' : 'Self',
+                ...formData,
+                // Pass supervisor data already stored in the application
+                supervisorName: application.selfFoundSupervisor?.name || '',
+                supervisorEmail: application.selfFoundSupervisor?.email || '',
+                supervisorPhone: application.selfFoundSupervisor?.phone || '',
+                supervisorDesignation: application.selfFoundSupervisor?.designation || '',
+                companyAddress: application.selfFoundSupervisor?.companyAddress || '',
             };
 
             const { data } = await axios.post(`${API_BASE}/agreement`, payload, config);
@@ -105,261 +115,280 @@ const StudentAgreementPage = () => {
         }
     };
 
+    // ── Loading state ──────────────────────────────────────────────────────────
     if (fetching) {
         return (
-            <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center">
+            <div className="min-h-screen bg-[#f0f4ff] flex flex-col items-center justify-center" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                 <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
-                <p className="text-xs font-bold text-slate-400">Loading Agreement Form...</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Loading...</p>
             </div>
         );
     }
 
     const isLocked = user?.internshipStatus === 'agreement_submitted';
+    const category = application?.internshipCategory;
+    const isFreelancer = category === 'freelancer';
 
-    return (
-        <div className="min-h-screen bg-[#f8fafc] flex flex-col">
-            <header className="h-16 md:h-20 bg-white/80 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between px-4 sm:px-8 md:px-10 sticky top-0 z-20">
-                <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                        <GraduationCap className="w-6 h-6 text-white" />
+    // ── Locked / Submitted state ───────────────────────────────────────────────
+    if (isLocked) {
+        return (
+            <div className="min-h-screen bg-[#f0f4ff] flex flex-col items-center justify-center p-4" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                <div className="w-full max-w-md">
+                    <div className="h-1 bg-blue-600 rounded-t-2xl" />
+                    <div className="bg-white rounded-b-2xl shadow-xl shadow-blue-100 border border-blue-50 p-8 text-center">
+                        <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-5 text-blue-600">
+                            <Clock className="w-8 h-8 animate-pulse" />
+                        </div>
+                        <h2 className="text-lg font-black text-slate-900 tracking-tight mb-2">Agreement Under Review</h2>
+                        <p className="text-slate-500 text-[11px] font-bold uppercase tracking-widest leading-relaxed mb-8">
+                            Your agreement has been submitted and is being processed by the department.
+                            You'll gain full dashboard access once verified.
+                        </p>
+                        <div className="grid grid-cols-2 gap-3 mb-8">
+                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-left">
+                                <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">Status</p>
+                                <p className="text-[10px] font-black text-blue-600 uppercase">Awaiting Verification</p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-left">
+                                <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">Category</p>
+                                <p className="text-[10px] font-black text-slate-800 uppercase">{category?.replace(/_/g, ' ') || 'N/A'}</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => logout()}
+                            className="w-full h-12 rounded-xl bg-blue-600 text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-blue-700 transition-all shadow-md shadow-blue-200 active:scale-95 flex items-center justify-center gap-2"
+                        >
+                            <LogOut className="w-3.5 h-3.5" />
+                            Sign Out & Check Back Later
+                        </button>
                     </div>
-                    <span className="text-xl font-black text-slate-900 tracking-tight uppercase italic">CU Portal</span>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Main form ──────────────────────────────────────────────────────────────
+    return (
+        <div className="min-h-screen bg-[#f0f4ff] flex flex-col" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+            {/* Header */}
+            <header className="bg-white border-b border-slate-100 flex items-center justify-between px-5 md:px-10 h-16 sticky top-0 z-20">
+                <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-200">
+                        <GraduationCap className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="text-sm font-black text-slate-900 tracking-tight uppercase">CU Internship Portal</span>
                 </div>
                 <button
                     onClick={() => logout()}
-                    className="flex items-center gap-3 px-5 py-2.5 rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-500 font-bold text-xs uppercase tracking-widest transition-all"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-all active:scale-95"
                 >
-                    <LogOut className="w-4 h-4" />
-                    <span className="hidden sm:inline">Sign Out</span>
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span className="text-[9px] font-black uppercase tracking-widest hidden sm:inline">Sign Out</span>
                 </button>
             </header>
 
-            <main className="flex-1 p-4 sm:p-8 md:p-12">
-                <div className="max-w-4xl mx-auto">
-                    <div className="mb-12">
-                        <div className="flex items-center gap-2 mb-4">
-                            <span className="h-[2px] w-8 bg-blue-600" />
-                            <span className="text-xs font-bold uppercase tracking-wider text-blue-600">Internship Agreement</span>
+            <main className="flex-1 flex items-start justify-center p-4 md:p-10">
+                <div className="w-full max-w-2xl">
+
+                    {/* Page title */}
+                    <div className="mb-8">
+                        <div className="flex items-center gap-2 mb-3">
+                            <span className="h-[2px] w-6 bg-blue-600" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Internship Agreement</span>
                         </div>
-                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-4 leading-none">
-                            Finalize Your <br /> <span className="text-blue-600 font-bold">Placement Contract</span>
+                        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight mb-2">
+                            Finalize Your <span className="text-blue-600">Placement Contract</span>
                         </h1>
-                        <p className="text-slate-500 font-medium max-w-lg leading-relaxed">
-                            {isLocked
-                                ? "Your agreement has been submitted and is currently being processed. You will gain full dashboard access once verified."
-                                : "Please provide the following details to finalize your internship placement agreement. This information is required for legal and administrative records."}
+                        <p className="text-slate-500 text-xs font-bold uppercase tracking-wider leading-relaxed">
+                            Upload your offer letter and confirm your contact details to complete the agreement.
                         </p>
                     </div>
 
-                    <div className="mb-10 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                        <StatusTracker currentStatus={user?.internshipStatus || 'none'} />
+                    {/* Application summary badge */}
+                    <div className="mb-6 flex items-center justify-between bg-white px-5 py-3 rounded-xl border border-slate-100 shadow-sm">
+                        <div className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">
+                                {application?.companyName} — {application?.position}
+                            </span>
+                        </div>
+                        <span className="px-3 py-1 bg-blue-600 text-white rounded-lg text-[8px] font-black uppercase tracking-widest">
+                            {category?.replace(/_/g, ' ') || 'N/A'}
+                        </span>
                     </div>
 
-                    {isLocked ? (
-                        <div className="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-2xl shadow-blue-500/5 border border-slate-100 overflow-hidden p-6 sm:p-8 md:p-12 text-center">
-                            <div className="w-24 h-24 bg-blue-50 rounded-[2rem] flex items-center justify-center mx-auto mb-8 text-blue-600">
-                                <Clock className="w-12 h-12 animate-pulse" />
+                    <form onSubmit={handleSubmit} className="space-y-5">
+
+                        {error && (
+                            <div className="bg-red-50 border border-red-100 text-red-600 px-5 py-3 rounded-xl flex items-center gap-3">
+                                <AlertCircle className="w-4 h-4 shrink-0" />
+                                <p className="text-[10px] font-black uppercase tracking-widest">{error}</p>
                             </div>
-                            <h2 className="text-2xl font-bold text-slate-900 tracking-tight mb-4">Agreement Under Review</h2>
-                            <p className="text-slate-500 font-medium max-w-md mx-auto mb-10 leading-relaxed">
-                                You've successfully submitted the agreement. The HOD is currently verifying your details. You'll be notified once your portal is fully active.
+                        )}
+
+                        {/* ── Offer Letter Upload ── */}
+                        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+                                    <Upload className="w-3.5 h-3.5 text-blue-600" />
+                                </div>
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-900">Offer Letter</h3>
+                            </div>
+
+                            {!offerFile ? (
+                                <label className="flex flex-col items-center justify-center h-36 border-2 border-dashed border-blue-100 rounded-xl hover:bg-blue-50/30 hover:border-blue-300 transition-all cursor-pointer group">
+                                    <input
+                                        ref={fileRef}
+                                        type="file"
+                                        accept=".pdf,.jpg,.jpeg,.png"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const f = e.target.files?.[0];
+                                            if (f) setOfferFile(f);
+                                        }}
+                                    />
+                                    <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mb-3 text-blue-400 group-hover:bg-blue-100 group-hover:text-blue-600 transition-all">
+                                        <FilePlus className="w-5 h-5" />
+                                    </div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Click to upload offer letter</p>
+                                    <p className="text-[8px] font-bold text-slate-300 uppercase mt-1">PDF, PNG, JPG accepted</p>
+                                </label>
+                            ) : (
+                                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-100">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                                            <FileText className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-black text-slate-900 truncate max-w-[220px]">{offerFile.name}</p>
+                                            <p className="text-[8px] font-bold text-slate-400 uppercase">{(offerFile.size / 1024).toFixed(0)} KB</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setOfferFile(null); if (fileRef.current) fileRef.current.value = ''; }}
+                                        className="p-1.5 text-slate-400 hover:text-red-500 transition-all rounded-lg hover:bg-red-50"
+                                    >
+                                        <XIcon className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                            )}
+                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-3">
+                                {isFreelancer
+                                    ? 'Upload any freelance contract or platform verification document.'
+                                    : 'Upload the official offer letter issued by the company.'}
                             </p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md mx-auto">
-                                <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm text-left">
-                                    <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1">Status</p>
-                                    <p className="text-xs font-bold text-blue-600 uppercase">Awaiting Verification</p>
-                                </div>
-                                <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm text-left">
-                                    <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1">Priority</p>
-                                    <p className="text-xs font-bold text-slate-900 uppercase">Registry Standard</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => logout()}
-                                className="mt-12 w-full h-16 rounded-2xl bg-slate-900 text-white text-[11px] font-black uppercase tracking-[0.3em] hover:bg-slate-800 transition-all active:scale-[0.98]"
-                            >
-                                Sign Out & Check Back Later
-                            </button>
                         </div>
-                    ) : (
-                        <form onSubmit={handleSubmit} className="space-y-8">
-                            {error && (
-                                <div className="bg-red-50 border border-red-100 text-red-600 px-6 py-4 rounded-2xl flex items-center gap-4">
-                                    <FileText className="w-5 h-5" />
-                                    <p className="text-xs font-black uppercase tracking-widest">{error}</p>
-                                </div>
-                            )}
 
-                            <div className="bg-white rounded-[2rem] border border-slate-100 p-8 shadow-sm">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                                        <Briefcase className="w-4 h-4 text-blue-600" />
-                                    </div>
-                                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">Internship Sourcing</h3>
+                        {/* ── Personal Contact Info ── */}
+                        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+                                    <Phone className="w-3.5 h-3.5 text-blue-600" />
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    {['Self', 'University Assigned'].map((type) => (
-                                        <button
-                                            key={type}
-                                            type="button"
-                                            onClick={() => setFormData({ ...formData, sourcingType: type })}
-                                            className={`h-20 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${formData.sourcingType === type
-                                                ? 'border-blue-600 bg-blue-50/50 text-blue-600'
-                                                : 'border-slate-50 bg-slate-50/50 text-slate-400 hover:border-slate-100 hover:bg-slate-50'
-                                                }`}
-                                        >
-                                            <span className="text-[10px] font-bold uppercase tracking-wider">{type}</span>
-                                            {formData.sourcingType === type && <CheckCircle2 className="w-4 h-4" />}
-                                        </button>
-                                    ))}
-                                </div>
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-900">Personal Contact Details</h3>
                             </div>
 
-                            <div className="bg-white rounded-[2rem] border border-slate-100 p-6 md:p-10 shadow-sm">
-                                <div className="flex items-center gap-3 mb-8">
-                                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                                        <UserCircle className="w-4 h-4 text-blue-600" />
-                                    </div>
-                                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">Personal Contact Information</h3>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <InputField
-                                        label="Personal Phone Number"
-                                        icon={Phone}
-                                        value={formData.phoneNumber}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                                        placeholder="e.g. 03XX-XXXXXXX"
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <FormField
+                                    label="Personal Phone"
+                                    icon={Phone}
+                                    type="tel"
+                                    placeholder="03XX-XXXXXXX"
+                                    value={formData.phoneNumber}
+                                    onChange={(v) => setFormData({ ...formData, phoneNumber: v })}
+                                />
+                                <FormField
+                                    label="Personal Email"
+                                    icon={Mail}
+                                    type="email"
+                                    placeholder="personal@gmail.com"
+                                    value={formData.personalEmail}
+                                    onChange={(v) => setFormData({ ...formData, personalEmail: v })}
+                                />
+                                <div className="sm:col-span-2 space-y-1.5">
+                                    <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-1.5">
+                                        <MapPin className="w-3 h-3" /> Home Address
+                                    </label>
+                                    <textarea
+                                        required
+                                        rows={2}
+                                        placeholder="Current residential address..."
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-900 focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all placeholder:text-slate-300 resize-none outline-none"
+                                        value={formData.homeAddress}
+                                        onChange={(e) => setFormData({ ...formData, homeAddress: e.target.value })}
                                     />
-                                    <InputField
-                                        label="Personal Email Address"
-                                        icon={Mail}
-                                        value={formData.personalEmail}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, personalEmail: e.target.value })}
-                                        placeholder="e.g. personal@gmail.com"
-                                    />
-                                    <div className="md:col-span-2 space-y-3">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Current Home Address</label>
-                                        <div className="relative group">
-                                            <MapPin className="absolute left-5 top-6 w-4 h-4 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
-                                            <textarea
-                                                required
-                                                rows={3}
-                                                className="w-full pl-12 pr-6 py-5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500/10 focus:bg-white text-sm font-bold text-slate-900 transition-all placeholder:text-slate-300 resize-none"
-                                                value={formData.homeAddress}
-                                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, homeAddress: e.target.value })}
-                                                placeholder="Enter your full permanent or current residential address..."
-                                            />
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
+                        </div>
 
-                            {formData.sourcingType === 'Self' && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="bg-white rounded-[2rem] border border-slate-100 p-6 md:p-10 shadow-sm"
-                                >
-                                    <div className="flex items-center gap-3 mb-8">
-                                        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                                            <Building className="w-4 h-4 text-blue-600" />
+                        {/* ── Supervisor details read-only preview (self_found only) ── */}
+                        {!isFreelancer && application?.selfFoundSupervisor?.name && (
+                            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center">
+                                            <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
                                         </div>
-                                        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">Industry Supervisor Details</h3>
+                                        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-900">Supervisor Details</h3>
                                     </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div className="md:col-span-2 space-y-3">
-                                            <label className="text-[10px) font-black uppercase tracking-widest text-slate-400 ml-1">Company Physical Address</label>
-                                            <div className="relative group">
-                                                <Building2 className="absolute left-5 top-5 w-4 h-4 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
-                                                <textarea
-                                                    required
-                                                    rows={2}
-                                                    className="w-full pl-12 pr-6 py-5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500/10 focus:bg-white text-sm font-bold text-slate-900 transition-all placeholder:text-slate-300 resize-none"
-                                                    value={formData.companyAddress}
-                                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, companyAddress: e.target.value })}
-                                                    placeholder="Full address of the company office you'll be attending..."
-                                                />
-                                            </div>
+                                    <span className="text-[8px] font-black uppercase tracking-widest text-green-500 bg-green-50 px-2 py-1 rounded-lg">
+                                        Pre-filled from application
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {[
+                                        { label: 'Name', val: application.selfFoundSupervisor.name },
+                                        { label: 'Email', val: application.selfFoundSupervisor.email },
+                                        { label: 'Phone', val: application.selfFoundSupervisor.phone },
+                                        { label: 'Designation', val: application.selfFoundSupervisor.designation },
+                                    ].map(({ label, val }) => val ? (
+                                        <div key={label} className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                            <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">{label}</p>
+                                            <p className="text-[10px] font-bold text-slate-800 truncate">{val}</p>
                                         </div>
-                                        <InputField
-                                            label="Supervisor Full Name"
-                                            icon={User}
-                                            value={formData.supervisorName}
-                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, supervisorName: e.target.value })}
-                                            placeholder="Name of your direct reporting manager"
-                                        />
-                                        <InputField
-                                            label="Supervisor Designation"
-                                            icon={Briefcase}
-                                            value={formData.supervisorDesignation}
-                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, supervisorDesignation: e.target.value })}
-                                            placeholder="e.g. Senior Project Manager"
-                                        />
-                                        <InputField
-                                            label="Supervisor Contact Email"
-                                            icon={Mail}
-                                            value={formData.supervisorEmail}
-                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, supervisorEmail: e.target.value })}
-                                            placeholder="Official company email address"
-                                        />
-                                        <InputField
-                                            label="Supervisor Office Phone"
-                                            icon={Phone}
-                                            value={formData.supervisorPhone}
-                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, supervisorPhone: e.target.value })}
-                                            placeholder="Contact number for verification"
-                                        />
-                                    </div>
-                                </motion.div>
-                            )}
+                                    ) : null)}
+                                </div>
+                            </div>
+                        )}
 
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full h-18 bg-blue-600 text-white rounded-[2rem] text-xs font-bold uppercase tracking-wider shadow-2xl shadow-blue-500/30 hover:bg-blue-700 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-4 py-6"
-                            >
-                                {loading ? (
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                ) : (
-                                    <>
-                                        <span>Submit Agreement & Finalize Placement</span>
-                                        <CheckCircle2 className="w-5 h-5" />
-                                    </>
-                                )}
-                            </button>
-                        </form>
-                    )}
+                        {/* ── Submit ── */}
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full h-12 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white rounded-xl font-black text-[9px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-200 active:scale-[0.98]"
+                        >
+                            {loading
+                                ? <Loader2 className="w-4 h-4 animate-spin" />
+                                : <><CheckCircle2 className="w-4 h-4" /><span>Submit Agreement & Finalize Placement</span></>
+                            }
+                        </button>
+                    </form>
                 </div>
             </main>
         </div>
     );
 };
 
-interface InputFieldProps {
-    label: string;
-    icon: any;
-    value: string;
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    placeholder: string;
-    disabled?: boolean;
-}
-
-const InputField = ({ label, icon: Icon, value, onChange, placeholder, disabled }: InputFieldProps) => (
-    <div className="space-y-3">
-        <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">{label}</label>
-        <div className="relative group">
-            <Icon className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
-            <input
-                required
-                disabled={disabled}
-                className="w-full h-14 pl-12 pr-6 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500/10 focus:bg-white text-sm font-bold text-slate-900 transition-all placeholder:text-slate-300"
-                value={value}
-                onChange={onChange}
-                placeholder={placeholder}
-            />
-        </div>
+// ── Small reusable field component ────────────────────────────────────────────
+const FormField = ({
+    label, icon: Icon, type = 'text', placeholder, value, onChange
+}: {
+    label: string; icon: any; type?: string; placeholder: string; value: string;
+    onChange: (v: string) => void;
+}) => (
+    <div className="space-y-1.5">
+        <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-1.5">
+            <Icon className="w-3 h-3" /> {label}
+        </label>
+        <input
+            required
+            type={type}
+            placeholder={placeholder}
+            className="w-full h-10 px-4 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-900 focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all placeholder:text-slate-300 outline-none"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+        />
     </div>
 );
 
