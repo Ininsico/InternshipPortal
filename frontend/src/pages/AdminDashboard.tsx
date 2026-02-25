@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-import { Loader2, X, RefreshCw, Menu } from 'lucide-react';
+import { Loader2, RefreshCw, Menu } from 'lucide-react';
 
 import AdminSidebar from '../components/admin/AdminSidebar';
 import OverviewTab from '../components/admin/OverviewTab';
@@ -75,10 +75,12 @@ const AdminDashboard = () => {
     const [viewApp, setViewApp] = useState<any | null>(null);
     const [viewAppLoading, setViewAppLoading] = useState(false);
 
-    const [showAddCompanyModal, setShowAddCompanyModal] = useState(false);
+    const [showInlineAddCompany, setShowInlineAddCompany] = useState(false);
     const [newCompany, setNewCompany] = useState({ name: '', email: '', website: '', phone: '', address: '' });
     const [companyLoading, setCompanyLoading] = useState(false);
     const [companyError, setCompanyError] = useState('');
+
+    const [showInlineAddStaff, setShowInlineAddStaff] = useState(false);
 
     const [changeSupervisorTarget, setChangeSupervisorTarget] = useState<any | null>(null);
     const [changeSupervisorId, setChangeSupervisorId] = useState('');
@@ -168,11 +170,11 @@ const AdminDashboard = () => {
             if (newAdmin.role === 'company_admin') payload.company = newAdmin.company;
             const { data } = await axios.post(`${API_BASE}/create-admin`, payload, config);
             if (data.success) {
-                // The FacultyTab component uses React Query, so we invalidate its cache
                 queryClient.invalidateQueries({ queryKey: ['faculty'] });
                 setShowAddAdminModal(false);
+                setShowInlineAddStaff(false);
                 setNewAdmin({ name: '', email: '', role: 'admin', company: '' });
-                fetchData(true); // Refresh other relevant data
+                fetchData(true);
             }
         } catch (err) { console.error(err); }
     };
@@ -315,7 +317,7 @@ const AdminDashboard = () => {
             const { data } = await axios.post(`${API_BASE}/companies`, newCompany, config);
             if (data.success) {
                 setPartneredCompanies((prev: any[]) => [...prev, { ...data.company, company: data.company.name, name: 'Manual Entry', isManual: true }]);
-                setShowAddCompanyModal(false);
+                setShowInlineAddCompany(false);
                 setNewCompany({ name: '', email: '', website: '', phone: '', address: '' });
             }
         } catch (err: any) {
@@ -464,19 +466,39 @@ const AdminDashboard = () => {
                                     />
                                 )}
                                 {activeTab === 'reports' && <ReportsTab reports={reports} handleDeleteReport={handleDeleteReport} setSelectedReport={setSelectedReport} setEditReport={(r) => { setEditReport(r); setEditReportForm({ summary: r.summary, overallRating: r.overallRating, recommendation: r.recommendation, completionStatus: r.completionStatus, scores: r.scores || {} }); }} />}
-                                {activeTab === 'faculty' && isSuperAdmin && <FacultyTab setShowAddAdminModal={setShowAddAdminModal} setEditFaculty={setEditFaculty} setEditFacultyForm={setEditFacultyForm} setDeleteFaculty={setDeleteFaculty} handleResendInvitation={handleResendInvitation} token={token || ''} />}
-                                {activeTab === 'companies' && isSuperAdmin && <CompaniesTab companies={partneredCompanies} setShowAddCompanyModal={setShowAddCompanyModal} handleDeleteCompany={handleDeleteCompany} />}
+                                {activeTab === 'faculty' && isSuperAdmin && (
+                                    <FacultyTab
+                                        setShowAddAdminModal={setShowAddAdminModal}
+                                        setEditFaculty={setEditFaculty}
+                                        setEditFacultyForm={setEditFacultyForm}
+                                        setDeleteFaculty={setDeleteFaculty}
+                                        handleResendInvitation={handleResendInvitation}
+                                        token={token || ''}
+                                        showInlineAddStaff={showInlineAddStaff}
+                                        setShowInlineAddStaff={setShowInlineAddStaff}
+                                        newAdmin={newAdmin}
+                                        setNewAdmin={setNewAdmin}
+                                        partneredCompanies={partneredCompanies}
+                                        handleCreateAdmin={handleCreateAdmin}
+                                    />
+                                )}
+                                {activeTab === 'companies' && isSuperAdmin && (
+                                    <CompaniesTab
+                                        companies={partneredCompanies}
+                                        handleDeleteCompany={handleDeleteCompany}
+                                        showInlineAddCompany={showInlineAddCompany}
+                                        setShowInlineAddCompany={setShowInlineAddCompany}
+                                        newCompany={newCompany}
+                                        setNewCompany={setNewCompany}
+                                        handleCreateCompany={handleCreateCompany}
+                                        companyLoading={companyLoading}
+                                        companyError={companyError}
+                                        token={token || ''}
+                                    />
+                                )}
                                 {activeTab === 'approvals' && isSuperAdmin && <ApprovalsTab students={students} handleViewApp={handleViewApp} viewAppLoading={viewAppLoading} handleApprove={handleApprove} />}
                                 {activeTab === 'agreements' && isSuperAdmin && <AgreementsTab agreements={agreements} handleVerifyAgreement={handleVerifyAgreement} />}
-                                {activeTab === 'settings' && (
-                                    <div className="h-[60vh] rounded-2xl border-2 border-dashed border-blue-100 bg-white flex items-center justify-center text-center">
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-300">Configuration</p>
-                                            <h2 className="text-lg font-black text-slate-900 uppercase tracking-widest italic">SuperAdmin Console</h2>
-                                            <p className="text-xs font-bold text-slate-400 mt-2 max-w-xs mx-auto">Access system configurations and security protocols here.</p>
-                                        </div>
-                                    </div>
-                                )}
+
                             </motion.div>
                         ) : (
                             <motion.div
@@ -539,42 +561,7 @@ const AdminDashboard = () => {
                 }}
             />
 
-            <AnimatePresence>
-                {showAddCompanyModal && (
-                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={() => setShowAddCompanyModal(false)}>
-                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl" onClick={e => e.stopPropagation()}>
-                            <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest italic">Add Partner</h3>
-                                <button onClick={() => setShowAddCompanyModal(false)} className="h-8 w-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-900 transition-all"><X className="h-4 w-4" /></button>
-                            </div>
-                            <form onSubmit={handleCreateCompany} className="space-y-6">
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Company Name</label>
-                                    <input required value={newCompany.name} onChange={e => setNewCompany({ ...newCompany, name: e.target.value })} className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300" placeholder="e.g. Google" />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Industry Email (Optional)</label>
-                                    <input type="email" value={newCompany.email} onChange={e => setNewCompany({ ...newCompany, email: e.target.value })} className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300" placeholder="hr@company.com" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Website</label>
-                                        <input value={newCompany.website} onChange={e => setNewCompany({ ...newCompany, website: e.target.value })} className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300" placeholder="company.com" />
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Phone</label>
-                                        <input value={newCompany.phone} onChange={e => setNewCompany({ ...newCompany, phone: e.target.value })} className="w-full h-14 rounded-2xl bg-slate-50 border-none px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300" placeholder="+1..." />
-                                    </div>
-                                </div>
-                                {companyError && <p className="text-xs font-bold text-red-500 bg-red-50 p-4 rounded-xl">{companyError}</p>}
-                                <button type="submit" disabled={companyLoading} className="w-full h-14 rounded-2xl bg-blue-600 text-white text-[11px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 active:scale-95 disabled:opacity-50">
-                                    {companyLoading ? 'Processing...' : 'Register Partner'}
-                                </button>
-                            </form>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+
         </div>
     );
 };

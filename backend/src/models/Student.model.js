@@ -67,6 +67,29 @@ const StudentSchema = new mongoose.Schema(
             enum: ['none', 'submitted', 'approved', 'rejected', 'agreement_submitted', 'verified', 'internship_assigned'],
             default: 'none',
         },
+
+        // ─── NEW: Internship Category (denormalized from approved application) ─────
+        // Set at the time of internship assignment for quick filtering
+        internshipCategory: {
+            type: String,
+            enum: ['university_assigned', 'self_found', 'freelancer', null],
+            default: null,
+        },
+
+        // ─── NEW: Work Mode ────────────────────────────────────────────────────────
+        workMode: {
+            type: String,
+            enum: ['onsite', 'remote', null],
+            default: null,
+        },
+
+        // ─── NEW: Internship Field ─────────────────────────────────────────────────
+        internshipField: {
+            type: String,
+            trim: true,
+            default: null,
+        },
+
         // Filled by admin during Step 6: Internship Assignment
         assignedCompany: { type: String, trim: true, default: null },
         assignedCompanyId: {
@@ -88,6 +111,8 @@ const StudentSchema = new mongoose.Schema(
 StudentSchema.index({ degree: 1 });
 StudentSchema.index({ internshipStatus: 1 });
 StudentSchema.index({ supervisorId: 1 });
+StudentSchema.index({ internshipCategory: 1 });
+StudentSchema.index({ workMode: 1 });
 StudentSchema.index({ createdAt: -1 });
 
 StudentSchema.pre('save', async function (next) {

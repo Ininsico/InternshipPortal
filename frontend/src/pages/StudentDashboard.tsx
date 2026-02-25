@@ -10,13 +10,11 @@ import {
     Plus,
     Loader2,
     X,
-    LayoutDashboard,
     ArrowUpRight,
     CheckCircle2,
     Upload,
     File,
     Camera,
-    Clock,
     CheckCheck,
     AlertCircle,
     Send,
@@ -287,18 +285,6 @@ const StudentDashboard = () => {
             </div>
         );
     };
-
-    const menuItems = [
-        { key: 'overview', label: 'Dashboard', icon: LayoutDashboard },
-        // My Applications only visible while application is being processed (not yet assigned)
-        ...(!isAssigned ? [{ key: 'applications', label: 'My Applications', icon: Briefcase }] : []),
-        // Assignments only visible once internship is assigned
-        ...(isAssigned ? [
-            { key: 'pending_assignments', label: 'Pending Assignments', icon: Clock },
-            { key: 'assignment_summary', label: 'Assignment Summary', icon: CheckCheck }
-        ] : []),
-        { key: 'profile', label: 'Profile Settings', icon: User },
-    ];
 
     return (
         <div className="flex h-screen bg-slate-50/50 overflow-hidden">

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Users, ShieldCheck, Building2, FileText, Settings, LogOut, ChevronLeft, ChevronRight, Bell, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Users, ShieldCheck, Building2, FileText, LogOut, ChevronLeft, ChevronRight, Bell, BookOpen } from 'lucide-react';
 
 interface AdminSidebarProps {
     activeTab: string;
     setActiveTab: (tab: any) => void;
-    isSuperAdmin: boolean; // role is still super_admin internally
+    isSuperAdmin: boolean;
     user: any;
     logout: () => void;
 }
@@ -45,7 +45,6 @@ const AdminSidebar = ({ activeTab, setActiveTab, isSuperAdmin, user, logout }: A
                         {item.label}
                     </span>
                 )}
-                {/* Tooltip on collapsed */}
                 {collapsed && (
                     <span className="pointer-events-none absolute left-full ml-3 z-50 whitespace-nowrap rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-xl">
                         {item.label}
@@ -103,25 +102,16 @@ const AdminSidebar = ({ activeTab, setActiveTab, isSuperAdmin, user, logout }: A
                         {mainNavItems.map(item => <NavBtn key={item.id} item={item} />)}
                     </div>
 
-                    {/* HOD Oversite section */}
+                    {/* HOD Oversight section */}
                     {isSuperAdmin && (
                         <div className="space-y-0.5">
                             {!collapsed && (
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 px-3">HOD Oversight</p>
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 px-3">HoD Oversight</p>
                             )}
                             {collapsed && <div className="h-px bg-blue-50 mb-2 mx-2" />}
                             {adminNavItems.map(item => <NavBtn key={item.id} item={item} />)}
                         </div>
                     )}
-
-                    {/* Settings */}
-                    <div className="space-y-0.5">
-                        {!collapsed && (
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 px-3">Account</p>
-                        )}
-                        {collapsed && <div className="h-px bg-blue-50 mb-2 mx-2" />}
-                        <NavBtn item={{ id: 'settings', label: 'Settings', icon: Settings }} />
-                    </div>
                 </div>
 
 
@@ -142,7 +132,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, isSuperAdmin, user, logout }: A
                                 >
                                     <p className="text-xs font-bold text-slate-900 truncate whitespace-nowrap">{user?.name}</p>
                                     <p className="text-[10px] font-semibold text-blue-500 mt-0.5 whitespace-nowrap uppercase tracking-wider">
-                                        {user?.role === 'super_admin' ? 'HOD' : user?.role?.replace('_', ' ')}
+                                        {user?.role === 'super_admin' ? 'HoD' : user?.role?.replace('_', ' ')}
                                     </p>
                                 </motion.div>
                             )}

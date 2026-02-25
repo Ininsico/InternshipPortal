@@ -11,13 +11,6 @@ interface ReportsTabProps {
 const ReportsTab = ({ reports, handleDeleteReport, setSelectedReport, setEditReport }: ReportsTabProps) => {
     return (
         <div className="space-y-8">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                    <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase italic">Internship Reports</h3>
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mt-1">Global faculty evaluations • Total: {reports.length}</p>
-                </div>
-            </div>
-
             {reports.length === 0 ? (
                 <div className="rounded-[2.5rem] border border-slate-100 bg-white p-8 sm:p-20 text-center">
                     <div className="mx-auto w-16 h-16 sm:w-20 sm:h-20 rounded-[1.5rem] sm:rounded-[2rem] bg-slate-50 flex items-center justify-center mb-6">

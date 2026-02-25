@@ -3,39 +3,50 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import {
     UserPlus, Pencil, Trash2, Mail, ShieldCheck, RefreshCw,
-    Search, ChevronLeft, ChevronRight, ArrowUpDown,
-    Briefcase, AlertCircle, Users
+    Search, ChevronLeft, ChevronRight,
+    Briefcase, AlertCircle, Users, X
 } from 'lucide-react';
 import API from '../../config/api';
 import StatusPill from '../StatusPill';
 
 interface FacultyTabProps {
-    setShowAddAdminModal: (show: boolean) => void;
+    setShowAddAdminModal?: (show: boolean) => void;
     setEditFaculty: (faculty: any) => void;
     setEditFacultyForm: (form: any) => void;
     setDeleteFaculty: (faculty: any) => void;
     handleResendInvitation: (adminId: string) => void;
     setViewAdminStudents: (admin: any) => void;
     token: string;
+    // Inline "add staff" form state passed from parent
+    showInlineAddStaff?: boolean;
+    setShowInlineAddStaff?: (v: boolean) => void;
+    newAdmin?: any;
+    setNewAdmin?: (v: any) => void;
+    partneredCompanies?: any[];
+    handleCreateAdmin?: (e: React.FormEvent) => void;
 }
 
 import { useAdminStore } from '../../store/adminStore';
 
 const FacultyTab = ({
-    setShowAddAdminModal,
+    // setShowAddAdminModal kept for backward compatibility
     setEditFaculty,
     setEditFacultyForm,
     setDeleteFaculty,
     handleResendInvitation,
-    token
+    token,
+    showInlineAddStaff,
+    setShowInlineAddStaff,
+    newAdmin,
+    setNewAdmin,
+    partneredCompanies,
+    handleCreateAdmin,
 }: Omit<FacultyTabProps, 'setViewAdminStudents'>) => {
     const { setViewAdminStudents } = useAdminStore();
     const queryClient = useQueryClient();
     const [page, setPage] = useState(1);
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
-    const [sortField, setSortField] = useState('name');
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [typeFilter, setTypeFilter] = useState<'all' | 'faculty' | 'staff'>('all');
     const limit = 20;
 
@@ -43,21 +54,21 @@ const FacultyTab = ({
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearch(search);
-            setPage(1); // Reset to first page on search
+            setPage(1);
         }, 300);
         return () => clearTimeout(timer);
     }, [search]);
 
     // Data Fetching
     const { data: response, isLoading, isError, isFetching } = useQuery({
-        queryKey: ['faculty', page, debouncedSearch, sortField, sortOrder, typeFilter],
+        queryKey: ['faculty', page, debouncedSearch, typeFilter],
         queryFn: async () => {
             const params = new URLSearchParams({
                 page: String(page),
                 limit: String(limit),
                 search: debouncedSearch,
-                sort: sortField,
-                order: sortOrder,
+                sort: 'name',
+                order: 'asc',
             });
             if (typeFilter !== 'all') params.append('type', typeFilter);
 
@@ -68,18 +79,11 @@ const FacultyTab = ({
         },
     });
 
-    const admins = response?.data || [];
+    // Filter out super_admins from the displayed list
+    const allAdmins: any[] = response?.data || [];
+    const admins = allAdmins.filter((a: any) => a.role !== 'super_admin');
     const totalPages = response?.pages || 0;
-    const totalItems = response?.total || 0;
-
-    const toggleSort = (field: string) => {
-        if (sortField === field) {
-            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-        } else {
-            setSortField(field);
-            setSortOrder('asc');
-        }
-    };
+    const totalItems = admins.length;
 
     if (isError) {
         return (
@@ -103,10 +107,12 @@ const FacultyTab = ({
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Header section */}
             <div className="flex flex-wrap items-center justify-between gap-6">
-                <div>
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">User Management</h3>
-                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-500 mt-2">Directorate of Staff & Administration</p>
-                </div>
+                <h3
+                    className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic leading-none"
+                    style={{ fontFamily: 'Montserrat, sans-serif' }}
+                >
+                    User Management
+                </h3>
                 <div className="flex items-center gap-3">
                     <div className="relative group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
@@ -119,13 +125,100 @@ const FacultyTab = ({
                         />
                     </div>
                     <button
-                        onClick={() => setShowAddAdminModal(true)}
+                        onClick={() => setShowInlineAddStaff?.(!showInlineAddStaff)}
                         className="h-12 px-6 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95 flex items-center gap-3"
                     >
-                        <UserPlus className="h-4 w-4" /> <span className="hidden sm:inline">Add Staff Member</span>
+                        <UserPlus className="h-4 w-4" /> <span className="hidden sm:inline">{showInlineAddStaff ? 'Cancel' : 'Add Staff Member'}</span>
                     </button>
                 </div>
             </div>
+
+            {/* ── Inline Add Staff Form ── */}
+            {showInlineAddStaff && newAdmin && setNewAdmin && handleCreateAdmin && (
+                <div className="rounded-[2rem] border border-blue-100 bg-blue-50/30 p-8 shadow-sm">
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">Add Personnel</h4>
+                            <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mt-1">Register a new staff member or industry partner</p>
+                        </div>
+                        <button
+                            onClick={() => setShowInlineAddStaff?.(false)}
+                            className="h-9 w-9 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-slate-900 transition-all shadow-sm"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    </div>
+                    <form onSubmit={handleCreateAdmin} className="space-y-5">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Full Name</label>
+                                <input
+                                    required
+                                    placeholder="Dr. John Doe"
+                                    value={newAdmin.name}
+                                    onChange={(e) => setNewAdmin({ ...newAdmin, name: e.target.value })}
+                                    className="w-full h-14 rounded-2xl bg-white border border-slate-200 px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all placeholder:text-slate-300"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Email Address</label>
+                                <input
+                                    required
+                                    type="email"
+                                    placeholder="john@university.edu"
+                                    value={newAdmin.email}
+                                    onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
+                                    className="w-full h-14 rounded-2xl bg-white border border-slate-200 px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all placeholder:text-slate-300"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block">Account Role</label>
+                                <select
+                                    value={newAdmin.role}
+                                    onChange={(e) => setNewAdmin({ ...newAdmin, role: e.target.value })}
+                                    className="w-full h-14 rounded-2xl bg-white border border-slate-200 px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all"
+                                >
+                                    <option value="admin">Faculty Supervisor</option>
+                                    <option value="company_admin">Industry Partner</option>
+                                </select>
+                            </div>
+                            {newAdmin.role === 'company_admin' && (
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Company Name</label>
+                                    <input
+                                        required
+                                        list="partnered-companies-list"
+                                        placeholder="e.g. Systems Limited"
+                                        value={newAdmin.company}
+                                        onChange={(e) => setNewAdmin({ ...newAdmin, company: e.target.value })}
+                                        className="w-full h-14 rounded-2xl bg-white border border-slate-200 px-6 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all placeholder:text-slate-300"
+                                    />
+                                    <datalist id="partnered-companies-list">
+                                        {Array.isArray(partneredCompanies) && partneredCompanies.map((c: any, i: number) => (
+                                            <option key={i} value={c.company} />
+                                        ))}
+                                    </datalist>
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-3 pt-2">
+                            <button
+                                type="submit"
+                                className="h-12 px-8 rounded-2xl bg-slate-900 text-white text-xs font-bold uppercase tracking-wider hover:bg-black transition-all shadow-xl shadow-slate-200"
+                            >
+                                Finish Registration
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowInlineAddStaff?.(false)}
+                                className="h-12 px-8 rounded-2xl border border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wider hover:bg-slate-50 transition-all"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
 
             {/* Filters & Controls */}
             <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-slate-50/50 rounded-3xl border border-slate-100">
@@ -151,11 +244,6 @@ const FacultyTab = ({
                 </div>
 
                 <div className="flex items-center gap-4 text-xs font-bold text-slate-400">
-                    <button onClick={() => toggleSort('name')} className="flex items-center gap-1 hover:text-slate-900 transition-colors uppercase tracking-wider">
-                        Sort: <span className="text-slate-900 underline decoration-blue-500/30 underline-offset-4">{sortField}</span>
-                        <ArrowUpDown className="h-3 w-3" />
-                    </button>
-                    <div className="h-4 w-px bg-slate-200" />
                     <span className="uppercase tracking-wider">Total: <span className="text-slate-900">{totalItems} Results</span></span>
                 </div>
             </div>
@@ -242,7 +330,6 @@ const FacultyTab = ({
                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">Designated Role</span>
                                             <StatusPill status={admin.role === 'company_admin' ? (admin.company || 'Enterprise Staff') : 'Faculty Supervisor'} />
                                         </div>
-                                        {/* Explicit button — replaces unreliable whole-card click */}
                                         <button
                                             onClick={() => setViewAdminStudents(admin)}
                                             className="flex items-center gap-2 h-10 px-4 rounded-xl bg-blue-50 text-blue-600 text-xs font-bold hover:bg-blue-600 hover:text-white transition-all active:scale-95 shadow-sm"
