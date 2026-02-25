@@ -436,13 +436,13 @@ const StudentDashboard = () => {
                                             onClick={() => { setActiveTab('pending_assignments'); setShowMobileSidebar(false); }}
                                             className={`flex w-full items-center rounded-xl px-4 py-2.5 transition-all ${activeTab === 'pending_assignments' ? 'text-blue-700 bg-blue-50/50 font-bold' : 'text-slate-400 hover:text-blue-600 hover:bg-white'}`}
                                         >
-                                            <span className="text-[12px] font-bold font-display">Tasks Queue</span>
+                                            <span className="text-[12px] font-bold font-display">Pending Assignments</span>
                                         </button>
                                         <button
                                             onClick={() => { setActiveTab('assignment_summary'); setShowMobileSidebar(false); }}
                                             className={`flex w-full items-center rounded-xl px-4 py-2.5 transition-all ${activeTab === 'assignment_summary' ? 'text-blue-700 bg-blue-50/50 font-bold' : 'text-slate-400 hover:text-blue-600 hover:bg-white'}`}
                                         >
-                                            <span className="text-[12px] font-bold font-display">Performance</span>
+                                            <span className="text-[12px] font-bold font-display">Assignment Summary</span>
                                         </button>
                                     </motion.div>
                                 )}
