@@ -1,24 +1,13 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const mongoose = require('mongoose');
 const Student = require('../src/models/Student.model');
 
 const studentsToInsert = [
     {
-        rollNumber: 'FA23-BCS-013',
-        name: 'test1',
-        email: 'fa23-bcs-013@student.comsats.edu.pk',
-        password: 'Megamix@123'
-    },
-    {
-        rollNumber: 'FA23-BCS-001',
-        name: 'test2',
-        email: 'fa23-bcs-001@student.comsats.edu.pk',
-        password: 'Megamix@123'
-    },
-    {
-        rollNumber: 'FA23-BCS-003',
-        name: 'test3',
-        email: 'fa23-bcs-003@student.comsats.edu.pk',
+        rollNumber: 'FA23-BCS-010',
+        name: 'Rathore',
+        email: 'fa23-bcs-010@student.comsats.edu.pk',
         password: 'Megamix@123'
     }
 ];
@@ -60,7 +49,7 @@ const seedStudents = async () => {
                 serialNo,
                 name: data.name,
                 email: data.email,
-                passwordHash: data.password, // Will be hashed by pre-save hook
+                passwordHash: data.password, 
                 isEmailVerified: true,
                 isActive: true,
                 internshipStatus: 'none'
